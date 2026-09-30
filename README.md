@@ -4,7 +4,7 @@ Free text-to-speech API using Microsoft Edge's neural TTS voices. Returns audio 
 
 ## Features
 
-- **300+ natural-sounding voices** — powered by Microsoft Edge's neural TTS (completely free, no API key needed)
+- **9 curated high-quality US English voices** — the best neural voices from Microsoft Edge TTS (free, no API key needed)
 - **Sentence-level timestamps** — word boundary events mapped to sentences for text highlighting
 - **Adjustable speed** — 0.5x to 2.0x speech rate
 - **Base64 audio response** — easy to consume from any frontend
@@ -36,14 +36,54 @@ python main.py
 
 ### `GET /api/voices`
 
-Returns all available TTS voices.
+Returns the 9 highest-quality US English voices, ordered best first.
 
 **Response:**
 ```json
 [
   {
+    "id": "en-US-AvaMultilingualNeural",
+    "name": "Microsoft AvaMultilingual Online (Natural) - English (United States)",
+    "locale": "en-US"
+  },
+  {
     "id": "en-US-EmmaMultilingualNeural",
-    "name": "Emma",
+    "name": "Microsoft EmmaMultilingual Online (Natural) - English (United States)",
+    "locale": "en-US"
+  },
+  {
+    "id": "en-US-AndrewMultilingualNeural",
+    "name": "Microsoft AndrewMultilingual Online (Natural) - English (United States)",
+    "locale": "en-US"
+  },
+  {
+    "id": "en-US-BrianMultilingualNeural",
+    "name": "Microsoft BrianMultilingual Online (Natural) - English (United States)",
+    "locale": "en-US"
+  },
+  {
+    "id": "en-US-AriaNeural",
+    "name": "Microsoft Aria Online (Natural) - English (United States)",
+    "locale": "en-US"
+  },
+  {
+    "id": "en-US-JennyNeural",
+    "name": "Microsoft Jenny Online (Natural) - English (United States)",
+    "locale": "en-US"
+  },
+  {
+    "id": "en-US-GuyNeural",
+    "name": "Microsoft Guy Online (Natural) - English (United States)",
+    "locale": "en-US"
+  },
+  {
+    "id": "en-US-ChristopherNeural",
+    "name": "Microsoft Christopher Online (Natural) - English (United States)",
+    "locale": "en-US"
+  },
+  {
+    "id": "en-US-MichelleNeural",
+    "name": "Microsoft Michelle Online (Natural) - English (United States)",
     "locale": "en-US"
   }
 ]
@@ -116,17 +156,23 @@ audio.play();
 // sentences[i].start_ms / end_ms tell you when each sentence plays
 ```
 
-## Popular Voices
+## Voice List
 
-| Voice ID                          | Language | Style            |
-|-----------------------------------|----------|------------------|
-| `en-US-EmmaMultilingualNeural`   | English  | Warm, natural    |
-| `en-US-AvaMultilingualNeural`    | English  | Friendly         |
-| `en-US-AndrewNeural`             | English  | Professional     |
-| `en-GB-SoniaNeural`              | British  | Clear            |
-| `en-AU-NatashaNeural`            | Australian | Conversational |
-| `ja-JP-NanamiNeural`             | Japanese | Natural          |
-| `ko-KR-SunHiNeural`              | Korean   | Natural          |
+The `/api/voices` endpoint returns 9 curated high-quality US English voices, ordered best first:
+
+| Voice ID                          | Type      | Gender |
+|-----------------------------------|-----------|--------|
+| `en-US-AvaMultilingualNeural`    | HD (newest) | Female |
+| `en-US-EmmaMultilingualNeural`   | HD (newest) | Female |
+| `en-US-AndrewMultilingualNeural` | HD (newest) | Male   |
+| `en-US-BrianMultilingualNeural`  | HD (newest) | Male   |
+| `en-US-AriaNeural`              | Neural    | Female |
+| `en-US-JennyNeural`              | Neural    | Female |
+| `en-US-GuyNeural`               | Neural    | Male   |
+| `en-US-ChristopherNeural`       | Neural    | Male   |
+| `en-US-MichelleNeural`          | Neural    | Female |
+
+The four **Multilingual** voices are Microsoft's newest HD generation. The rest are the strongest of the classic neural voices. Lower-quality voices (child, telephony, and superseded duplicates) have been excluded.
 
 ## Project structure
 
