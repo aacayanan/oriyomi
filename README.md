@@ -13,21 +13,24 @@ Free text-to-speech API using Microsoft Edge's neural TTS voices. Returns audio 
 
 ### Prerequisites
 
-- Python 3.10+
+- Docker and Docker Compose
 
-### Install dependencies
+### Run with Docker
 
 ```bash
-pip install -r requirements.txt
+docker compose up --build
 ```
 
-### Run the server
+The API starts at **http://localhost:8000**.
+
+### Run without Docker
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 python main.py
 ```
-
-The API starts at `http://localhost:8000`.
 
 ## API
 
@@ -131,6 +134,8 @@ audio.play();
 ├── main.py           # FastAPI app with /api/voices, /api/tts, /api/health
 ├── tts.py            # TTS engine (edge-tts wrapper, sentence splitting, timestamp mapping)
 ├── requirements.txt  # Python dependencies
+├── Dockerfile        # Container image definition
+├── docker-compose.yml # Docker Compose config
 └── README.md
 ```
 
