@@ -33,7 +33,7 @@ export default function Controls({
   isLoading,
   voices,
 }: ControlsProps) {
-  const showPlay = !isPlaying && !isPaused;
+  const showPlay = !isPlaying;
   const showPause = isPlaying;
 
   return (
@@ -82,7 +82,7 @@ export default function Controls({
               onClick={onPlay}
               disabled={isLoading}
               className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-              title="Play"
+              title={isPaused ? "Resume" : "Play"}
             >
               ▶
             </button>
