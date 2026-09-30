@@ -34,7 +34,7 @@ export default function Controls({
   isLoading,
   voices,
 }: ControlsProps) {
-  const showPlay = !isPlaying && !isPaused;
+  const showPlay = !isPlaying;
   const showPause = isPlaying;
 
   return (
@@ -71,7 +71,6 @@ export default function Controls({
             step={0.1}
             value={speed}
             onChange={(e) => onSpeedChange(parseFloat(e.target.value))}
-            disabled={isPlaying}
             className="w-40 accent-blue-500"
           />
         </div>

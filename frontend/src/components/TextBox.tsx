@@ -3,10 +3,11 @@
 interface TextBoxProps {
   text: string;
   onChange: (text: string) => void;
-  disabled: boolean;
+  onClear: () => void;
+  disabled?: boolean;
 }
 
-export default function TextBox({ text, onChange, disabled }: TextBoxProps) {
+export default function TextBox({ text, onChange, onClear, disabled }: TextBoxProps) {
   const wordCount = text
     .trim()
     .split(/\s+/)
@@ -21,9 +22,20 @@ export default function TextBox({ text, onChange, disabled }: TextBoxProps) {
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
       />
-      <span className="text-sm text-zinc-500 dark:text-zinc-400">
-        {wordCount} {wordCount === 1 ? "word" : "words"}
-      </span>
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-zinc-500 dark:text-zinc-400">
+          {wordCount} {wordCount === 1 ? "word" : "words"}
+        </span>
+        {text.length > 0 && (
+          <button
+            type="button"
+            onClick={onClear}
+            className="text-sm text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+          >
+            Clear
+          </button>
+        )}
+      </div>
     </div>
   );
 }

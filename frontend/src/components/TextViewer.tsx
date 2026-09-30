@@ -13,12 +13,14 @@ interface TextViewerProps {
   sentences: Sentence[];
   activeSentenceIndex: number | null;
   text: string;
+  onSentenceClick?: (index: number) => void;
 }
 
 export default function TextViewer({
   sentences,
   activeSentenceIndex,
   text,
+  onSentenceClick,
 }: TextViewerProps) {
   const activeRef = useRef<HTMLSpanElement>(null);
 
@@ -61,10 +63,11 @@ export default function TextViewer({
             <span
               key={i}
               ref={isActive ? activeRef : null}
+              onClick={() => onSentenceClick?.(i)}
               className={`rounded px-1 transition-colors duration-200 ${
                 isActive
                   ? "bg-yellow-200 dark:bg-yellow-800"
-                  : ""
+                  : "cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-700"
               }`}
             >
               {sentence.text}

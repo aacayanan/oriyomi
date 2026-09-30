@@ -13,6 +13,9 @@ interface AudioPlayerReturn {
   play: (base64Audio: string, onTimeUpdate: (time: number) => void) => void;
   pause: () => void;
   stop: () => void;
+  setPlaybackRate: (rate: number) => void;
+  setOffset: (time: number) => void;
+  playbackRate: number;
   isPlaying: boolean;
   isPaused: boolean;
   currentTime: number;
@@ -25,8 +28,10 @@ export default function useAudioPlayer(): AudioPlayerReturn {
   const offsetRef = useRef<number>(0);
   const animFrameRef = useRef<number>(0);
   const onTimeUpdateRef = useRef<((time: number) => void) | null>(null);
+  const playbackRateRef = useRef<number>(1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [playbackRate, setPlaybackRateState] = useState(1);
   const [currentTime, setCurrentTime] = useState(0);
 
   // Cleanup AudioContext on unmount
@@ -64,6 +69,7 @@ export default function useAudioPlayer(): AudioPlayerReturn {
 
         const source = ctx.createBufferSource();
         source.buffer = audioBuffer;
+        source.playbackRate.value = playbackRateRef.current;
         source.connect(ctx.destination);
         sourceNodeRef.current = source;
 
@@ -134,5 +140,17 @@ export default function useAudioPlayer(): AudioPlayerReturn {
     offsetRef.current = 0;
   }, []);
 
-  return { play, pause, stop, isPlaying, isPaused, currentTime };
+  const setPlaybackRate = useCallback((rate: number) => {
+    playbackRateRef.current = rate;
+    setPlaybackRateState(rate);
+    if (sourceNodeRef.current) {
+      sourceNodeRef.current.playbackRate.value = rate;
+    }
+  }, []);
+
+  const setOffset = useCallback((time: number) => {
+    offsetRef.current = time;
+  }, []);
+
+  return { play, pause, stop, setPlaybackRate, setOffset, playbackRate, isPlaying, isPaused, currentTime };
 }

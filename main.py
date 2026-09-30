@@ -6,8 +6,9 @@ with sentence-level timestamps using Microsoft Edge neural TTS voices.
 """
 
 import base64
+import logging
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -23,6 +24,9 @@ app = FastAPI(
     version="1.0.0",
 )
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s: %(message)s")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
@@ -32,13 +36,29 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    if request.url.path == "/api/tts" and request.method == "POST":
+        body = await request.body()
+        logger.info("POST /api/tts raw body length: %d bytes", len(body))
+        logger.info("POST /api/tts raw body: %s", body[:500])
+        # Re-create the request with the consumed body
+        from starlette.requests import Request as StarletteRequest
+        scope = request.scope
+        async def receive():
+            return {"type": "http.request", "body": body}
+        request = StarletteRequest(scope, receive=receive)
+    response = await call_next(request)
+    return response
+
+
 # ---------------------------------------------------------------------------
 # Request / response models
 # ---------------------------------------------------------------------------
 
 class TTSRequest(BaseModel):
     """Request body for the TTS endpoint."""
-    text: str = Field(..., min_length=1, max_length=5000, description="Text to synthesize.")
+    text: str = Field(..., min_length=1, max_length=50000, description="Text to synthesize.")
     voice: str = Field(
         default="en-US-EmmaMultilingualNeural",
         description="Voice short name (e.g. 'en-US-EmmaMultilingualNeural').",
@@ -96,6 +116,7 @@ async def text_to_speech(request: TTSRequest):
     Returns base64-encoded MP3 audio and sentence-level timestamps
     for synchronizing text highlighting with audio playback.
     """
+    logger.info("TTS request: text=%d chars, voice=%s, speed=%.1f", len(request.text), request.voice, request.speed)
     try:
         result = await generate_audio(
             text=request.text,

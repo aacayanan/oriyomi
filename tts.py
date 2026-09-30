@@ -5,10 +5,14 @@ Provides voice listing, audio generation with MP3 output, and sentence-level
 timestamps using edge-tts's built-in SentenceBoundary events.
 """
 
+import asyncio
+import logging
 import re
 from dataclasses import dataclass
 
 import edge_tts
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -148,31 +152,49 @@ async def generate_audio(
             f"Voice '{voice}' not found. Available voices: {sorted(voice_ids)[:10]}..."
         )
 
-    # Collect audio chunks and sentence boundary events
-    audio_chunks: list[bytes] = []
-    sentence_boundaries: list[dict] = []
+    # Collect audio chunks and sentence boundary events with retry
+    max_retries = 3
+    last_error: Exception | None = None
 
-    communicate = edge_tts.Communicate(
-        text,
-        voice,
-        rate=_speed_to_rate(speed),
-        boundary="SentenceBoundary",
-    )
+    for attempt in range(max_retries):
+        audio_chunks: list[bytes] = []
+        sentence_boundaries: list[dict] = []
 
-    async for chunk in communicate.stream():
-        if chunk["type"] == "audio":
-            audio_chunks.append(chunk["data"])
-        elif chunk["type"] == "SentenceBoundary":
-            sentence_boundaries.append({
-                "text": chunk["text"],
-                "offset_ms": int(chunk["offset"] / 10_000),  # ticks -> ms
-                "duration_ms": int(chunk["duration"] / 10_000),
-            })
+        communicate = edge_tts.Communicate(
+            text,
+            voice,
+            rate=_speed_to_rate(speed),
+            boundary="SentenceBoundary",
+        )
 
-    audio_bytes = b"".join(audio_chunks)
+        try:
+            async for chunk in communicate.stream():
+                if chunk["type"] == "audio":
+                    audio_chunks.append(chunk["data"])
+                elif chunk["type"] == "SentenceBoundary":
+                    sentence_boundaries.append({
+                        "text": chunk["text"],
+                        "offset_ms": int(chunk["offset"] / 10_000),  # ticks -> ms
+                        "duration_ms": int(chunk["duration"] / 10_000),
+                    })
+
+            audio_bytes = b"".join(audio_chunks)
+
+            if audio_bytes:
+                break  # Success
+
+            last_error = RuntimeError("TTS engine returned no audio data.")
+            logger.warning("TTS attempt %d/%d: no audio received, retrying...", attempt + 1, max_retries)
+        except Exception as e:
+            last_error = e
+            logger.warning("TTS attempt %d/%d failed: %s, retrying...", attempt + 1, max_retries, e)
+
+        # Wait before retrying (exponential backoff: 0.5s, 1s, 2s)
+        if attempt < max_retries - 1:
+            await asyncio.sleep(0.5 * (2 ** attempt))
 
     if not audio_bytes:
-        raise RuntimeError("TTS engine returned no audio data.")
+        raise RuntimeError(f"TTS generation failed after {max_retries} attempts: {last_error}")
 
     # Build sentence timestamps from boundary events
     sentences = [

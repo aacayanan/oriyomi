@@ -30,8 +30,14 @@ export default function TextReader() {
   const [activeSentenceIndex, setActiveSentenceIndex] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [audioBase64, setAudioBase64] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const audioPlayer = useAudioPlayer();
+
+  // Sync speed changes with the audio player
+  useEffect(() => {
+    audioPlayer.setPlaybackRate(speed);
+  }, [speed, audioPlayer.setPlaybackRate]);
 
   // Fetch available voices on mount
   useEffect(() => {
@@ -77,6 +83,7 @@ export default function TextReader() {
     if (!text.trim()) return;
 
     setIsLoading(true);
+    setError(null);
     try {
       const res = await fetch(apiUrl("/api/tts"), {
         method: "POST",
@@ -85,6 +92,10 @@ export default function TextReader() {
       });
       const data = await res.json();
 
+      if (!res.ok) {
+        throw new Error(data.detail || `Server error (${res.status})`);
+      }
+
       setAudioBase64(data.audio_base64);
       setSentences(data.sentences || []);
       setActiveSentenceIndex(null);
@@ -92,10 +103,30 @@ export default function TextReader() {
       audioPlayer.play(data.audio_base64, handleTimeUpdate);
     } catch (err) {
       console.error("TTS request failed:", err);
+      setError(err instanceof Error ? err.message : "Failed to generate speech. Please try again.");
     } finally {
       setIsLoading(false);
     }
   }, [text, voice, speed, audioPlayer, audioBase64, handleTimeUpdate]);
+
+  const handleSentenceClick = useCallback((index: number) => {
+    if (sentences.length === 0 || !audioBase64) return;
+
+    const sentence = sentences[index];
+    if (!sentence) return;
+
+    // Stop current playback
+    audioPlayer.stop();
+
+    // Set offset to the sentence's start time (start_ms is in milliseconds, convert to seconds)
+    audioPlayer.setOffset(sentence.start_ms / 1000);
+
+    // Set active sentence
+    setActiveSentenceIndex(index);
+
+    // Start playback from that point
+    audioPlayer.play(audioBase64, handleTimeUpdate);
+  }, [sentences, audioBase64, audioPlayer, handleTimeUpdate]);
 
   const handlePause = useCallback(() => {
     audioPlayer.pause();
@@ -124,6 +155,7 @@ export default function TextReader() {
             sentences={sentences}
             activeSentenceIndex={activeSentenceIndex}
             text={text}
+            onSentenceClick={handleSentenceClick}
           />
         </div>
       </div>
@@ -141,6 +173,13 @@ export default function TextReader() {
         isLoading={isLoading}
         voices={voices}
       />
+
+      {/* Error display */}
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300">
+          {error}
+        </div>
+      )}
     </div>
   );
 }
