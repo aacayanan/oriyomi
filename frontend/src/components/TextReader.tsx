@@ -11,7 +11,6 @@ interface Voice {
   id: string;
   name: string;
   locale: string;
-  display_name: string;
 }
 
 interface Sentence {
@@ -30,9 +29,6 @@ export default function TextReader() {
   const [activeSentenceIndex, setActiveSentenceIndex] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [audioBase64, setAudioBase64] = useState<string | null>(null);
-  // The text/voice/speed the cached audio was generated for, so we can tell
-  // whether the cached clip is still valid or needs regenerating.
-  const [audioKey, setAudioKey] = useState<string | null>(null);
 
   const audioPlayer = useAudioPlayer();
 
@@ -71,24 +67,13 @@ export default function TextReader() {
   }, [audioPlayer]);
 
   const handlePlay = useCallback(async () => {
-    const requestKey = `${text}|${voice}|${speed}`;
-    const hasFreshAudio = Boolean(audioBase64) && audioKey === requestKey;
-
-    // Resume where we left off (only if the cached clip still matches the
-    // current text/voice/speed).
-    if (audioPlayer.isPaused && hasFreshAudio && audioBase64) {
+    // If paused, resume
+    if (audioPlayer.isPaused && audioBase64) {
       audioPlayer.play(audioBase64, handleTimeUpdate);
       return;
     }
 
     if (!text.trim()) return;
-
-    // Already generated for this exact input: replay it instead of
-    // hitting the TTS endpoint again.
-    if (hasFreshAudio && audioBase64 && !audioPlayer.isPlaying) {
-      audioPlayer.play(audioBase64, handleTimeUpdate);
-      return;
-    }
 
     setIsLoading(true);
     try {
@@ -100,7 +85,6 @@ export default function TextReader() {
       const data = await res.json();
 
       setAudioBase64(data.audio_base64);
-      setAudioKey(requestKey);
       setSentences(data.sentences || []);
       setActiveSentenceIndex(null);
 
@@ -110,7 +94,7 @@ export default function TextReader() {
     } finally {
       setIsLoading(false);
     }
-  }, [text, voice, speed, audioPlayer, audioBase64, audioKey, handleTimeUpdate]);
+  }, [text, voice, speed, audioPlayer, audioBase64, handleTimeUpdate]);
 
   const handlePause = useCallback(() => {
     audioPlayer.pause();

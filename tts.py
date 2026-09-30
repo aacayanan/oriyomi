@@ -21,7 +21,6 @@ class Voice:
     id: str
     name: str
     locale: str
-    display_name: str
 
 
 @dataclass
@@ -40,78 +39,16 @@ class TTSResult:
 
 
 # ---------------------------------------------------------------------------
-# Internal helpers
-# ---------------------------------------------------------------------------
-
-def _display_name(friendly_name: str) -> str:
-    """
-    Extract a clean display name from a Microsoft Edge TTS friendly name.
-
-    Turns "Microsoft AvaMultilingual Online (Natural) - English (United States)"
-    into "Ava (Multilingual)", or "Microsoft Aria Online (Natural) ..." into "Aria".
-    Falls back to the original string if parsing fails.
-    """
-    if not friendly_name.startswith("Microsoft "):
-        return friendly_name
-    # e.g. "Microsoft AvaMultilingual Online (Natural) - English (United States)"
-    rest = friendly_name[len("Microsoft "):]  # "AvaMultilingual Online ..."
-    name = rest.split(" Online")[0]            # "AvaMultilingual" or "Aria"
-    if name.endswith("Multilingual"):
-        name = name[: -len("Multilingual")]
-        return f"{name} (Multilingual)"
-    return name
-
-
-# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
-
-# Curated shortlist of the highest-quality US English voices, best first.
-# The four *Multilingual voices are Microsoft's newest HD generation; the rest
-# are the strongest of the classic neural voices. Left out: child/telephony
-# voices (Ana, Eric, Roger) and non-multilingual twins superseded by these
-# (e.g. AvaNeural, EmmaNeural).
-_PREFERRED_VOICE_IDS = [
-    "en-US-AvaMultilingualNeural",
-    "en-US-EmmaMultilingualNeural",
-    "en-US-AndrewMultilingualNeural",
-    "en-US-BrianMultilingualNeural",
-    "en-US-AriaNeural",
-    "en-US-JennyNeural",
-    "en-US-GuyNeural",
-    "en-US-ChristopherNeural",
-    "en-US-MichelleNeural",
-]
-
 
 async def get_voices() -> list[Voice]:
     """Return all available TTS voices."""
     raw = await edge_tts.list_voices()
     return [
-        Voice(
-            id=v["ShortName"],
-            name=v["FriendlyName"],
-            locale=v["Locale"],
-            display_name=_display_name(v["FriendlyName"]),
-        )
+        Voice(id=v["ShortName"], name=v["FriendlyName"], locale=v["Locale"])
         for v in raw
     ]
-
-
-async def get_preferred_voices() -> list[Voice]:
-    """
-    Return the highest-quality US English voices only.
-
-    Preserves the curated quality ordering. Falls back to every en-US voice
-    if none of the curated short names are available from the engine.
-    """
-    voices = await get_voices()
-    by_id = {v.id: v for v in voices}
-
-    preferred = [by_id[vid] for vid in _PREFERRED_VOICE_IDS if vid in by_id]
-    if preferred:
-        return preferred
-    return [v for v in voices if v.locale == "en-US"]
 
 
 async def generate_audio(

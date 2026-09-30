@@ -11,7 +11,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from tts import get_preferred_voices, generate_audio
+from tts import Voice, get_voices, generate_audio
 
 # ---------------------------------------------------------------------------
 # App setup
@@ -71,7 +71,6 @@ class VoiceResponse(BaseModel):
     id: str
     name: str
     locale: str
-    display_name: str
 
 
 # ---------------------------------------------------------------------------
@@ -80,12 +79,9 @@ class VoiceResponse(BaseModel):
 
 @app.get("/api/voices", response_model=list[VoiceResponse])
 async def list_voices():
-    """Return the highest-quality US English TTS voices, best first."""
-    voices = await get_preferred_voices()
-    return [
-        VoiceResponse(id=v.id, name=v.name, locale=v.locale, display_name=v.display_name)
-        for v in voices
-    ]
+    """Return all available TTS voices."""
+    voices = await get_voices()
+    return [VoiceResponse(id=v.id, name=v.name, locale=v.locale) for v in voices]
 
 
 @app.post("/api/tts", response_model=TTSResponse)
