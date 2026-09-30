@@ -4,6 +4,7 @@ interface Voice {
   id: string;
   name: string;
   locale: string;
+  display_name: string;
 }
 
 interface ControlsProps {
@@ -52,7 +53,7 @@ export default function Controls({
           >
             {voices.map((v) => (
               <option key={v.id} value={v.id}>
-                {v.name} ({v.locale})
+                {v.display_name}
               </option>
             ))}
           </select>
