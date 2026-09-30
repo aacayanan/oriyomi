@@ -118,6 +118,29 @@ async def get_preferred_voices() -> list[Voice]:
     return [v for v in voices if v.locale == "en-US"]
 
 
+# ---------------------------------------------------------------------------
+# Text normalization
+# ---------------------------------------------------------------------------
+
+def _normalize_text(text: str) -> str:
+    """
+    Normalize text for TTS by cleaning up whitespace and formatting.
+
+    Collapses multiple whitespace characters (spaces, tabs, newlines) into
+    single spaces and trims leading/trailing whitespace. This prevents
+    edge-tts from inserting unwanted pauses at arbitrary break points.
+    """
+    # Replace tabs and newlines with spaces
+    text = text.replace("\t", " ").replace("\n", " ").replace("\r", " ")
+    # Collapse multiple spaces into one
+    text = re.sub(r' {2,}', ' ', text)
+    # Remove spaces before punctuation
+    text = re.sub(r'\s+([.,!?;:])', r'\1', text)
+    # Ensure single space after punctuation
+    text = re.sub(r'([.,!?;:])\s{2,}', r'\1 ', text)
+    return text.strip()
+
+
 async def generate_audio(
     text: str,
     voice: str = "en-US-EmmaMultilingualNeural",
@@ -143,6 +166,9 @@ async def generate_audio(
     """
     if not text or not text.strip():
         raise ValueError("Text must not be empty.")
+
+    # Normalize text: collapse whitespace, fix formatting for better TTS
+    text = _normalize_text(text)
 
     # Validate voice exists (cache this in production to avoid repeated calls)
     voices = await get_voices()

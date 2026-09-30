@@ -85,10 +85,16 @@ export default function TextReader() {
     setIsLoading(true);
     setError(null);
     try {
+      // Normalize text before sending: collapse whitespace for better TTS
+      const normalizedText = text
+        .replace(/[\t\n\r]+/g, " ")
+        .replace(/ {2,}/g, " ")
+        .trim();
+
       const res = await fetch(apiUrl("/api/tts"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, voice, speed }),
+        body: JSON.stringify({ text: normalizedText, voice, speed }),
       });
       const data = await res.json();
 
