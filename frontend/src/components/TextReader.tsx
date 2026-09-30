@@ -58,6 +58,14 @@ export default function TextReader() {
     [sentences],
   );
 
+  const handleClear = useCallback(() => {
+    audioPlayer.stop();
+    setText("");
+    setSentences([]);
+    setActiveSentenceIndex(null);
+    setAudioBase64(null);
+  }, [audioPlayer]);
+
   const handlePlay = useCallback(async () => {
     // If paused, resume
     if (audioPlayer.isPaused && audioBase64) {
@@ -98,16 +106,27 @@ export default function TextReader() {
   }, [audioPlayer]);
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6">
+    <div className="mx-auto flex h-full w-full max-w-6xl flex-col gap-4 p-6">
       <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
         Text-to-Speech Reader
       </h1>
-      <TextBox text={text} onChange={setText} disabled={audioPlayer.isPlaying} />
-      <TextViewer
-        sentences={sentences}
-        activeSentenceIndex={activeSentenceIndex}
-        text={text}
-      />
+
+      <div className="flex flex-1 flex-col gap-4 lg:flex-row">
+        {/* Left column: paste area (compact) */}
+        <div className="w-full shrink-0 lg:w-80">
+          <TextBox text={text} onChange={setText} onClear={handleClear} />
+        </div>
+
+        {/* Right column: text viewer (main display) */}
+        <div className="flex min-h-[300px] flex-1 flex-col lg:min-h-0">
+          <TextViewer
+            sentences={sentences}
+            activeSentenceIndex={activeSentenceIndex}
+            text={text}
+          />
+        </div>
+      </div>
+
       <Controls
         voice={voice}
         onVoiceChange={setVoice}
