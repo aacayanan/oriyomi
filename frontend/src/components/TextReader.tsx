@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import useAudioPlayer from "./useAudioPlayer";
 import TextBox from "./TextBox";
+import FileUpload from "./FileUpload";
 import TextViewer from "./TextViewer";
 import Controls from "./Controls";
+import Waveform from "./Waveform";
 import { apiUrl } from "@/lib/api";
 
 interface Voice {
@@ -34,10 +36,20 @@ export default function TextReader() {
 
   const audioPlayer = useAudioPlayer();
 
-  // Sync speed changes with the audio player
-  useEffect(() => {
-    audioPlayer.setPlaybackRate(speed);
-  }, [speed, audioPlayer.setPlaybackRate]);
+  // Keep the latest sentences in a ref so the time-update callback stored by
+  // the audio player always reads current sentence timings, even after the
+  // sentences array is replaced (e.g. when audio is regenerated for a speed
+  // change). handleTimeUpdate is therefore stable and never goes stale.
+  const sentencesRef = useRef<Sentence[]>([]);
+
+  const updateSentences = useCallback((next: Sentence[]) => {
+    sentencesRef.current = next;
+    setSentences(next);
+  }, []);
+
+  // Guards against out-of-order TTS responses when the speed slider is
+  // dragged quickly: only the most recent request may apply its result.
+  const regenerateIdRef = useRef(0);
 
   // Fetch available voices on mount
   useEffect(() => {
@@ -50,89 +62,175 @@ export default function TextReader() {
   }, []);
 
   // Track active sentence via playback time
-  const handleTimeUpdate = useCallback(
-    (currentTime: number) => {
-      if (sentences.length === 0) return;
+  const handleTimeUpdate = useCallback((currentTime: number) => {
+    const current = sentencesRef.current;
+    if (current.length === 0) return;
 
-      for (let i = sentences.length - 1; i >= 0; i--) {
-        if (currentTime >= sentences[i].start_ms / 1000) {
-          setActiveSentenceIndex(i);
-          return;
-        }
+    for (let i = current.length - 1; i >= 0; i--) {
+      if (currentTime >= current[i].start_ms / 1000) {
+        setActiveSentenceIndex(i);
+        return;
       }
-      setActiveSentenceIndex(0);
-    },
-    [sentences],
-  );
+    }
+    setActiveSentenceIndex(0);
+  }, []);
 
   const handleClear = useCallback(() => {
     audioPlayer.stop();
     setText("");
-    setSentences([]);
+    updateSentences([]);
     setActiveSentenceIndex(null);
     setAudioBase64(null);
-  }, [audioPlayer]);
+  }, [audioPlayer, updateSentences]);
+
+  // File upload: extracted text replaces the current text and resets any
+  // stale audio/sentence state (same cleanup as clearing).
+  const handleFileExtracted = useCallback(
+    (extractedText: string) => {
+      audioPlayer.stop();
+      setText(extractedText);
+      updateSentences([]);
+      setActiveSentenceIndex(null);
+      setAudioBase64(null);
+      setError(null);
+    },
+    [audioPlayer, updateSentences],
+  );
+
+  // Generate TTS audio at `newSpeed`. If `resumeFrom` is given (a position in
+  // the previous audio), playback resumes at the equivalent point in the new
+  // audio — mapped by content fraction so the listener stays at the same
+  // place in the text even though the total duration changed with speed.
+  const regenerateTTS = useCallback(
+    async (newSpeed: number, resumeFrom?: number) => {
+      const requestId = ++regenerateIdRef.current;
+      if (!text.trim()) return;
+
+      setIsLoading(true);
+      setError(null);
+      try {
+        // Normalize text before sending: collapse whitespace for better TTS
+        const normalizedText = text
+          .replace(/[\t\n\r]+/g, " ")
+          .replace(/ {2,}/g, " ")
+          .trim();
+
+        const res = await fetch(apiUrl("/api/tts"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: normalizedText, voice, speed: newSpeed }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.detail || `Server error (${res.status})`);
+        }
+
+        // A newer regeneration superseded this one — discard the stale result
+        if (requestId !== regenerateIdRef.current) return;
+
+        const newSentences: Sentence[] = data.sentences || [];
+        const oldSentences = sentencesRef.current;
+        const oldDuration =
+          oldSentences.length > 0 ? oldSentences[oldSentences.length - 1].end_ms / 1000 : 0;
+        const newDuration =
+          newSentences.length > 0 ? newSentences[newSentences.length - 1].end_ms / 1000 : 0;
+
+        // Map the previous position onto the new audio by content fraction
+        let startOffset = 0;
+        if (resumeFrom !== undefined && resumeFrom > 0 && newDuration > 0) {
+          const fraction = oldDuration > 0 ? Math.min(resumeFrom / oldDuration, 1) : 0;
+          startOffset = fraction * newDuration;
+        }
+
+        updateSentences(newSentences);
+        setActiveSentenceIndex(null);
+        setAudioBase64(data.audio_base64);
+
+        audioPlayer.setOffset(startOffset);
+        audioPlayer.play(data.audio_base64, handleTimeUpdate);
+      } catch (err) {
+        if (requestId !== regenerateIdRef.current) return;
+        console.error("TTS request failed:", err);
+        setError(err instanceof Error ? err.message : "Failed to generate speech. Please try again.");
+      } finally {
+        if (requestId === regenerateIdRef.current) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [text, voice, audioPlayer, handleTimeUpdate, updateSentences],
+  );
 
   const handlePlay = useCallback(async () => {
-    // If paused, resume
+    // If paused, resume from the saved offset
     if (audioPlayer.isPaused && audioBase64) {
       audioPlayer.play(audioBase64, handleTimeUpdate);
       return;
     }
 
-    if (!text.trim()) return;
+    await regenerateTTS(speed);
+  }, [audioPlayer.isPaused, audioBase64, handleTimeUpdate, regenerateTTS, speed]);
 
-    setIsLoading(true);
-    setError(null);
-    try {
-      // Normalize text before sending: collapse whitespace for better TTS
-      const normalizedText = text
-        .replace(/[\t\n\r]+/g, " ")
-        .replace(/ {2,}/g, " ")
-        .trim();
+  // Speed is baked into the audio by the API (SSML rate), so changing speed
+  // mid-playback means regenerating the TTS at the new speed and resuming
+  // from the current position — never applying playbackRate on top of it.
+  const handleSpeedChange = useCallback(
+    async (newSpeed: number) => {
+      setSpeed(newSpeed);
 
-      const res = await fetch(apiUrl("/api/tts"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: normalizedText, voice, speed }),
-      });
-      const data = await res.json();
+      const wasActive = audioPlayer.isPlaying || audioPlayer.isPaused;
+      if (!audioBase64 || !wasActive) return;
 
-      if (!res.ok) {
-        throw new Error(data.detail || `Server error (${res.status})`);
+      const resumePosition = audioPlayer.currentTime;
+      audioPlayer.stop();
+      await regenerateTTS(newSpeed, resumePosition);
+    },
+    [audioPlayer, audioBase64, regenerateTTS],
+  );
+
+  const handleSentenceClick = useCallback(
+    (index: number) => {
+      if (sentences.length === 0 || !audioBase64) return;
+
+      const sentence = sentences[index];
+      if (!sentence) return;
+
+      // Stop current playback
+      audioPlayer.stop();
+
+      // Set offset to the sentence's start time (start_ms is in milliseconds, convert to seconds)
+      audioPlayer.setOffset(sentence.start_ms / 1000);
+
+      // Set active sentence
+      setActiveSentenceIndex(index);
+
+      // Start playback from that point
+      audioPlayer.play(audioBase64, handleTimeUpdate);
+    },
+    [sentences, audioBase64, audioPlayer, handleTimeUpdate],
+  );
+
+  // Seek from the progress bar or waveform: restart playback at the requested position
+  const handleSeek = useCallback(
+    (time: number) => {
+      if (!audioBase64) return;
+
+      const clamped = Math.max(0, time);
+      audioPlayer.stop();
+      audioPlayer.setOffset(clamped);
+      // Keep the active sentence (and waveform region) in sync with the jump
+      const current = sentencesRef.current;
+      for (let i = current.length - 1; i >= 0; i--) {
+        if (clamped >= current[i].start_ms / 1000) {
+          setActiveSentenceIndex(i);
+          break;
+        }
       }
-
-      setAudioBase64(data.audio_base64);
-      setSentences(data.sentences || []);
-      setActiveSentenceIndex(null);
-
-      audioPlayer.play(data.audio_base64, handleTimeUpdate);
-    } catch (err) {
-      console.error("TTS request failed:", err);
-      setError(err instanceof Error ? err.message : "Failed to generate speech. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [text, voice, speed, audioPlayer, audioBase64, handleTimeUpdate]);
-
-  const handleSentenceClick = useCallback((index: number) => {
-    if (sentences.length === 0 || !audioBase64) return;
-
-    const sentence = sentences[index];
-    if (!sentence) return;
-
-    // Stop current playback
-    audioPlayer.stop();
-
-    // Set offset to the sentence's start time (start_ms is in milliseconds, convert to seconds)
-    audioPlayer.setOffset(sentence.start_ms / 1000);
-
-    // Set active sentence
-    setActiveSentenceIndex(index);
-
-    // Start playback from that point
-    audioPlayer.play(audioBase64, handleTimeUpdate);
-  }, [sentences, audioBase64, audioPlayer, handleTimeUpdate]);
+      audioPlayer.play(audioBase64, handleTimeUpdate);
+    },
+    [audioBase64, audioPlayer, handleTimeUpdate],
+  );
 
   const handlePause = useCallback(() => {
     audioPlayer.pause();
@@ -143,6 +241,10 @@ export default function TextReader() {
     setActiveSentenceIndex(null);
   }, [audioPlayer]);
 
+  // Total playback duration from the last sentence's end time
+  const duration =
+    sentences.length > 0 ? sentences[sentences.length - 1].end_ms / 1000 : 0;
+
   return (
     <div className="mx-auto flex h-full w-full max-w-6xl flex-col gap-4 p-6">
       <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
@@ -150,8 +252,9 @@ export default function TextReader() {
       </h1>
 
       <div className="flex flex-1 flex-col gap-4 lg:flex-row">
-        {/* Left column: paste area (compact) */}
-        <div className="w-full shrink-0 lg:w-80">
+        {/* Left column: file upload + paste area (compact) */}
+        <div className="flex w-full shrink-0 flex-col gap-4 lg:w-80">
+          <FileUpload onTextExtracted={handleFileExtracted} />
           <TextBox text={text} onChange={setText} onClear={handleClear} />
         </div>
 
@@ -166,18 +269,31 @@ export default function TextReader() {
         </div>
       </div>
 
+      {/* Interactive waveform: click to seek, active sentence highlighted */}
+      <Waveform
+        audioBase64={audioBase64}
+        sentences={sentences}
+        activeSentenceIndex={activeSentenceIndex}
+        onSeek={handleSeek}
+        isPlaying={audioPlayer.isPlaying}
+        currentTime={audioPlayer.currentTime}
+      />
+
       <Controls
         voice={voice}
         onVoiceChange={setVoice}
         speed={speed}
-        onSpeedChange={setSpeed}
+        onSpeedChange={handleSpeedChange}
         onPlay={handlePlay}
         onPause={handlePause}
         onStop={handleStop}
+        onSeek={handleSeek}
         isPlaying={audioPlayer.isPlaying}
         isPaused={audioPlayer.isPaused}
         isLoading={isLoading}
         voices={voices}
+        currentTime={audioPlayer.currentTime}
+        duration={duration}
       />
 
       {/* Error display */}
