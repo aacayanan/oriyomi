@@ -1,0 +1,125 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import useAudioPlayer from "./useAudioPlayer";
+import TextBox from "./TextBox";
+import TextViewer from "./TextViewer";
+import Controls from "./Controls";
+
+interface Voice {
+  id: string;
+  name: string;
+  grade: string;
+}
+
+interface Sentence {
+  index: number;
+  text: string;
+  start_time: number;
+  end_time: number;
+}
+
+export default function TextReader() {
+  const [text, setText] = useState("");
+  const [voice, setVoice] = useState("af_heart");
+  const [speed, setSpeed] = useState(1.0);
+  const [voices, setVoices] = useState<Voice[]>([]);
+  const [sentences, setSentences] = useState<Sentence[]>([]);
+  const [activeSentenceIndex, setActiveSentenceIndex] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [audioBase64, setAudioBase64] = useState<string | null>(null);
+
+  const audioPlayer = useAudioPlayer();
+
+  // Fetch available voices on mount
+  useEffect(() => {
+    fetch("/api/voices")
+      .then((res) => res.json())
+      .then((data) => {
+        setVoices(data.voices || []);
+      })
+      .catch((err) => console.error("Failed to fetch voices:", err));
+  }, []);
+
+  // Track active sentence via playback time
+  const handleTimeUpdate = useCallback(
+    (currentTime: number) => {
+      if (sentences.length === 0) return;
+
+      for (let i = sentences.length - 1; i >= 0; i--) {
+        if (currentTime >= sentences[i].start_time) {
+          setActiveSentenceIndex(i);
+          return;
+        }
+      }
+      setActiveSentenceIndex(0);
+    },
+    [sentences],
+  );
+
+  const handlePlay = useCallback(async () => {
+    // If paused, resume
+    if (audioPlayer.isPaused && audioBase64) {
+      audioPlayer.play(audioBase64, handleTimeUpdate);
+      return;
+    }
+
+    if (!text.trim()) return;
+
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, voice, speed }),
+      });
+      const data = await res.json();
+
+      setAudioBase64(data.audio_base64);
+      setSentences(data.sentences || []);
+      setActiveSentenceIndex(null);
+
+      audioPlayer.play(data.audio_base64, handleTimeUpdate);
+    } catch (err) {
+      console.error("TTS request failed:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [text, voice, speed, audioPlayer, audioBase64, handleTimeUpdate]);
+
+  const handlePause = useCallback(() => {
+    audioPlayer.pause();
+  }, [audioPlayer]);
+
+  const handleStop = useCallback(() => {
+    audioPlayer.stop();
+    setActiveSentenceIndex(null);
+  }, [audioPlayer]);
+
+  return (
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6">
+      <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
+        Text-to-Speech Reader
+      </h1>
+      <TextBox text={text} onChange={setText} disabled={audioPlayer.isPlaying} />
+      <TextViewer
+        sentences={sentences}
+        activeSentenceIndex={activeSentenceIndex}
+        text={text}
+      />
+      <Controls
+        voice={voice}
+        onVoiceChange={setVoice}
+        speed={speed}
+        onSpeedChange={setSpeed}
+        onPlay={handlePlay}
+        onPause={handlePause}
+        onStop={handleStop}
+        isPlaying={audioPlayer.isPlaying}
+        isPaused={audioPlayer.isPaused}
+        isLoading={isLoading}
+        voices={voices}
+      />
+    </div>
+  );
+}
