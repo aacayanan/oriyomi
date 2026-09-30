@@ -5,8 +5,8 @@ import { useRef, useState, useCallback, useEffect } from "react";
 interface Sentence {
   index: number;
   text: string;
-  start_time: number;
-  end_time: number;
+  start_ms: number;
+  end_ms: number;
 }
 
 interface AudioPlayerReturn {

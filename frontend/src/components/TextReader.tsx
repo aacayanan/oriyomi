@@ -5,23 +5,24 @@ import useAudioPlayer from "./useAudioPlayer";
 import TextBox from "./TextBox";
 import TextViewer from "./TextViewer";
 import Controls from "./Controls";
+import { apiUrl } from "@/lib/api";
 
 interface Voice {
   id: string;
   name: string;
-  grade: string;
+  locale: string;
 }
 
 interface Sentence {
   index: number;
   text: string;
-  start_time: number;
-  end_time: number;
+  start_ms: number;
+  end_ms: number;
 }
 
 export default function TextReader() {
   const [text, setText] = useState("");
-  const [voice, setVoice] = useState("af_heart");
+  const [voice, setVoice] = useState("en-US-EmmaMultilingualNeural");
   const [speed, setSpeed] = useState(1.0);
   const [voices, setVoices] = useState<Voice[]>([]);
   const [sentences, setSentences] = useState<Sentence[]>([]);
@@ -33,10 +34,10 @@ export default function TextReader() {
 
   // Fetch available voices on mount
   useEffect(() => {
-    fetch("/api/voices")
+    fetch(apiUrl("/api/voices"))
       .then((res) => res.json())
       .then((data) => {
-        setVoices(data.voices || []);
+        setVoices(Array.isArray(data) ? data : []);
       })
       .catch((err) => console.error("Failed to fetch voices:", err));
   }, []);
@@ -47,7 +48,7 @@ export default function TextReader() {
       if (sentences.length === 0) return;
 
       for (let i = sentences.length - 1; i >= 0; i--) {
-        if (currentTime >= sentences[i].start_time) {
+        if (currentTime >= sentences[i].start_ms / 1000) {
           setActiveSentenceIndex(i);
           return;
         }
@@ -68,7 +69,7 @@ export default function TextReader() {
 
     setIsLoading(true);
     try {
-      const res = await fetch("/api/tts", {
+      const res = await fetch(apiUrl("/api/tts"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text, voice, speed }),
