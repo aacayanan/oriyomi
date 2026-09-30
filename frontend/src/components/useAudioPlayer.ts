@@ -29,6 +29,13 @@ export default function useAudioPlayer(): AudioPlayerReturn {
   const animFrameRef = useRef<number>(0);
   const onTimeUpdateRef = useRef<((time: number) => void) | null>(null);
   const playbackRateRef = useRef<number>(1);
+
+  // Rate-aware position tracking:
+  // We track the audio position at the time of the last snapshot, and
+  // compute the current position using elapsed real time * playback rate.
+  const audioPositionRef = useRef<number>(0); // position in the buffer (seconds)
+  const snapshotTimeRef = useRef<number>(0);   // AudioContext time of snapshot
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [playbackRate, setPlaybackRateState] = useState(1);
@@ -41,6 +48,14 @@ export default function useAudioPlayer(): AudioPlayerReturn {
         audioContextRef.current.close();
       }
     };
+  }, []);
+
+  /** Compute the current audio position accounting for playback rate. */
+  const getAudioPosition = useCallback(() => {
+    const ctx = audioContextRef.current;
+    if (!ctx) return audioPositionRef.current;
+    const elapsed = ctx.currentTime - snapshotTimeRef.current;
+    return audioPositionRef.current + elapsed * playbackRateRef.current;
   }, []);
 
   const play = useCallback(
@@ -80,14 +95,18 @@ export default function useAudioPlayer(): AudioPlayerReturn {
 
         // Start from offset
         source.start(0, offsetRef.current);
-        startTimeRef.current = ctx.currentTime - offsetRef.current;
+
+        // Snapshot: we are at offsetRef.current in the buffer, right now
+        audioPositionRef.current = offsetRef.current;
+        snapshotTimeRef.current = ctx.currentTime;
+        startTimeRef.current = ctx.currentTime;
+
         setIsPlaying(true);
         setIsPaused(false);
 
         // Track time via requestAnimationFrame
         const tick = () => {
-          if (!audioContextRef.current) return;
-          const elapsed = audioContextRef.current.currentTime - startTimeRef.current;
+          const elapsed = getAudioPosition();
           setCurrentTime(elapsed);
           onTimeUpdateRef.current?.(elapsed);
           animFrameRef.current = requestAnimationFrame(tick);
@@ -100,19 +119,23 @@ export default function useAudioPlayer(): AudioPlayerReturn {
           setIsPaused(false);
           setCurrentTime(0);
           offsetRef.current = 0;
+          audioPositionRef.current = 0;
         };
       });
     },
-    [],
+    [getAudioPosition],
   );
 
   const pause = useCallback(() => {
     if (!isPlaying || isPaused) return;
 
-    // Save current offset
-    if (audioContextRef.current) {
-      offsetRef.current = audioContextRef.current.currentTime - startTimeRef.current;
-    }
+    // Capture current position before stopping
+    const pos = getAudioPosition();
+
+    // Save current offset for resume
+    offsetRef.current = pos;
+    audioPositionRef.current = pos;
+    snapshotTimeRef.current = audioContextRef.current?.currentTime ?? 0;
 
     // Stop source node
     if (sourceNodeRef.current) {
@@ -124,7 +147,7 @@ export default function useAudioPlayer(): AudioPlayerReturn {
     cancelAnimationFrame(animFrameRef.current);
     setIsPaused(true);
     setIsPlaying(false);
-  }, [isPlaying, isPaused]);
+  }, [isPlaying, isPaused, getAudioPosition]);
 
   const stop = useCallback(() => {
     if (sourceNodeRef.current) {
@@ -138,12 +161,21 @@ export default function useAudioPlayer(): AudioPlayerReturn {
     setIsPaused(false);
     setCurrentTime(0);
     offsetRef.current = 0;
+    audioPositionRef.current = 0;
   }, []);
 
   const setPlaybackRate = useCallback((rate: number) => {
     playbackRateRef.current = rate;
     setPlaybackRateState(rate);
+
     if (sourceNodeRef.current) {
+      // Snapshot the current audio position before changing rate
+      const ctx = audioContextRef.current;
+      if (ctx) {
+        const elapsed = ctx.currentTime - snapshotTimeRef.current;
+        audioPositionRef.current += elapsed * playbackRateRef.current;
+        snapshotTimeRef.current = ctx.currentTime;
+      }
       sourceNodeRef.current.playbackRate.value = rate;
     }
   }, []);

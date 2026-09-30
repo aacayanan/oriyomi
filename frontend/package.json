@@ -11,7 +11,10 @@
   "dependencies": {
     "next": "16.3.7",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "wavesurfer.js": "^7",
+    "pdfjs-dist": "^4",
+    "mammoth": "^1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

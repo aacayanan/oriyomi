@@ -162,7 +162,9 @@ export default function Waveform({
         resize: false,
       });
       // Let clicks pass through the region to the waveform (seek), not the region
-      region.element.style.pointerEvents = "none";
+      if (region.element) {
+        region.element.style.pointerEvents = "none";
+      }
     };
 
     applyHighlightRef.current = applyHighlight;
