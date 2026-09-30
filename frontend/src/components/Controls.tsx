@@ -1,7 +1,5 @@
 "use client";
 
-import { useRef, useState } from "react";
-
 interface Voice {
   id: string;
   name: string;
@@ -17,21 +15,10 @@ interface ControlsProps {
   onPlay: () => void;
   onPause: () => void;
   onStop: () => void;
-  onSeek: (time: number) => void;
   isPlaying: boolean;
   isPaused: boolean;
   isLoading: boolean;
   voices: Voice[];
-  currentTime: number;
-  duration: number;
-}
-
-/** Format seconds as M:SS (e.g. 1:23, 10:45). */
-function formatTime(seconds: number): string {
-  const safe = Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
-  const m = Math.floor(safe / 60);
-  const s = Math.floor(safe % 60);
-  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
 export default function Controls({
@@ -42,26 +29,13 @@ export default function Controls({
   onPlay,
   onPause,
   onStop,
-  onSeek,
   isPlaying,
   isPaused,
   isLoading,
   voices,
-  currentTime,
-  duration,
 }: ControlsProps) {
   const showPlay = !isPlaying;
   const showPause = isPlaying;
-
-  // Progress-bar scrubbing state. Refs hold the values the event handlers
-  // read (always current); state drives the displayed value.
-  const [isScrubbing, setIsScrubbing] = useState(false);
-  const [scrubTime, setScrubTime] = useState(0);
-  const scrubTimeRef = useRef(0);
-  const isScrubbingRef = useRef(false);
-
-  const maxTime = duration > 0 ? duration : 1;
-  const displayTime = Math.min(isScrubbing ? scrubTime : currentTime, maxTime);
 
   return (
     <div className="flex flex-col gap-4 rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800">
@@ -132,51 +106,6 @@ export default function Controls({
             </button>
           )}
         </div>
-      </div>
-
-      {/* Progress bar with time display */}
-      <div className="flex items-center gap-3">
-        <span className="w-12 shrink-0 text-right text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
-          {formatTime(displayTime)}
-        </span>
-        <input
-          type="range"
-          min={0}
-          max={maxTime}
-          step={0.1}
-          value={displayTime}
-          onChange={(e) => {
-            const v = parseFloat(e.target.value);
-            scrubTimeRef.current = v;
-            isScrubbingRef.current = true;
-            setScrubTime(v);
-            setIsScrubbing(true);
-          }}
-          onPointerUp={() => {
-            if (isScrubbingRef.current) {
-              onSeek(scrubTimeRef.current);
-              isScrubbingRef.current = false;
-              setIsScrubbing(false);
-            }
-          }}
-          onPointerCancel={() => {
-            isScrubbingRef.current = false;
-            setIsScrubbing(false);
-          }}
-          onKeyUp={() => {
-            if (isScrubbingRef.current) {
-              onSeek(scrubTimeRef.current);
-              isScrubbingRef.current = false;
-              setIsScrubbing(false);
-            }
-          }}
-          disabled={duration <= 0}
-          aria-label="Seek"
-          className="h-2 flex-1 cursor-pointer accent-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
-        />
-        <span className="w-12 shrink-0 text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
-          {formatTime(duration)}
-        </span>
       </div>
 
       {/* Loading indicator */}

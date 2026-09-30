@@ -18,6 +18,15 @@ interface WaveformProps {
   onSeek: (time: number) => void;
   isPlaying: boolean;
   currentTime: number;
+  duration: number;
+}
+
+/** Format seconds as M:SS (e.g. 1:23, 10:45). */
+function formatTime(seconds: number): string {
+  const safe = Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
+  const m = Math.floor(safe / 60);
+  const s = Math.floor(safe % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
 /** Wave colors matched to the app's Tailwind zinc light/dark palette. */
@@ -34,6 +43,7 @@ export default function Waveform({
   onSeek,
   isPlaying,
   currentTime,
+  duration,
 }: WaveformProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WaveSurfer | null>(null);
@@ -178,8 +188,15 @@ export default function Waveform({
     wsRef.current?.setTime(currentTime);
   }, [currentTime]);
 
+  const displayTime = Math.min(currentTime, duration > 0 ? duration : Infinity);
+
   return (
     <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900">
+      {/* Time display: elapsed / total */}
+      <div className="mb-2 flex items-center justify-between text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
+        <span>{formatTime(displayTime)}</span>
+        <span>{formatTime(duration)}</span>
+      </div>
       {audioBase64 ? (
         <div ref={containerRef} className="w-full" aria-label="Audio waveform" />
       ) : (

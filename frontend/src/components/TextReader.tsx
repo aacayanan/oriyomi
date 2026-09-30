@@ -269,7 +269,7 @@ export default function TextReader() {
         </div>
       </div>
 
-      {/* Interactive waveform: click to seek, active sentence highlighted */}
+      {/* Interactive waveform: seek, time display, active sentence highlighted */}
       <Waveform
         audioBase64={audioBase64}
         sentences={sentences}
@@ -277,6 +277,7 @@ export default function TextReader() {
         onSeek={handleSeek}
         isPlaying={audioPlayer.isPlaying}
         currentTime={audioPlayer.currentTime}
+        duration={duration}
       />
 
       <Controls
@@ -287,13 +288,10 @@ export default function TextReader() {
         onPlay={handlePlay}
         onPause={handlePause}
         onStop={handleStop}
-        onSeek={handleSeek}
         isPlaying={audioPlayer.isPlaying}
         isPaused={audioPlayer.isPaused}
         isLoading={isLoading}
         voices={voices}
-        currentTime={audioPlayer.currentTime}
-        duration={duration}
       />
 
       {/* Error display */}
