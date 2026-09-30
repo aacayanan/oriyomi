@@ -11,6 +11,7 @@ interface Voice {
   id: string;
   name: string;
   locale: string;
+  display_name: string;
 }
 
 interface Sentence {
