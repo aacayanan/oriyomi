@@ -2,3 +2,5 @@ fastapi==0.115.12
 uvicorn==0.34.3
 edge-tts>=7.2.7
 pydantic>=2.11
+python-dotenv>=1.0
+google-genai>=1.0

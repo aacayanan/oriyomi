@@ -6,13 +6,19 @@ with sentence-level timestamps using Microsoft Edge neural TTS voices.
 """
 
 import base64
+import json
 import logging
+import os
+
+from dotenv import load_dotenv
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from tts import get_preferred_voices, generate_audio
+
+load_dotenv()
 
 # ---------------------------------------------------------------------------
 # App setup
@@ -95,6 +101,30 @@ class VoiceResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Quiz models
+# ---------------------------------------------------------------------------
+
+class QuizRequest(BaseModel):
+    """Request body for the quiz endpoint."""
+    text: str = Field(..., min_length=50, max_length=20000, description="Source text to generate questions from.")
+    num_questions: int = Field(default=3, ge=1, le=8, description="How many questions to generate.")
+
+
+class QuizQuestion(BaseModel):
+    """A single multiple-choice quiz question."""
+    question: str
+    options: list[str]  # exactly 4
+    correct_index: int  # 0-3
+    explanation: str
+
+
+class QuizResponse(BaseModel):
+    """Response from the quiz endpoint."""
+    questions: list[QuizQuestion]
+    model: str
+
+
+# ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
 
@@ -139,6 +169,101 @@ async def text_to_speech(request: TTSRequest):
         voice=request.voice,
         speed=request.speed,
     )
+
+
+@app.post("/api/quiz", response_model=QuizResponse)
+async def generate_quiz(request: QuizRequest):
+    """
+    Generate multiple-choice quiz questions about the given text using Google Gemini.
+
+    Returns a strict-JSON list of questions, each with 4 options and a correct index.
+    """
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise HTTPException(
+            status_code=503,
+            detail="GEMINI_API_KEY is not set. Copy .env.example to .env and add your Google Gemini API key.",
+        )
+
+    model_name = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+    logger.info(
+        "Quiz request: text=%d chars, num_questions=%d, model=%s",
+        len(request.text), request.num_questions, model_name,
+    )
+
+    prompt = (
+        f"You are a quiz generator. Based on the source text below, create exactly "
+        f"{request.num_questions} multiple-choice questions that test comprehension of the material.\n\n"
+        "Return STRICT JSON only — no markdown, no code fences, no extra commentary. "
+        "The JSON must match this shape exactly:\n"
+        '{"questions": [{"question": str, "options": [4 strings], "correct_index": int, "explanation": str}]}\n\n'
+        "Rules:\n"
+        "- Each question must have exactly 4 options.\n"
+        "- Exactly one option is correct; correct_index is the 0-based index of that option.\n"
+        "- Shuffle option order so the correct answer is not always in the same position.\n"
+        "- The explanation should briefly justify why the correct answer is right.\n"
+        "- Do not include any keys other than those specified.\n\n"
+        f"Source text:\n{request.text}"
+    )
+
+    from google import genai
+    client = genai.Client(api_key=api_key)
+    try:
+        result = client.models.generate_content(
+            model=model_name,
+            contents=prompt,
+        )
+    except Exception as e:
+        logger.error("Gemini API call failed: %s", e)
+        raise HTTPException(status_code=502, detail=f"Gemini API call failed: {e}")
+
+    raw = result.text or ""
+
+    # Defensive JSON parsing: strip markdown fences if present
+    cleaned = raw.strip()
+    if cleaned.startswith("```"):
+        # Remove opening fence (```json or ```) and closing fence
+        lines = cleaned.split("\n")
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        cleaned = "\n".join(lines).strip()
+
+    try:
+        data = json.loads(cleaned)
+    except json.JSONDecodeError as e:
+        logger.error("Quiz JSON parse failed: %s | raw=%.300s", e, raw)
+        raise HTTPException(
+            status_code=502,
+            detail=f"Model returned invalid JSON: {raw[:300]}",
+        )
+
+    raw_questions = data.get("questions", [])
+    if not isinstance(raw_questions, list) or not raw_questions:
+        raise HTTPException(status_code=502, detail=f"Model returned no questions: {raw[:300]}")
+
+    questions: list[QuizQuestion] = []
+    for i, q in enumerate(raw_questions):
+        try:
+            options = q["options"]
+            correct_index = int(q["correct_index"])
+            if len(options) != 4:
+                raise ValueError(f"question {i}: expected 4 options, got {len(options)}")
+            if not (0 <= correct_index < 4):
+                raise ValueError(f"question {i}: correct_index {correct_index} out of range")
+            questions.append(QuizQuestion(
+                question=str(q["question"]),
+                options=[str(o) for o in options],
+                correct_index=correct_index,
+                explanation=str(q.get("explanation", "")),
+            ))
+        except (KeyError, TypeError, ValueError) as e:
+            logger.error("Quiz question validation failed at index %d: %s | raw=%.300s", i, e, raw)
+            raise HTTPException(status_code=502, detail=f"Invalid question from model: {e}")
+
+    logger.info("Quiz generated: %d questions from model %s", len(questions), model_name)
+    return QuizResponse(questions=questions, model=model_name)
 
 
 @app.get("/api/health")
