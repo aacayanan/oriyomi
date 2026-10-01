@@ -9,11 +9,14 @@ import base64
 import json
 import logging
 import os
+import re
+import uuid
 
 from dotenv import load_dotenv
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from tts import get_preferred_voices, generate_audio
@@ -79,6 +82,7 @@ class TTSRequest(BaseModel):
 
 class SentenceTimestamp(BaseModel):
     """Timing for a single sentence."""
+    index: int = 0
     text: str
     start_ms: int
     end_ms: int
@@ -90,6 +94,22 @@ class TTSResponse(BaseModel):
     sentences: list[SentenceTimestamp] = Field(description="Sentence-level timestamps.")
     voice: str
     speed: float
+
+
+class TTSAsyncResponse(BaseModel):
+    """Response when TTS is submitted asynchronously."""
+    task_id: str
+    chunk_count: int
+    mode: str = "async"
+
+
+class TTSJobStatus(BaseModel):
+    """Status of an async TTS job."""
+    task_id: str
+    status: str  # "queued", "processing", "complete", "error"
+    chunk: int | None = None
+    total: int | None = None
+    error: str | None = None
 
 
 class VoiceResponse(BaseModel):
@@ -138,15 +158,30 @@ async def list_voices():
     ]
 
 
-@app.post("/api/tts", response_model=TTSResponse)
+@app.post("/api/tts", response_model=TTSResponse | TTSAsyncResponse)
 async def text_to_speech(request: TTSRequest):
     """
     Generate speech audio from text.
 
-    Returns base64-encoded MP3 audio and sentence-level timestamps
-    for synchronizing text highlighting with audio playback.
+    For short texts (<1000 chars), returns audio immediately (synchronous).
+    For long texts (>=1000 chars), submits a Celery chord for parallel
+    processing and returns a task_id for SSE progress tracking.
     """
-    logger.info("TTS request: text=%d chars, voice=%s, speed=%.1f", len(request.text), request.voice, request.speed)
+    logger.info(
+        "TTS request: text=%d chars, voice=%s, speed=%.1f",
+        len(request.text), request.voice, request.speed,
+    )
+
+    # Fast path: short texts stay synchronous
+    if len(request.text) < 1000:
+        return await _tts_sync(request)
+
+    # Async path: chunk and submit to Celery
+    return await _tts_async(request)
+
+
+async def _tts_sync(request: TTSRequest) -> TTSResponse:
+    """Synchronous TTS for short texts."""
     try:
         result = await generate_audio(
             text=request.text,
@@ -163,12 +198,157 @@ async def text_to_speech(request: TTSRequest):
     return TTSResponse(
         audio_base64=audio_b64,
         sentences=[
-            SentenceTimestamp(text=s.text, start_ms=s.start_ms, end_ms=s.end_ms)
-            for s in result.sentences
+            SentenceTimestamp(index=i, text=s.text, start_ms=s.start_ms, end_ms=s.end_ms)
+            for i, s in enumerate(result.sentences)
         ],
         voice=request.voice,
         speed=request.speed,
     )
+
+
+async def _tts_async(request: TTSRequest) -> TTSAsyncResponse:
+    """Async TTS via Celery chord for large texts."""
+    from celery import chord as celery_chord
+    from celery_app import app as celery_app
+    from tts_worker import generate_chunk_task, merge_chunks_callback
+    from tts_chunks import split_into_chunks
+
+    task_id = str(uuid.uuid4())
+
+    # Normalize text the same way as the sync path
+    normalized_text = re.sub(r"[\t\n\r]+", " ", request.text)
+    normalized_text = re.sub(r" {2,}", " ", normalized_text).strip()
+
+    # Split into chunks at sentence boundaries
+    chunks = split_into_chunks(normalized_text, max_chars=2500)
+    total_chunks = len(chunks)
+
+    logger.info("Async TTS: task=%s, %d chunks", task_id, total_chunks)
+
+    # Build chord: header = chunk tasks, body = merge callback
+    header = [
+        generate_chunk_task.s(
+            chunk_index=c["chunk_index"],
+            text=c["text"],
+            voice=request.voice,
+            speed=request.speed,
+            task_id=task_id,
+            total_chunks=total_chunks,
+        )
+        for c in chunks
+    ]
+    body = merge_chunks_callback.s(
+        task_id=task_id,
+        voice=request.voice,
+        speed=request.speed,
+    )
+
+    # Submit the chord
+    celery_chord(header)(body)
+
+    return TTSAsyncResponse(task_id=task_id, chunk_count=total_chunks)
+
+
+@app.get("/api/tts/stream/{task_id}")
+async def tts_stream(task_id: str):
+    """
+    Server-Sent Events stream for TTS job progress.
+
+    Subscribes to Redis pub/sub channel tts_progress:{task_id} and
+    relays progress events to the client.
+
+    Events:
+    - data: {"status": "processing", "chunk": N, "total": M}
+    - data: {"status": "chunk_done", "chunk": N, "total": M}
+    - data: {"status": "complete", "task_id": "..."}
+    - data: {"status": "error", "error": "..."}
+    """
+    import redis as redis_lib
+
+    redis_url = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/1")
+    r = redis_lib.from_url(redis_url)
+    pubsub = r.pubsub()
+    pubsub.subscribe(f"tts_progress:{task_id}")
+
+    async def event_generator():
+        try:
+            for message in pubsub.listen():
+                if message["type"] != "message":
+                    continue
+                data = (
+                    message["data"].decode("utf-8")
+                    if isinstance(message["data"], bytes)
+                    else message["data"]
+                )
+                yield f"data: {data}\n\n"
+                # Stop after terminal states
+                parsed = json.loads(data)
+                if parsed.get("status") in ("complete", "error"):
+                    break
+        finally:
+            pubsub.unsubscribe()
+            pubsub.close()
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@app.get("/api/tts/{task_id}", response_model=TTSResponse)
+async def tts_result(task_id: str):
+    """
+    Retrieve the result of a completed async TTS job.
+
+    Returns the full TTSResponse (audio_base64, sentences, voice, speed).
+    404 if the result has expired or doesn't exist.
+    """
+    import redis as redis_lib
+
+    redis_url = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/1")
+    r = redis_lib.from_url(redis_url)
+    data = r.get(f"tts_result:{task_id}")
+
+    if not data:
+        raise HTTPException(status_code=404, detail="Result not found or expired.")
+
+    result = json.loads(data)
+    return TTSResponse(
+        audio_base64=result["audio_base64"],
+        sentences=[SentenceTimestamp(**s) for s in result["sentences"]],
+        voice=result["voice"],
+        speed=result["speed"],
+    )
+
+
+@app.delete("/api/tts/{task_id}")
+async def tts_cancel(task_id: str):
+    """
+    Cancel an in-progress TTS job.
+
+    Revokes the Celery chord and cleans up Redis keys.
+    """
+    import redis as redis_lib
+    from celery_app import app as celery_app
+
+    redis_url = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/1")
+    r = redis_lib.from_url(redis_url)
+
+    # Revoke any pending tasks (best-effort)
+    celery_app.control.revoke(task_id, terminate=True)
+
+    # Clean up Redis keys
+    r.delete(f"tts_result:{task_id}")
+    pubsub = r.pubsub()
+    pubsub.unsubscribe(f"tts_progress:{task_id}")
+    pubsub.close()
+
+    return {"status": "cancelled", "task_id": task_id}
 
 
 @app.post("/api/quiz", response_model=QuizResponse)

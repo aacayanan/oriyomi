@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import useAudioPlayer from "./useAudioPlayer";
+import useTTSJob from "@/hooks/useTTSJob";
 import TextBox from "./TextBox";
 import FileUpload from "./FileUpload";
 import TextViewer from "./TextViewer";
@@ -36,6 +37,7 @@ export default function TextReader() {
   const [error, setError] = useState<string | null>(null);
 
   const audioPlayer = useAudioPlayer();
+  const ttsJob = useTTSJob();
 
   // Keep the latest sentences in a ref so the time-update callback stored by
   // the audio player always reads current sentence timings, even after the
@@ -47,10 +49,6 @@ export default function TextReader() {
     sentencesRef.current = next;
     setSentences(next);
   }, []);
-
-  // Guards against out-of-order TTS responses when the speed slider is
-  // dragged quickly: only the most recent request may apply its result.
-  const regenerateIdRef = useRef(0);
 
   // Fetch available voices on mount
   useEffect(() => {
@@ -77,12 +75,14 @@ export default function TextReader() {
   }, []);
 
   const handleClear = useCallback(() => {
+    ttsJob.cancelJob();
     audioPlayer.stop();
     setText("");
     updateSentences([]);
     setActiveSentenceIndex(null);
     setAudioBase64(null);
-  }, [audioPlayer, updateSentences]);
+    setIsLoading(false);
+  }, [audioPlayer, updateSentences, ttsJob]);
 
   // File upload: extracted text replaces the current text and resets any
   // stale audio/sentence state (same cleanup as clearing).
@@ -104,11 +104,11 @@ export default function TextReader() {
   // place in the text even though the total duration changed with speed.
   const regenerateTTS = useCallback(
     async (newSpeed: number, resumeFrom?: number) => {
-      const requestId = ++regenerateIdRef.current;
       if (!text.trim()) return;
 
       setIsLoading(true);
       setError(null);
+
       try {
         // Normalize text before sending: collapse whitespace for better TTS
         const normalizedText = text
@@ -116,21 +116,10 @@ export default function TextReader() {
           .replace(/ {2,}/g, " ")
           .trim();
 
-        const res = await fetch(apiUrl("/api/tts"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: normalizedText, voice, speed: newSpeed }),
-        });
-        const data = await res.json();
+        const result = await ttsJob.submitJob(normalizedText, voice, newSpeed);
+        if (!result) return; // cancelled
 
-        if (!res.ok) {
-          throw new Error(data.detail || `Server error (${res.status})`);
-        }
-
-        // A newer regeneration superseded this one — discard the stale result
-        if (requestId !== regenerateIdRef.current) return;
-
-        const newSentences: Sentence[] = data.sentences || [];
+        const newSentences: Sentence[] = result.sentences || [];
         const oldSentences = sentencesRef.current;
         const oldDuration =
           oldSentences.length > 0 ? oldSentences[oldSentences.length - 1].end_ms / 1000 : 0;
@@ -146,21 +135,18 @@ export default function TextReader() {
 
         updateSentences(newSentences);
         setActiveSentenceIndex(null);
-        setAudioBase64(data.audio_base64);
+        setAudioBase64(result.audio_base64);
 
         audioPlayer.setOffset(startOffset);
-        audioPlayer.play(data.audio_base64, handleTimeUpdate);
+        audioPlayer.play(result.audio_base64, handleTimeUpdate);
       } catch (err) {
-        if (requestId !== regenerateIdRef.current) return;
         console.error("TTS request failed:", err);
         setError(err instanceof Error ? err.message : "Failed to generate speech. Please try again.");
       } finally {
-        if (requestId === regenerateIdRef.current) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     },
-    [text, voice, audioPlayer, handleTimeUpdate, updateSentences],
+    [text, voice, audioPlayer, handleTimeUpdate, updateSentences, ttsJob],
   );
 
   const handlePlay = useCallback(async () => {
@@ -235,9 +221,11 @@ export default function TextReader() {
   }, [audioPlayer]);
 
   const handleStop = useCallback(() => {
+    ttsJob.cancelJob();
     audioPlayer.stop();
     setActiveSentenceIndex(null);
-  }, [audioPlayer]);
+    setIsLoading(false);
+  }, [audioPlayer, ttsJob]);
 
   // Total playback duration from the last sentence's end time
   const duration =
@@ -286,11 +274,32 @@ export default function TextReader() {
         onPlay={handlePlay}
         onPause={handlePause}
         onStop={handleStop}
+        onCancel={handleStop}
         isPlaying={audioPlayer.isPlaying}
         isPaused={audioPlayer.isPaused}
         isLoading={isLoading}
         voices={voices}
       />
+
+      {/* TTS generation progress */}
+      {isLoading && ttsJob.progress && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-900/30">
+          <div className="flex items-center justify-between text-sm text-blue-700 dark:text-blue-300">
+            <span>Generating speech...</span>
+            <span>
+              {ttsJob.progress.chunk} / {ttsJob.progress.total} chunks
+            </span>
+          </div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-blue-200 dark:bg-blue-800">
+            <div
+              className="h-full rounded-full bg-blue-500 transition-all duration-300"
+              style={{
+                width: `${(ttsJob.progress.chunk / ttsJob.progress.total) * 100}%`,
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Quiz: generate comprehension questions after reading/listening */}
       <Quiz text={text} disabled={!text.trim()} />

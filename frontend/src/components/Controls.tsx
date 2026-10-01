@@ -15,6 +15,7 @@ interface ControlsProps {
   onPlay: () => void;
   onPause: () => void;
   onStop: () => void;
+  onCancel?: () => void;
   isPlaying: boolean;
   isPaused: boolean;
   isLoading: boolean;
@@ -29,6 +30,7 @@ export default function Controls({
   onPlay,
   onPause,
   onStop,
+  onCancel,
   isPlaying,
   isPaused,
   isLoading,
@@ -101,6 +103,15 @@ export default function Controls({
               onClick={onStop}
               className="flex h-10 w-10 items-center justify-center rounded-full bg-red-500 text-white transition-colors hover:bg-red-600"
               title="Stop"
+            >
+              ⏹
+            </button>
+          )}
+          {isLoading && !isPlaying && !isPaused && (
+            <button
+              onClick={onCancel}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-red-500 text-white transition-colors hover:bg-red-600"
+              title="Cancel"
             >
               ⏹
             </button>

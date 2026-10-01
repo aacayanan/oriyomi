@@ -8,11 +8,35 @@ timestamps using edge-tts's built-in SentenceBoundary events.
 import asyncio
 import logging
 import re
+import time
 from dataclasses import dataclass
 
 import edge_tts
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Voice list cache
+# ---------------------------------------------------------------------------
+
+# Avoids a network round-trip on every TTS request.
+# Each process (uvicorn, celery worker) maintains its own cache.
+_voice_cache: set[str] | None = None
+_voice_cache_time: float = 0
+_VOICE_CACHE_TTL: float = 3600  # 1 hour
+
+
+async def _get_voice_set() -> set[str]:
+    """Return the set of valid voice IDs, cached for VOICE_CACHE_TTL seconds."""
+    global _voice_cache, _voice_cache_time
+    now = time.monotonic()
+    if _voice_cache is not None and (now - _voice_cache_time) < _VOICE_CACHE_TTL:
+        return _voice_cache
+    voices = await get_voices()
+    _voice_cache = {v.id for v in voices}
+    _voice_cache_time = now
+    return _voice_cache
 
 
 # ---------------------------------------------------------------------------
@@ -170,9 +194,8 @@ async def generate_audio(
     # Normalize text: collapse whitespace, fix formatting for better TTS
     text = _normalize_text(text)
 
-    # Validate voice exists (cache this in production to avoid repeated calls)
-    voices = await get_voices()
-    voice_ids = {v.id for v in voices}
+    # Validate voice exists (cached — avoids network round-trip on every request)
+    voice_ids = await _get_voice_set()
     if voice not in voice_ids:
         raise ValueError(
             f"Voice '{voice}' not found. Available voices: {sorted(voice_ids)[:10]}..."
