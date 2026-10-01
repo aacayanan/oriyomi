@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 
 interface Sentence {
   index: number;
@@ -16,6 +16,10 @@ interface TextViewerProps {
   onSentenceClick?: (index: number) => void;
 }
 
+const MIN_SCALE = 0.7;
+const MAX_SCALE = 1.6;
+const SCALE_STEP = 0.1;
+
 export default function TextViewer({
   sentences,
   activeSentenceIndex,
@@ -23,6 +27,7 @@ export default function TextViewer({
   onSentenceClick,
 }: TextViewerProps) {
   const activeRef = useRef<HTMLSpanElement>(null);
+  const [scale, setScale] = useState(1);
 
   // Auto-scroll to active sentence
   useEffect(() => {
@@ -34,47 +39,77 @@ export default function TextViewer({
     }
   }, [activeSentenceIndex]);
 
-  // Fallback: render raw text as paragraphs
-  if (sentences.length === 0) {
-    return (
-      <div className="max-h-[300px] overflow-y-auto rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-base leading-relaxed text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
-        {text ? (
-          text.split("\n").map((paragraph, i) => (
-            <p key={i} className="mb-2 last:mb-0">
-              {paragraph}
+  const zoomOut = () =>
+    setScale((s) => Math.max(MIN_SCALE, +(s - SCALE_STEP).toFixed(1)));
+  const zoomIn = () =>
+    setScale((s) => Math.min(MAX_SCALE, +(s + SCALE_STEP).toFixed(1)));
+
+  return (
+    <div className="flex flex-col overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
+      {/* Scale controls */}
+      <div className="flex items-center justify-end gap-1 border-b border-zinc-200 px-2 py-1 dark:border-zinc-700">
+        <button
+          onClick={zoomOut}
+          disabled={scale <= MIN_SCALE}
+          className="flex h-6 w-6 items-center justify-center rounded border border-zinc-300 text-sm leading-none text-zinc-600 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-700"
+          title="Zoom out"
+        >
+          −
+        </button>
+        <span className="w-10 text-center text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
+          {Math.round(scale * 100)}%
+        </span>
+        <button
+          onClick={zoomIn}
+          disabled={scale >= MAX_SCALE}
+          className="flex h-6 w-6 items-center justify-center rounded border border-zinc-300 text-sm leading-none text-zinc-600 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-700"
+          title="Zoom in"
+        >
+          +
+        </button>
+      </div>
+
+      {/* Scrollable text area — font size follows the scale control */}
+      <div
+        className="max-h-[300px] overflow-y-auto p-4 text-base leading-relaxed text-zinc-800 dark:text-zinc-200"
+        style={{ fontSize: `${scale}rem` }}
+      >
+        {/* Fallback: render raw text as paragraphs */}
+        {sentences.length === 0 ? (
+          text ? (
+            text.split("\n").map((paragraph, i) => (
+              <p key={i} className="mb-2 last:mb-0">
+                {paragraph}
+              </p>
+            ))
+          ) : (
+            <p className="italic text-zinc-400">
+              Your text will appear here after generating speech...
             </p>
-          ))
+          )
         ) : (
-          <p className="italic text-zinc-400">
-            Your text will appear here after generating speech...
+          /* Render sentences with highlighting */
+          <p>
+            {sentences.map((sentence, i) => {
+              const isActive = i === activeSentenceIndex;
+              return (
+                <span
+                  key={i}
+                  ref={isActive ? activeRef : null}
+                  onClick={() => onSentenceClick?.(i)}
+                  className={`rounded px-1 transition-colors duration-200 ${
+                    isActive
+                      ? "bg-yellow-200 dark:bg-yellow-800"
+                      : "cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                  }`}
+                >
+                  {sentence.text}
+                </span>
+              );
+            })}
           </p>
         )}
       </div>
-    );
-  }
-
-  // Render sentences with highlighting
-  return (
-    <div className="max-h-[300px] overflow-y-auto rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-base leading-relaxed text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
-      <p>
-        {sentences.map((sentence, i) => {
-          const isActive = i === activeSentenceIndex;
-          return (
-            <span
-              key={i}
-              ref={isActive ? activeRef : null}
-              onClick={() => onSentenceClick?.(i)}
-              className={`rounded px-1 transition-colors duration-200 ${
-                isActive
-                  ? "bg-yellow-200 dark:bg-yellow-800"
-                  : "cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-700"
-              }`}
-            >
-              {sentence.text}
-            </span>
-          );
-        })}
-      </p>
     </div>
   );
 }
