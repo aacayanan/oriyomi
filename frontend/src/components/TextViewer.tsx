@@ -14,6 +14,7 @@ interface TextViewerProps {
   activeSentenceIndex: number | null;
   text: string;
   onSentenceClick?: (index: number) => void;
+  currentSectionTitle?: string | null;
 }
 
 const MIN_SCALE = 0.7;
@@ -25,6 +26,7 @@ export default function TextViewer({
   activeSentenceIndex,
   text,
   onSentenceClick,
+  currentSectionTitle,
 }: TextViewerProps) {
   const activeRef = useRef<HTMLSpanElement>(null);
   const [scale, setScale] = useState(1);
@@ -47,7 +49,13 @@ export default function TextViewer({
   return (
     <div className="flex flex-col overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
       {/* Scale controls */}
-      <div className="flex items-center justify-end gap-1 border-b border-zinc-200 px-2 py-1 dark:border-zinc-700">
+      <div className="flex items-center justify-between gap-2 border-b border-zinc-200 px-2 py-1 dark:border-zinc-700">
+        {currentSectionTitle && (
+          <span className="truncate text-xs font-medium text-zinc-600 dark:text-zinc-400">
+            {currentSectionTitle}
+          </span>
+        )}
+        <div className={`flex items-center gap-1 ${currentSectionTitle ? "ml-auto" : "ml-auto"}`}>
         <button
           onClick={zoomOut}
           disabled={scale <= MIN_SCALE}
@@ -67,6 +75,7 @@ export default function TextViewer({
         >
           +
         </button>
+        </div>
       </div>
 
       {/* Scrollable text area — font size follows the scale control */}

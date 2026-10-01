@@ -20,6 +20,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from tts import get_preferred_voices, generate_audio
+from text_structure import analyze_text_structure
 
 load_dotenv()
 
@@ -121,6 +122,37 @@ class VoiceResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Structure analysis models
+# ---------------------------------------------------------------------------
+
+class AnalyzeRequest(BaseModel):
+    """Request body for the structure analysis endpoint."""
+    text: str = Field(..., min_length=1, max_length=50000, description="Text to analyze for structure.")
+
+
+class AnalyzeSection(BaseModel):
+    """A single section in the document structure."""
+    title: str
+    level: int
+    section_type: str
+    number: str | None
+    char_start: int
+    char_end: int
+    text: str
+    text_preview: str
+    children: list["AnalyzeSection"] = []
+
+
+class AnalyzeResponse(BaseModel):
+    """Response from the structure analysis endpoint."""
+    sections: list[AnalyzeSection]
+    doc_type: str  # "flat", "chapters", "sections", "hierarchical"
+    total_chars: int
+    detection_method: str
+    has_structure: bool
+
+
+# ---------------------------------------------------------------------------
 # Quiz models
 # ---------------------------------------------------------------------------
 
@@ -156,6 +188,40 @@ async def list_voices():
         VoiceResponse(id=v.id, name=v.name, locale=v.locale, display_name=v.display_name)
         for v in voices
     ]
+
+
+@app.post("/api/analyze", response_model=AnalyzeResponse)
+async def analyze_structure(request: AnalyzeRequest):
+    """
+    Analyze text for document structure (chapters, sections, subsections).
+
+    Returns a tree of detected sections with character offsets, allowing the
+    frontend to offer section-level TTS generation.
+    """
+    logger.info("Analyze request: %d chars", len(request.text))
+
+    result = analyze_text_structure(request.text)
+
+    def convert_section(s) -> AnalyzeSection:
+        return AnalyzeSection(
+            title=s.title,
+            level=s.level,
+            section_type=s.section_type,
+            number=s.number,
+            char_start=s.char_start,
+            char_end=s.char_end,
+            text=s.text,
+            text_preview=s.text_preview,
+            children=[convert_section(c) for c in s.children],
+        )
+
+    return AnalyzeResponse(
+        sections=[convert_section(s) for s in result.sections],
+        doc_type=result.doc_type,
+        total_chars=result.total_chars,
+        detection_method=result.detection_method,
+        has_structure=result.has_structure,
+    )
 
 
 @app.post("/api/tts", response_model=TTSResponse | TTSAsyncResponse)

@@ -9,6 +9,8 @@ import TextViewer from "./TextViewer";
 import Controls from "./Controls";
 import Waveform from "./Waveform";
 import Quiz from "./Quiz";
+import ChapterSelector from "./ChapterSelector";
+import type { Section } from "./ChapterSelector";
 import { apiUrl } from "@/lib/api";
 
 interface Voice {
@@ -36,6 +38,12 @@ export default function TextReader() {
   const [audioBase64, setAudioBase64] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Document structure state
+  const [sections, setSections] = useState<Section[]>([]);
+  const [selectedSection, setSelectedSection] = useState<Section | null>(null);
+  const [hasStructure, setHasStructure] = useState(false);
+  const [docType, setDocType] = useState("flat");
+
   const audioPlayer = useAudioPlayer();
   const ttsJob = useTTSJob();
 
@@ -48,6 +56,33 @@ export default function TextReader() {
   const updateSentences = useCallback((next: Sentence[]) => {
     sentencesRef.current = next;
     setSentences(next);
+  }, []);
+
+  // Analyze text structure to detect chapters/sections
+  const analyzeText = useCallback(async (textToAnalyze: string) => {
+    if (!textToAnalyze.trim() || textToAnalyze.trim().length < 50) {
+      setSections([]);
+      setSelectedSection(null);
+      setHasStructure(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(apiUrl("/api/analyze"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: textToAnalyze }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSections(data.sections || []);
+        setHasStructure(data.has_structure || false);
+        setDocType(data.doc_type || "flat");
+        setSelectedSection(null);
+      }
+    } catch (err) {
+      console.error("Analysis failed:", err);
+    }
   }, []);
 
   // Fetch available voices on mount
@@ -82,6 +117,9 @@ export default function TextReader() {
     setActiveSentenceIndex(null);
     setAudioBase64(null);
     setIsLoading(false);
+    setSections([]);
+    setSelectedSection(null);
+    setHasStructure(false);
   }, [audioPlayer, updateSentences, ttsJob]);
 
   // File upload: extracted text replaces the current text and resets any
@@ -94,8 +132,9 @@ export default function TextReader() {
       setActiveSentenceIndex(null);
       setAudioBase64(null);
       setError(null);
+      analyzeText(extractedText);
     },
-    [audioPlayer, updateSentences],
+    [audioPlayer, updateSentences, analyzeText],
   );
 
   // Generate TTS audio at `newSpeed`. If `resumeFrom` is given (a position in
@@ -104,14 +143,16 @@ export default function TextReader() {
   // place in the text even though the total duration changed with speed.
   const regenerateTTS = useCallback(
     async (newSpeed: number, resumeFrom?: number) => {
-      if (!text.trim()) return;
+      // Use selected section's text if one is selected, otherwise full text
+      const textToGenerate = selectedSection ? selectedSection.text : text;
+      if (!textToGenerate.trim()) return;
 
       setIsLoading(true);
       setError(null);
 
       try {
         // Normalize text before sending: collapse whitespace for better TTS
-        const normalizedText = text
+        const normalizedText = textToGenerate
           .replace(/[\t\n\r]+/g, " ")
           .replace(/ {2,}/g, " ")
           .trim();
@@ -146,7 +187,7 @@ export default function TextReader() {
         setIsLoading(false);
       }
     },
-    [text, voice, audioPlayer, handleTimeUpdate, updateSentences, ttsJob],
+    [text, selectedSection, voice, audioPlayer, handleTimeUpdate, updateSentences, ttsJob],
   );
 
   const handlePlay = useCallback(async () => {
@@ -251,6 +292,7 @@ export default function TextReader() {
             activeSentenceIndex={activeSentenceIndex}
             text={text}
             onSentenceClick={handleSentenceClick}
+            currentSectionTitle={selectedSection ? selectedSection.title : null}
           />
         </div>
       </div>
@@ -280,6 +322,17 @@ export default function TextReader() {
         isLoading={isLoading}
         voices={voices}
       />
+
+      {/* Chapter/section selector for structure-aware TTS */}
+      {hasStructure && (
+        <ChapterSelector
+          sections={sections}
+          selectedSection={selectedSection}
+          onSelect={setSelectedSection}
+          disabled={isLoading}
+          docType={docType}
+        />
+      )}
 
       {/* TTS generation progress */}
       {isLoading && ttsJob.progress && (
