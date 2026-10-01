@@ -165,15 +165,17 @@ export default function useAudioPlayer(): AudioPlayerReturn {
   }, []);
 
   const setPlaybackRate = useCallback((rate: number) => {
+    const oldRate = playbackRateRef.current;
     playbackRateRef.current = rate;
     setPlaybackRateState(rate);
 
     if (sourceNodeRef.current) {
-      // Snapshot the current audio position before changing rate
+      // Snapshot the current audio position BEFORE changing rate,
+      // using the OLD rate for the elapsed period.
       const ctx = audioContextRef.current;
       if (ctx) {
         const elapsed = ctx.currentTime - snapshotTimeRef.current;
-        audioPositionRef.current += elapsed * playbackRateRef.current;
+        audioPositionRef.current += elapsed * oldRate;
         snapshotTimeRef.current = ctx.currentTime;
       }
       sourceNodeRef.current.playbackRate.value = rate;

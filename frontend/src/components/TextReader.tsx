@@ -7,6 +7,7 @@ import FileUpload from "./FileUpload";
 import TextViewer from "./TextViewer";
 import Controls from "./Controls";
 import Waveform from "./Waveform";
+import Quiz from "./Quiz";
 import { apiUrl } from "@/lib/api";
 
 interface Voice {
@@ -172,21 +173,18 @@ export default function TextReader() {
     await regenerateTTS(speed);
   }, [audioPlayer.isPaused, audioBase64, handleTimeUpdate, regenerateTTS, speed]);
 
-  // Speed is baked into the audio by the API (SSML rate), so changing speed
-  // mid-playback means regenerating the TTS at the new speed and resuming
-  // from the current position — never applying playbackRate on top of it.
+  // Speed changes apply live via Web Audio playbackRate — instant, no recompile.
+  // The speed is still sent to the API when TTS is next generated (on play from
+  // a fresh start), so newly generated audio is baked at the correct rate.
   const handleSpeedChange = useCallback(
-    async (newSpeed: number) => {
+    (newSpeed: number) => {
       setSpeed(newSpeed);
-
-      const wasActive = audioPlayer.isPlaying || audioPlayer.isPaused;
-      if (!audioBase64 || !wasActive) return;
-
-      const resumePosition = audioPlayer.currentTime;
-      audioPlayer.stop();
-      await regenerateTTS(newSpeed, resumePosition);
+      // Apply immediately to the live audio node if anything is playing or paused
+      if (audioPlayer.isPlaying || audioPlayer.isPaused) {
+        audioPlayer.setPlaybackRate(newSpeed);
+      }
     },
-    [audioPlayer, audioBase64, regenerateTTS],
+    [audioPlayer],
   );
 
   const handleSentenceClick = useCallback(
@@ -293,6 +291,9 @@ export default function TextReader() {
         isLoading={isLoading}
         voices={voices}
       />
+
+      {/* Quiz: generate comprehension questions after reading/listening */}
+      <Quiz text={text} disabled={!text.trim()} />
 
       {/* Error display */}
       {error && (
