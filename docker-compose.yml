@@ -19,6 +19,7 @@ services:
       - PYTHONUNBUFFERED=1
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
     depends_on:
       redis:
         condition: service_healthy
@@ -32,6 +33,9 @@ services:
       - PYTHONUNBUFFERED=1
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      # Browser origin when hitting the API directly (proxy makes this optional)
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
     depends_on:
       redis:
         condition: service_healthy
@@ -40,11 +44,12 @@ services:
     build:
       context: ./frontend
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:8000
+        # Same-origin /api proxy — browser never needs the backend host
+        NEXT_PUBLIC_API_URL: ""
+        # Compose-network route: Next server → tts-api service
+        API_PROXY_URL: http://tts-api:8000
     ports:
       - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
     depends_on:
       - tts-api
 

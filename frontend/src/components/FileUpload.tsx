@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { UploadIcon, AlertIcon } from "./Icons";
 
 const ACCEPTED_EXTENSIONS = [".txt", ".md", ".pdf", ".docx"];
 const ACCEPT_TYPES =
@@ -36,20 +37,22 @@ function countWords(text: string): number {
 function getErrorMessage(err: unknown, extension: string): string {
   if (err instanceof Error) {
     if (err.name === "PasswordException" || /password/i.test(err.message)) {
-      return "This PDF is password-protected. Please unlock it and try again.";
+      return "This PDF is password-protected. Unlock it and try again.";
     }
-    if (err.name === "InvalidPDFException" || /invalid pdf|corrupt|structure/i.test(err.message)) {
-      return "This file appears to be corrupt or invalid. Please try another file.";
+    if (
+      err.name === "InvalidPDFException" ||
+      /invalid pdf|corrupt|structure/i.test(err.message)
+    ) {
+      return "This file appears to be corrupt or invalid. Try another file.";
     }
   }
-  return `Failed to process this ${extension === ".pdf" ? "PDF" : "DOCX"} file. Please try another file.`;
+  return `Failed to process this ${extension === ".pdf" ? "PDF" : "DOCX"} file. Try another file.`;
 }
 
 async function extractTextFromPdf(
   data: ArrayBuffer,
   onProgress: (page: number, total: number) => void,
 ): Promise<string> {
-  // Lazy-load pdf.js so it never executes during server-side rendering
   const pdfjs = await import("pdfjs-dist");
   pdfjs.GlobalWorkerOptions.workerSrc = new URL(
     "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -103,7 +106,7 @@ export default function FileUpload({ onTextExtracted }: FileUploadProps) {
         setUploadedFile(null);
         setStatus("idle");
         setError(
-          `Unsupported file type${extension ? ` "${extension}"` : ""}. Please upload a .txt, .md, .pdf, or .docx file.`,
+          `Unsupported file type${extension ? ` "${extension}"` : ""}. Use .txt, .md, .pdf, or .docx.`,
         );
         return;
       }
@@ -111,13 +114,13 @@ export default function FileUpload({ onTextExtracted }: FileUploadProps) {
       if (file.size === 0) {
         setUploadedFile(null);
         setStatus("idle");
-        setError("This file is empty. Please choose a file with content.");
+        setError("This file is empty. Choose a file with content.");
         return;
       }
 
       setStatus("processing");
       setError(null);
-      setProgress(extension === ".pdf" ? "Preparing PDF..." : "Extracting text...");
+      setProgress(extension === ".pdf" ? "Preparing PDF…" : "Extracting text…");
 
       try {
         const data = await file.arrayBuffer();
@@ -125,7 +128,7 @@ export default function FileUpload({ onTextExtracted }: FileUploadProps) {
 
         if (extension === ".pdf") {
           extractedText = await extractTextFromPdf(data, (page, total) => {
-            setProgress(`Extracting page ${page} of ${total}...`);
+            setProgress(`Extracting page ${page} of ${total}…`);
           });
         } else if (extension === ".docx") {
           extractedText = await extractTextFromDocx(data);
@@ -138,12 +141,16 @@ export default function FileUpload({ onTextExtracted }: FileUploadProps) {
           setUploadedFile(null);
           setStatus("idle");
           setError(
-            "No readable text was found in this file. It may be a scanned or image-only document.",
+            "No readable text in this file. It may be a scanned or image-only document.",
           );
           return;
         }
 
-        setUploadedFile({ name: file.name, size: file.size, wordCount: countWords(trimmed) });
+        setUploadedFile({
+          name: file.name,
+          size: file.size,
+          wordCount: countWords(trimmed),
+        });
         setStatus("success");
         onTextExtracted(trimmed);
       } catch (err) {
@@ -177,7 +184,6 @@ export default function FileUpload({ onTextExtracted }: FileUploadProps) {
         className="sr-only"
         onChange={(e) => {
           handleFiles(e.target.files);
-          // Reset so selecting the same file again still fires onChange
           e.target.value = "";
         }}
       />
@@ -201,108 +207,61 @@ export default function FileUpload({ onTextExtracted }: FileUploadProps) {
           if (!isProcessing) handleFiles(e.dataTransfer.files);
         }}
         className={[
-          "flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 text-center transition-colors",
+          "flex w-full flex-col items-center justify-center gap-2 border border-dashed px-4 py-5 text-center transition-colors",
           isDragOver
-            ? "border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-900/20"
-            : "border-zinc-300 bg-zinc-50 hover:border-zinc-400 hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800/50 dark:hover:border-zinc-500 dark:hover:bg-zinc-800",
-          isProcessing
-            ? "cursor-wait"
-            : "cursor-pointer",
-          error && !isProcessing
-            ? "border-red-300 dark:border-red-700"
-            : "",
+            ? "border-vermilion bg-fold"
+            : "border-hairline-deep bg-fold/60 hover:border-ink-mute hover:bg-fold",
+          isProcessing ? "cursor-wait" : "cursor-pointer",
+          error && !isProcessing ? "border-vermilion-soft" : "",
         ].join(" ")}
       >
         {isProcessing ? (
           <>
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              className="h-8 w-8 animate-spin text-blue-500 dark:text-blue-400"
+            <span
+              className="h-6 w-6 animate-spin rounded-full border-2 border-hairline-deep border-t-vermilion"
               aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="9" className="opacity-25" />
-              <path d="M21 12a9 9 0 0 0-9-9" />
-            </svg>
-            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
-              {progress ?? "Processing file..."}
+            />
+            <span className="font-ui text-xs font-semibold text-sumi-soft">
+              {progress ?? "Processing file…"}
             </span>
           </>
         ) : status === "success" && uploadedFile ? (
           <>
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-8 w-8 text-emerald-500 dark:text-emerald-400"
-              aria-hidden="true"
-            >
-              <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
-              <path d="M14 3v5h5" />
-            </svg>
+            <UploadIcon className="h-6 w-6 text-vermilion" />
             <div className="flex max-w-full flex-col gap-0.5">
               <span
-                className="max-w-full truncate text-sm font-medium text-zinc-800 dark:text-zinc-100"
+                className="max-w-full truncate font-ui text-xs font-semibold text-sumi"
                 title={uploadedFile.name}
               >
                 {uploadedFile.name}
               </span>
-              <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                {formatFileSize(uploadedFile.size)} · {uploadedFile.wordCount.toLocaleString()}{" "}
-                {uploadedFile.wordCount === 1 ? "word" : "words"} extracted
+              <span className="font-data text-[10px] tabular-nums text-ink-fade">
+                {formatFileSize(uploadedFile.size)} ·{" "}
+                {uploadedFile.wordCount.toLocaleString()} words
               </span>
             </div>
-            <span className="text-xs text-zinc-400 dark:text-zinc-500">
-              Text loaded — click to choose another file
+            <span className="label-ui text-[9px] text-ink-mute">
+              Loaded — choose another
             </span>
           </>
         ) : error ? (
           <>
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-8 w-8 text-red-400 dark:text-red-500"
-              aria-hidden="true"
-            >
-              <path d="M12 3 2.5 20h19L12 3z" />
-              <path d="M12 10v4" />
-              <circle cx="12" cy="17.2" r="0.8" fill="currentColor" stroke="none" />
-            </svg>
-            <span className="text-sm font-medium text-red-700 dark:text-red-300">{error}</span>
-            <span className="text-xs text-zinc-400 dark:text-zinc-500">
+            <AlertIcon className="h-6 w-6 text-vermilion" />
+            <span className="font-ui text-xs font-semibold text-vermilion-ink">
+              {error}
+            </span>
+            <span className="label-ui text-[9px] text-ink-mute">
               Click to try another file
             </span>
           </>
         ) : (
           <>
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-8 w-8 text-zinc-400 dark:text-zinc-500"
-              aria-hidden="true"
-            >
-              <path d="M12 16V4m0 0-4 4m4-4 4 4" />
-              <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
-            </svg>
-            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
-              Drag &amp; drop a file here, or click to browse
+            <UploadIcon className="h-6 w-6 text-ink-fade" />
+            <span className="font-ui text-xs font-semibold text-sumi-soft">
+              Drop a file, or click to browse
             </span>
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">
-              Accepts .txt, .md, .pdf, and .docx
+            <span className="font-data text-[10px] text-ink-fade">
+              .txt · .md · .pdf · .docx
             </span>
           </>
         )}

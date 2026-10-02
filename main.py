@@ -37,9 +37,24 @@ app = FastAPI(
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s: %(message)s")
 
+def _cors_origins() -> list[str]:
+    """Browser origins allowed to call the API directly.
+
+    Default covers the local frontend on either localhost or 127.0.0.1.
+    Override with ALLOWED_ORIGINS=comma,separated,origins (Docker compose sets this).
+    When the Next.js proxy is used, the browser is same-origin and CORS is unused.
+    """
+    raw = os.environ.get(
+        "ALLOWED_ORIGINS",
+        "http://localhost:3000,http://127.0.0.1:3000",
+    )
+    origins = [o.strip() for o in raw.split(",") if o.strip()]
+    return origins or ["http://localhost:3000"]
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

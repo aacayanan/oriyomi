@@ -12,60 +12,53 @@ interface ControlsProps {
   onVoiceChange: (voice: string) => void;
   speed: number;
   onSpeedChange: (speed: number) => void;
-  onPlay: () => void;
-  onPause: () => void;
-  onStop: () => void;
-  onCancel?: () => void;
-  isPlaying: boolean;
-  isPaused: boolean;
-  isLoading: boolean;
   voices: Voice[];
+  disabled?: boolean;
 }
 
+/** VOICE + TEMPO rail rows — outline chrome from the approved comp. */
 export default function Controls({
   voice,
   onVoiceChange,
   speed,
   onSpeedChange,
-  onPlay,
-  onPause,
-  onStop,
-  onCancel,
-  isPlaying,
-  isPaused,
-  isLoading,
   voices,
+  disabled = false,
 }: ControlsProps) {
-  const showPlay = !isPlaying;
-  const showPause = isPlaying;
-
   return (
-    <div className="flex flex-col gap-4 rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-        {/* Voice dropdown */}
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Voice
-          </label>
+    <div className="flex flex-col">
+      <label className="group flex items-center gap-3 border-t border-hairline py-3">
+        <span className="label-ui w-[4.5rem] shrink-0 text-[11px] text-sumi-soft">
+          Voice
+        </span>
+        <span className="relative min-w-0 flex-1">
           <select
-            className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-200 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100"
+            className="w-full appearance-none border border-transparent bg-transparent py-0.5 pr-6 font-ui text-sm font-semibold text-sumi hover:border-hairline focus-visible:border-vermilion"
             value={voice}
             onChange={(e) => onVoiceChange(e.target.value)}
-            disabled={isPlaying}
+            disabled={disabled || voices.length === 0}
           >
-            {voices.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.display_name}
-              </option>
-            ))}
+            {voices.length === 0 ? (
+              <option value={voice}>Emma</option>
+            ) : (
+              voices.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.display_name}
+                </option>
+              ))
+            )}
           </select>
-        </div>
+          <span className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-ink-fade">
+            ▾
+          </span>
+        </span>
+      </label>
 
-        {/* Speed slider */}
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Speed: {speed.toFixed(1)}x
-          </label>
+      <label className="flex items-center gap-3 border-t border-hairline py-3">
+        <span className="label-ui w-[4.5rem] shrink-0 text-[11px] text-sumi-soft">
+          Tempo
+        </span>
+        <span className="flex min-w-0 flex-1 items-center gap-3">
           <input
             type="range"
             min={0.5}
@@ -73,56 +66,15 @@ export default function Controls({
             step={0.1}
             value={speed}
             onChange={(e) => onSpeedChange(parseFloat(e.target.value))}
-            className="w-40 accent-blue-500"
+            disabled={disabled}
+            className="h-1 w-full cursor-pointer appearance-none rounded-full bg-hairline-deep accent-vermilion"
+            aria-label="Playback tempo"
           />
-        </div>
-
-        {/* Playback buttons */}
-        <div className="flex gap-2">
-          {showPlay && (
-            <button
-              onClick={onPlay}
-              disabled={isLoading}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-              title="Play"
-            >
-              ▶
-            </button>
-          )}
-          {showPause && (
-            <button
-              onClick={onPause}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-yellow-500 text-white transition-colors hover:bg-yellow-600"
-              title="Pause"
-            >
-              ⏸
-            </button>
-          )}
-          {(isPlaying || isPaused) && (
-            <button
-              onClick={onStop}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-red-500 text-white transition-colors hover:bg-red-600"
-              title="Stop"
-            >
-              ⏹
-            </button>
-          )}
-          {isLoading && !isPlaying && !isPaused && (
-            <button
-              onClick={onCancel}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-red-500 text-white transition-colors hover:bg-red-600"
-              title="Cancel"
-            >
-              ⏹
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Loading indicator */}
-      {isLoading && (
-        <p className="text-sm text-blue-500">Generating speech...</p>
-      )}
+          <span className="w-12 shrink-0 text-right font-data text-sm tabular-nums text-sumi">
+            {speed.toFixed(1)}x
+          </span>
+        </span>
+      </label>
     </div>
   );
 }

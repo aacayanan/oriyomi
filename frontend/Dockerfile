@@ -12,8 +12,12 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-ARG NEXT_PUBLIC_API_URL
+# Browser calls stay same-origin; the server proxies /api/* to the backend.
+ARG NEXT_PUBLIC_API_URL=
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+# Rewrite target for /api/:path* — compose sets http://tts-api:8000
+ARG API_PROXY_URL=http://localhost:8000
+ENV API_PROXY_URL=$API_PROXY_URL
 
 # Limit Node.js memory to avoid OOM kills in constrained Docker environments
 ENV NODE_OPTIONS=--max-old-space-size=2048

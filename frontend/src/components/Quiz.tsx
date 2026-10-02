@@ -11,20 +11,21 @@ interface QuizQuestion {
 }
 
 interface QuizProps {
-  text: string; // the full source text
-  disabled?: boolean; // disable when no text
+  text: string;
+  disabled?: boolean;
 }
 
 interface QuizState {
   questions: QuizQuestion[];
-  /** For each question index: the option the user picked, or null if unanswered. */
   answers: (number | null)[];
 }
 
+/** Optional comprehension fold — graceful without GEMINI_API_KEY. */
 export default function Quiz({ text, disabled = false }: QuizProps) {
   const [quiz, setQuiz] = useState<QuizState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
 
   const generateQuiz = useCallback(async () => {
     if (!text.trim() || disabled) return;
@@ -48,9 +49,14 @@ export default function Quiz({ text, disabled = false }: QuizProps) {
         questions,
         answers: questions.map(() => null),
       });
+      setOpen(true);
     } catch (err) {
       console.error("Quiz request failed:", err);
-      setError(err instanceof Error ? err.message : "Failed to generate quiz. Please try again.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Quiz is unavailable right now. You can keep reading without it.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -60,7 +66,6 @@ export default function Quiz({ text, disabled = false }: QuizProps) {
     (questionIndex: number, optionIndex: number) => {
       setQuiz((prev) => {
         if (!prev) return prev;
-        // Don't allow changing an already-answered question
         if (prev.answers[questionIndex] !== null) return prev;
         const newAnswers = [...prev.answers];
         newAnswers[questionIndex] = optionIndex;
@@ -80,68 +85,88 @@ export default function Quiz({ text, disabled = false }: QuizProps) {
   const showScore = quiz !== null && answeredCount > 0;
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Quiz</h2>
-        <div className="flex items-center gap-2">
+    <section
+      id="quiz"
+      className="border border-hairline bg-fold/80"
+      aria-label="Quiz"
+    >
+      <div className="flex items-center justify-between gap-3 border-b border-hairline px-4 py-3">
+        <div className="flex items-baseline gap-3">
+          <h2 className="label-ui text-[11px] text-sumi-soft">Quiz</h2>
           {showScore && (
-            <span className="text-sm text-zinc-600 dark:text-zinc-400">
+            <span className="font-data text-xs tabular-nums text-ink-fade">
               {correctCount} / {quiz!.questions.length} correct
             </span>
           )}
+        </div>
+        <div className="flex items-center gap-2">
+          {quiz && (
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              className="label-ui text-[10px] text-ink-fade hover:text-vermilion"
+            >
+              {open ? "Hide" : "Show"}
+            </button>
+          )}
           <button
+            type="button"
             onClick={generateQuiz}
             disabled={isLoading || disabled}
             title={disabled ? "Add text first" : undefined}
-            className="rounded-md bg-blue-500 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+            className="gold-dot-btn h-8 px-4 text-[11px]"
           >
-            {quiz ? "Regenerate" : "Generate quiz"}
+            <span className="h-2 w-2 rounded-full bg-gold-lit" aria-hidden="true" />
+            {quiz ? "Regenerate" : "Generate"}
           </button>
         </div>
       </div>
 
       {isLoading && (
-        <p className="mt-3 text-sm text-blue-500">Generating quiz...</p>
+        <p className="px-4 py-3 font-ui text-xs text-ink-fade">
+          Folding questions…
+        </p>
       )}
 
-      {error && (
-        <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300">
+      {error && !isLoading && (
+        <p className="border-t border-hairline px-4 py-3 font-ui text-xs text-vermilion-ink">
           {error}
-        </div>
+        </p>
       )}
 
-      {quiz && !isLoading && (
-        <div className="mt-4 flex flex-col gap-4">
+      {quiz && open && !isLoading && (
+        <div className="flex flex-col gap-4 px-4 py-4">
           {quiz.questions.map((q, qi) => {
             const selected = quiz.answers[qi];
             const answered = selected !== null;
             return (
-              <div
-                key={qi}
-                className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900"
-              >
-                <p className="mb-2 text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                  {qi + 1}. {q.question}
+              <div key={qi} className="flex flex-col gap-2">
+                <p className="font-body text-sm leading-relaxed text-sumi">
+                  <span className="mr-2 font-data text-[11px] tabular-nums text-ink-fade">
+                    {String(qi + 1).padStart(2, "0")}
+                  </span>
+                  {q.question}
                 </p>
                 <div className="flex flex-col gap-1.5">
                   {q.options.map((option, oi) => {
                     let optionClass =
-                      "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-600";
+                      "w-full border border-hairline bg-transparent px-3 py-2 text-left font-ui text-xs text-sumi transition-colors hover:bg-washi";
                     if (answered) {
                       if (oi === q.correct_index) {
                         optionClass =
-                          "w-full rounded-md border border-green-500 bg-green-50 px-3 py-2 text-left text-sm font-medium text-green-800 dark:border-green-600 dark:bg-green-900/40 dark:text-green-300";
+                          "w-full border border-vermilion bg-fold px-3 py-2 text-left font-ui text-xs font-semibold text-vermilion-ink";
                       } else if (oi === selected) {
                         optionClass =
-                          "w-full rounded-md border border-red-500 bg-red-50 px-3 py-2 text-left text-sm text-red-800 dark:border-red-600 dark:bg-red-900/40 dark:text-red-300";
+                          "w-full border border-hairline-deep bg-washi-deep px-3 py-2 text-left font-ui text-xs text-ink-fade line-through";
                       } else {
                         optionClass =
-                          "w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-left text-sm text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500";
+                          "w-full border border-hairline bg-transparent px-3 py-2 text-left font-ui text-xs text-ink-mute";
                       }
                     }
                     return (
                       <button
                         key={oi}
+                        type="button"
                         onClick={() => handleAnswer(qi, oi)}
                         disabled={answered}
                         className={optionClass}
@@ -152,7 +177,7 @@ export default function Quiz({ text, disabled = false }: QuizProps) {
                   })}
                 </div>
                 {answered && q.explanation && (
-                  <p className="mt-2 text-sm italic text-zinc-500 dark:text-zinc-400">
+                  <p className="font-body text-xs italic leading-relaxed text-ink-fade">
                     {q.explanation}
                   </p>
                 )}
@@ -161,6 +186,6 @@ export default function Quiz({ text, disabled = false }: QuizProps) {
           })}
         </div>
       )}
-    </div>
+    </section>
   );
 }

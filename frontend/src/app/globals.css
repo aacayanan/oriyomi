@@ -1,26 +1,218 @@
 @import "tailwindcss";
 
+/* Paper-Fold Sequence — tokens from the approved comp (comp-fold-desk). */
+@theme {
+  --color-washi: #f6eee2;
+  --color-washi-deep: #efe4d4;
+  --color-fold: #f8f4ea;
+  --color-vermilion: #c34838;
+  --color-vermilion-soft: #c3574b;
+  --color-vermilion-ink: #9e3226;
+  --color-sumi: #1a1513;
+  --color-sumi-soft: #2a2420;
+  --color-ink-fade: #6e645c;
+  --color-ink-mute: #80756e;
+  --color-gold: #c9a227;
+  --color-gold-lit: #e8c55a;
+  --color-hairline: #d6ccbc;
+  --color-hairline-deep: #c9beb0;
+
+  --font-display: var(--font-unna), "Times New Roman", serif;
+  --font-body: var(--font-body-serif), "Times New Roman", serif;
+  --font-ui: var(--font-ui-sans), system-ui, sans-serif;
+  --font-data: var(--font-data-sans), system-ui, sans-serif;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --sheet-pad: clamp(1.25rem, 2.4vw, 2.75rem);
+  --rail-w: clamp(16rem, 24vw, 21rem);
+  --zone-gap: clamp(0.75rem, 1.2vw, 1.25rem);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-washi);
+  background-image: url("/plates/washi-ground.png");
+  background-size: 280px 158px;
+  background-repeat: repeat;
+  background-blend-mode: lighten;
+  color: var(--color-sumi);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Browser surfaces belong to the world. */
+::selection {
+  background: color-mix(in srgb, var(--color-vermilion) 28%, white);
+  color: var(--color-sumi);
+}
+
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-vermilion);
+  outline-offset: 3px;
+}
+
+textarea,
+input,
+select,
+button {
+  font: inherit;
+  color: inherit;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-hairline-deep) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--color-hairline-deep);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-ink-mute);
+  background-clip: content-box;
+}
+
+.label-ui {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Gold-dot primary action — the comp's PLAY chrome. */
+.gold-dot-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  background: var(--color-vermilion);
+  color: #f8f1e6;
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.gold-dot-btn:hover:not(:disabled) {
+  background: var(--color-vermilion-ink);
+}
+
+.gold-dot-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.gold-dot-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Hairline outline secondary control. */
+.outline-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 1px solid var(--color-hairline-deep);
+  background: transparent;
+  color: var(--color-sumi);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+
+.outline-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-fold) 80%, var(--color-hairline));
+  border-color: var(--color-ink-mute);
+}
+
+.outline-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Active sentence: gold margin dot + vermilion crease underline. */
+.crease-active {
+  color: #1d1210;
+  font-weight: 600;
+}
+
+.crease-active > u {
+  text-decoration: none;
+  border-bottom: 3px solid var(--color-vermilion-soft);
+  padding-bottom: 0.08em;
+}
+
+/* Fold-card crease lines (CSS stand-in for the plate crop). */
+.crease-lines {
+  background-image:
+    linear-gradient(
+      115deg,
+      transparent 42%,
+      color-mix(in srgb, var(--color-fold) 75%, white) 42.4%,
+      transparent 43.2%
+    ),
+    linear-gradient(
+      65deg,
+      transparent 58%,
+      color-mix(in srgb, var(--color-fold) 55%, white) 58.3%,
+      transparent 59.1%
+    ),
+    linear-gradient(
+      180deg,
+      transparent 70%,
+      color-mix(in srgb, var(--color-fold) 40%, white) 70.3%,
+      transparent 71%
+    ),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-vermilion) 92%, black),
+      color-mix(in srgb, var(--color-vermilion) 70%, #6a2218)
+    );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
