@@ -514,14 +514,18 @@ export default function TextReader() {
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      {/* ——— Top bar: logo only ——— */}
-      <header className="z-30 flex shrink-0 items-center border-b border-hairline bg-fold px-4 py-3 sm:px-6 lg:px-8">
+      {/* ——— Top bar: logo + tagline ——— */}
+      <header className="z-30 flex shrink-0 items-center gap-4 border-b border-hairline bg-fold px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex shrink-0 items-center gap-2.5">
           <CraneMark className="h-7 w-7 text-vermilion-ink" />
           <span className="font-display text-xl leading-none text-sumi sm:text-2xl">
-            Text Reader
+            oriyomi
           </span>
         </div>
+        <p className="label-ui ml-auto text-right text-[9px] leading-relaxed text-ink-fade sm:text-[10px]">
+          <span className="text-sumi-soft">ori</span>--to fold,{" "}
+          <span className="text-sumi-soft">yomi</span>--to read
+        </p>
       </header>
 
       {/* ——— Three-zone desk (viewport-locked; only the sheet scrolls long content) ——— */}
