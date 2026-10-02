@@ -17,6 +17,7 @@ import type { Section } from "./ChapterSelector";
 import {
   CraneMark,
   PauseIcon,
+  PlayIcon,
   StopIcon,
   AlertIcon,
 } from "./Icons";
@@ -604,14 +605,7 @@ export default function TextReader() {
   const playIcon = audioPlayer.isPlaying ? (
     <PauseIcon className="h-4 w-4" />
   ) : (
-    <span
-      className="h-2.5 w-2.5 rounded-full"
-      style={{
-        background:
-          "radial-gradient(circle at 35% 30%, #E8C55A, #C9A227 60%, #A8841C)",
-      }}
-      aria-hidden="true"
-    />
+    <PlayIcon className="h-4 w-4" />
   );
 
   return (
