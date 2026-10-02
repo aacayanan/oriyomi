@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import useAudioPlayer from "./useAudioPlayer";
 import useDocumentTTS from "@/hooks/useDocumentTTS";
 import TextBox from "./TextBox";
 import FileUpload from "./FileUpload";
 import TextViewer from "./TextViewer";
+import type { ViewerFold } from "./TextViewer";
 import Controls from "./Controls";
 import Waveform from "./Waveform";
 import Quiz from "./Quiz";
@@ -78,6 +79,9 @@ export default function TextReader() {
   const playingFoldRef = useRef<number | null>(null);
   const sectionsRef = useRef<Section[]>([]);
   const analyzeTimerRef = useRef<number | null>(null);
+  /** Sentence seek requested inside a fold that isn't playing yet. */
+  const pendingSeekRef = useRef<{ fold: number; local: number } | null>(null);
+  const foldOffsetsRef = useRef<number[]>([]);
   const updateSentences = useCallback((next: Sentence[]) => {
     sentencesRef.current = next;
     setSentences(next);
@@ -90,6 +94,56 @@ export default function TextReader() {
   useEffect(() => {
     sectionsRef.current = sections;
   }, [sections]);
+
+  /**
+   * Whole-document viewer model: every fold at once, in reading order.
+   * Folds whose Celery audio has landed contribute sentence-split text
+   * (with global indices for cross-fold highlight/seek); the rest show
+   * plain section text until they finish folding.
+   */
+  const { viewerFolds, foldOffsets, sentenceByGlobalIndex } = useMemo(() => {
+    const folds: ViewerFold[] = [];
+    const offsets: number[] = [];
+    const byIndex = new Map<
+      number,
+      { fold: number; local: number; start_ms: number }
+    >();
+    let cursor = 0;
+
+    const pushFold = (index: number, title: string | null, plainText: string) => {
+      offsets.push(cursor);
+      const raw = docTTS.getFold(index)?.sentences;
+      if (raw && raw.length > 0) {
+        const mapped = raw.map((s, j) => {
+          const g = cursor + j;
+          byIndex.set(g, { fold: index, local: j, start_ms: s.start_ms });
+          return { index: g, text: s.text, start_ms: s.start_ms, end_ms: s.end_ms };
+        });
+        cursor += mapped.length;
+        folds.push({ index, title, sentences: mapped, text: plainText, status: "ready" });
+      } else {
+        const status =
+          docTTS.foldStatus[index] === "error" ? "error" : "pending";
+        folds.push({ index, title, sentences: null, text: plainText, status });
+      }
+    };
+
+    if (hasStructure && sections.length > 0) {
+      sections.forEach((s, i) => pushFold(i, s.title || null, s.text || ""));
+    } else if (text.trim()) {
+      pushFold(0, null, text);
+    }
+
+    return {
+      viewerFolds: folds,
+      foldOffsets: offsets,
+      sentenceByGlobalIndex: byIndex,
+    };
+  }, [hasStructure, sections, text, docTTS]);
+
+  useEffect(() => {
+    foldOffsetsRef.current = foldOffsets;
+  }, [foldOffsets]);
 
   useEffect(() => {
     return () => {
@@ -224,6 +278,7 @@ export default function TextReader() {
   const resetReadingState = useCallback(() => {
     docTTS.cancel();
     audioPlayer.stop();
+    pendingSeekRef.current = null;
     updateSentences([]);
     setActiveSentenceIndex(null);
     setAudioBase64(null);
@@ -270,7 +325,6 @@ export default function TextReader() {
         end_ms: s.end_ms,
       }));
       updateSentences(foldSentences);
-      setActiveSentenceIndex(null);
       setHasCompletedRead(false);
       setAudioBase64(fold.audio_base64);
       setPlayingFoldIndex(index);
@@ -278,7 +332,21 @@ export default function TextReader() {
       setWaitingFold(null);
       setAutoPlayFold(null);
       setIsLoading(false);
-      audioPlayer.setOffset(0);
+
+      // Honor a sentence click that landed before this fold's audio was ready
+      const seek = pendingSeekRef.current;
+      pendingSeekRef.current = null;
+      if (seek && seek.fold === index && foldSentences.length > 0) {
+        const local = Math.min(
+          Math.max(seek.local, 0),
+          foldSentences.length - 1,
+        );
+        audioPlayer.setOffset(foldSentences[local].start_ms / 1000);
+        setActiveSentenceIndex(local);
+      } else {
+        audioPlayer.setOffset(0);
+        setActiveSentenceIndex(null);
+      }
       audioPlayer.play(fold.audio_base64, handleTimeUpdate);
       return true;
     },
@@ -347,21 +415,6 @@ export default function TextReader() {
       }
     },
     [audioPlayer],
-  );
-
-  const handleSentenceClick = useCallback(
-    (index: number) => {
-      if (sentences.length === 0 || !audioBase64) return;
-
-      const sentence = sentences[index];
-      if (!sentence) return;
-
-      audioPlayer.stop();
-      audioPlayer.setOffset(sentence.start_ms / 1000);
-      setActiveSentenceIndex(index);
-      audioPlayer.play(audioBase64, handleTimeUpdate);
-    },
-    [sentences, audioBase64, audioPlayer, handleTimeUpdate],
   );
 
   const handleSeek = useCallback(
@@ -434,10 +487,28 @@ export default function TextReader() {
       ? activeSection.title
       : null;
 
+  // Playback tracks fold-local sentence indices; the sheet addresses
+  // sentences globally across all folds — map the active one up.
+  const viewerActiveIndex =
+    activeSentenceIndex !== null && playingFoldIndex !== null
+      ? (foldOffsets[playingFoldIndex] ?? 0) + activeSentenceIndex
+      : null;
+
   const foldCardChars = activeSection
     ? activeSection.char_end - activeSection.char_start
     : text.trim().length;
   const foldCardDuration = estimateDuration(foldCardChars);
+
+  // Right-sidebar description: backend fold summary first, preview fallback
+  const foldDescription = activeSection?.summary
+    ? activeSection.summary
+    : activeSection?.text_preview
+      ? `${activeSection.text_preview.slice(0, 140)}${
+          activeSection.text_preview.length > 140 ? "…" : ""
+        }`
+      : text.trim()
+        ? "Press play to fold this document into speech. The sheet advances as sentences finish."
+        : "Load a document to begin. Each section is a fold; the crane stands when the last one closes.";
 
   const prevFold =
     hasStructure && foldIndex > 0
@@ -469,6 +540,37 @@ export default function TextReader() {
       await ensureDocumentTTS();
     },
     [sections, docTTS, startPlayingFold, ensureDocumentTTS],
+  );
+
+  /**
+   * Click a sentence anywhere in the sheet. Same fold + audio loaded →
+   * seek straight to it. Otherwise jump to that fold, carrying the seek
+   * so playback starts on the clicked line once audio lands.
+   */
+  const handleSentenceClick = useCallback(
+    (globalIndex: number) => {
+      const entry = sentenceByGlobalIndex.get(globalIndex);
+      if (!entry) return;
+
+      if (entry.fold === playingFoldIndex && audioBase64) {
+        audioPlayer.stop();
+        audioPlayer.setOffset(entry.start_ms / 1000);
+        setActiveSentenceIndex(entry.local);
+        audioPlayer.play(audioBase64, handleTimeUpdate);
+        return;
+      }
+
+      pendingSeekRef.current = { fold: entry.fold, local: entry.local };
+      void jumpToFold(entry.fold);
+    },
+    [
+      sentenceByGlobalIndex,
+      playingFoldIndex,
+      audioBase64,
+      audioPlayer,
+      handleTimeUpdate,
+      jumpToFold,
+    ],
   );
 
   const handleSelectFold = useCallback(
@@ -523,8 +625,8 @@ export default function TextReader() {
           </span>
         </div>
         <p className="label-ui ml-auto text-right text-[9px] leading-relaxed text-ink-fade sm:text-[10px]">
-          <span className="text-sumi-soft">ori</span>--to fold,{" "}
-          <span className="text-sumi-soft">yomi</span>--to read
+          <span className="text-sumi-soft">ori</span>—to fold,{" "}
+          <span className="text-sumi-soft">yomi</span>—to read
         </p>
       </header>
 
@@ -711,13 +813,13 @@ export default function TextReader() {
         <section className="flex min-h-[24rem] min-h-0 flex-col lg:min-h-0">
           <div className="min-h-0 flex-1">
             <TextViewer
-              sentences={sentences}
-              activeSentenceIndex={activeSentenceIndex}
-              text={text}
+              folds={viewerFolds}
+              activeSentenceIndex={viewerActiveIndex}
               onSentenceClick={handleSentenceClick}
               currentSectionTitle={currentSectionTitle}
               completedFolds={completedFolds}
               totalFolds={foldTotal}
+              activeFoldIndex={foldIndex}
               jumpToSentenceIndex={jumpToSentenceIndex}
             />
           </div>
@@ -756,13 +858,7 @@ export default function TextReader() {
               </div>
             </div>
             <p className="mt-3 font-body text-sm leading-relaxed text-ink-fade">
-              {activeSection?.text_preview?.slice(0, 140) ??
-                (text.trim()
-                  ? "Press play to fold this document into speech. The sheet advances as sentences finish."
-                  : "Load a document to begin. Each section is a fold; the crane stands when the last one closes.")}
-              {activeSection?.text_preview &&
-                activeSection.text_preview.length > 140 &&
-                "…"}
+              {foldDescription}
             </p>
 
             {/* Previous / next fold */}

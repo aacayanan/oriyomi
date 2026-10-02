@@ -10,7 +10,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY main.py tts.py celery_app.py tts_chunks.py tts_worker.py text_structure.py ./
+COPY main.py tts.py celery_app.py tts_chunks.py tts_worker.py text_structure.py summaries.py ./
 
 EXPOSE 8000
 

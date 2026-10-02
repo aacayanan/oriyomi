@@ -12,6 +12,8 @@ export interface Section {
   char_end: number;
   text: string;
   text_preview: string;
+  /** Extractive 1-2 sentence summary from the backend (sumy). */
+  summary?: string | null;
   children: Section[];
 }
 

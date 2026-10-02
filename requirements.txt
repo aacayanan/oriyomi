@@ -6,3 +6,4 @@ python-dotenv>=1.0
 google-genai>=1.0
 celery>=5.4
 redis>=5.0
+sumy>=0.11

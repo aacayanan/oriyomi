@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { Fragment, useRef, useEffect, useState } from "react";
 import { ZoomInIcon, ZoomOutIcon, CheckIcon } from "./Icons";
 
 interface Sentence {
@@ -10,19 +10,28 @@ interface Sentence {
   end_ms: number;
 }
 
-interface SectionLike {
-  title: string;
-  char_start: number;
+export type FoldViewStatus = "ready" | "pending" | "error";
+
+export interface ViewerFold {
+  index: number;
+  title: string | null;
+  /** Sentence-split text once that fold's TTS lands; null while pending. */
+  sentences: Sentence[] | null;
+  /** Plain text fallback (whole fold) shown until sentences arrive. */
+  text: string;
+  status: FoldViewStatus;
 }
 
 interface TextViewerProps {
-  sentences: Sentence[];
+  folds: ViewerFold[];
+  /** Global sentence index across all folds (offset by fold position). */
   activeSentenceIndex: number | null;
-  text: string;
-  onSentenceClick?: (index: number) => void;
+  onSentenceClick?: (globalIndex: number) => void;
   currentSectionTitle?: string | null;
   completedFolds?: number;
   totalFolds?: number;
+  /** Fold currently playing — divider for it lights up. */
+  activeFoldIndex?: number | null;
   /** When this number changes, scroll that sentence into view (fold jump). */
   jumpToSentenceIndex?: number | null;
 }
@@ -32,13 +41,13 @@ const MAX_SCALE = 1.7;
 const SCALE_STEP = 0.1;
 
 export default function TextViewer({
-  sentences,
+  folds,
   activeSentenceIndex,
-  text,
   onSentenceClick,
   currentSectionTitle,
   completedFolds = 0,
   totalFolds = 0,
+  activeFoldIndex = null,
   jumpToSentenceIndex = null,
 }: TextViewerProps) {
   const activeRef = useRef<HTMLSpanElement>(null);
@@ -47,6 +56,19 @@ export default function TextViewer({
   const [scale, setScale] = useState(1);
   const [jumpIndex, setJumpIndex] = useState<number | null>(null);
   const jumpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Running global index per fold — sentences are addressed across the doc
+  const foldOffsets = folds.map((fold, fi) => {
+    let offset = 0;
+    for (let k = 0; k < fi; k += 1) {
+      offset += folds[k].sentences?.length ?? 0;
+    }
+    return offset;
+  });
+  const totalSentences = folds.reduce(
+    (sum, fold) => sum + (fold.sentences?.length ?? 0),
+    0,
+  );
 
   useEffect(() => {
     if (activeSentenceIndex !== null && activeRef.current && scrollRef.current) {
@@ -64,7 +86,7 @@ export default function TextViewer({
       jumpToSentenceIndex === undefined ||
       !Number.isFinite(jumpToSentenceIndex) ||
       jumpToSentenceIndex < 0 ||
-      jumpToSentenceIndex >= sentences.length
+      jumpToSentenceIndex >= totalSentences
     ) {
       return;
     }
@@ -85,7 +107,7 @@ export default function TextViewer({
     return () => {
       if (jumpTimer.current) clearTimeout(jumpTimer.current);
     };
-  }, [jumpToSentenceIndex, sentences.length]);
+  }, [jumpToSentenceIndex, totalSentences]);
 
   const zoomOut = () =>
     setScale((s) => Math.max(MIN_SCALE, +(s - SCALE_STEP).toFixed(1)));
@@ -141,80 +163,157 @@ export default function TextViewer({
         className="sheet-scroll min-h-0 flex-1 overflow-y-auto px-[var(--sheet-pad)] py-8 sm:px-10 sm:py-10"
         style={{ fontSize: `${(scale * 1.05).toFixed(3)}rem` }}
       >
-        {sentences.length === 0 ? (
-          text ? (
-            <div className="mx-auto flex max-w-[48rem] flex-col gap-5">
-              {text.split(/\n+/).map((paragraph, i) => (
-                <p
-                  key={i}
-                  className="font-body text-sumi"
-                  style={{ lineHeight: 1.45 }}
-                >
-                  {paragraph}
-                </p>
-              ))}
-            </div>
-          ) : (
-            <EmptySheet />
-          )
+        {folds.length === 0 ? (
+          <EmptySheet />
         ) : (
           <div className="mx-auto flex max-w-[48rem] flex-col gap-4">
-            {sentences.map((sentence, i) => {
-              const isActive = i === activeSentenceIndex;
-              const isDone =
-                activeSentenceIndex !== null && i < activeSentenceIndex;
-              const isJumping = i === jumpIndex;
-              return (
-                <p
-                  key={i}
-                  className="flex items-start gap-3 font-body text-sumi"
-                  style={{ lineHeight: 1.45 }}
-                >
-                  <span
-                    aria-hidden="true"
-                    className={`mt-[0.55em] flex h-[0.7em] w-[0.7em] shrink-0 items-center justify-center rounded-full ${
-                      isActive
-                        ? "bg-gold"
-                        : isDone
-                          ? "bg-vermilion/70"
-                          : "bg-transparent"
-                    }`}
-                  >
-                    {isDone && !isActive && (
-                      <CheckIcon className="h-[0.55em] w-[0.55em] text-fold" />
-                    )}
-                  </span>
-                  <span
-                    ref={(el) => {
-                      sentenceRefs.current[i] = el;
-                      if (isActive) activeRef.current = el;
-                    }}
-                    onClick={() => onSentenceClick?.(i)}
-                    className={`cursor-pointer transition-colors duration-200 ${
-                      isActive
-                        ? "crease-active"
-                        : isDone
-                          ? "text-sumi-soft"
-                          : "hover:text-vermilion-ink"
-                    } ${isJumping ? "outline outline-[1px] outline-offset-[3px] outline-vermilion/60" : ""}`}
-                    role={onSentenceClick ? "button" : undefined}
-                    tabIndex={onSentenceClick ? 0 : undefined}
-                    onKeyDown={(e) => {
-                      if (!onSentenceClick) return;
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        onSentenceClick(i);
-                      }
-                    }}
-                  >
-                    {isActive ? <u>{sentence.text}</u> : sentence.text}
-                  </span>
-                </p>
-              );
-            })}
+            {folds.map((fold, fi) => (
+              <Fragment key={`${fold.index}-${fi}`}>
+                {fi > 0 && (
+                  <FoldDivider
+                    number={String(fold.index + 1).padStart(2, "0")}
+                    title={fold.title}
+                    status={fold.status}
+                    active={fold.index === activeFoldIndex}
+                  />
+                )}
+                {fold.sentences ? (
+                  fold.sentences.map((sentence, i) => {
+                    const g = foldOffsets[fi] + i;
+                    const isActive = g === activeSentenceIndex;
+                    const isDone =
+                      activeSentenceIndex !== null && g < activeSentenceIndex;
+                    const isJumping = g === jumpIndex;
+                    return (
+                      <p
+                        key={g}
+                        className="flex items-start gap-3 font-body text-sumi"
+                        style={{ lineHeight: 1.45 }}
+                      >
+                        <span
+                          aria-hidden="true"
+                          className={`mt-[0.55em] flex h-[0.7em] w-[0.7em] shrink-0 items-center justify-center rounded-full ${
+                            isActive
+                              ? "bg-gold"
+                              : isDone
+                                ? "bg-vermilion/70"
+                                : "bg-transparent"
+                          }`}
+                        >
+                          {isDone && !isActive && (
+                            <CheckIcon className="h-[0.55em] w-[0.55em] text-fold" />
+                          )}
+                        </span>
+                        <span
+                          ref={(el) => {
+                            sentenceRefs.current[g] = el;
+                            if (isActive) activeRef.current = el;
+                          }}
+                          onClick={() => onSentenceClick?.(g)}
+                          className={`cursor-pointer transition-colors duration-200 ${
+                            isActive
+                              ? "crease-active"
+                              : isDone
+                                ? "text-sumi-soft"
+                                : "hover:text-vermilion-ink"
+                          } ${isJumping ? "outline outline-[1px] outline-offset-[3px] outline-vermilion/60" : ""}`}
+                          role={onSentenceClick ? "button" : undefined}
+                          tabIndex={onSentenceClick ? 0 : undefined}
+                          onKeyDown={(e) => {
+                            if (!onSentenceClick) return;
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              onSentenceClick(g);
+                            }
+                          }}
+                        >
+                          {isActive ? <u>{sentence.text}</u> : sentence.text}
+                        </span>
+                      </p>
+                    );
+                  })
+                ) : (
+                  <div className="flex flex-col gap-4 pt-2">
+                    {fold.text
+                      .split(/\n+/)
+                      .filter((paragraph) => paragraph.trim().length > 0)
+                      .map((paragraph, i) => (
+                        <p
+                          key={i}
+                          className="font-body text-sumi"
+                          style={{ lineHeight: 1.45 }}
+                        >
+                          {paragraph}
+                        </p>
+                      ))}
+                  </div>
+                )}
+              </Fragment>
+            ))}
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Paper-perforation break between folds: dashed crease line with a diamond
+ * at the fold, fold number + title on the left, generation state on the right.
+ */
+function FoldDivider({
+  number,
+  title,
+  status,
+  active,
+}: {
+  number: string;
+  title: string | null;
+  status: FoldViewStatus;
+  active: boolean;
+}) {
+  const dashColor = active
+    ? "color-mix(in srgb, var(--color-gold) 55%, var(--color-hairline-deep))"
+    : "var(--color-hairline-deep)";
+  const dashStyle = {
+    backgroundImage: `repeating-linear-gradient(to right, ${dashColor} 0 7px, transparent 7px 14px)`,
+  };
+
+  return (
+    <div
+      className="flex items-center gap-3 py-7"
+      role="separator"
+      aria-label={`Fold ${number}${title ? `: ${title}` : ""}`}
+    >
+      <span
+        className={`label-ui shrink-0 text-[10px] ${active ? "text-vermilion" : "text-ink-fade"}`}
+      >
+        Fold {number}
+      </span>
+      {title && (
+        <span className="max-w-[40%] truncate font-display text-sm text-sumi-soft">
+          {title}
+        </span>
+      )}
+      <span aria-hidden="true" className="relative flex min-w-0 flex-1 items-center">
+        <span className="h-px flex-1" style={dashStyle} />
+        <span
+          className={`mx-2 h-1.5 w-1.5 shrink-0 rotate-45 border ${
+            active ? "border-gold bg-gold/40" : "border-ink-mute/70"
+          }`}
+        />
+        <span className="h-px flex-1" style={dashStyle} />
+      </span>
+      {status === "pending" && (
+        <span className="label-ui shrink-0 text-[9px] text-ink-mute">
+          folding…
+        </span>
+      )}
+      {status === "error" && (
+        <span className="label-ui shrink-0 text-[9px] text-vermilion">
+          failed
+        </span>
+      )}
     </div>
   );
 }

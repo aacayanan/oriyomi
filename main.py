@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field
 
 from tts import get_preferred_voices, generate_audio
 from text_structure import analyze_text_structure
+from summaries import summarize_fold
 
 load_dotenv()
 
@@ -198,6 +199,10 @@ class AnalyzeSection(BaseModel):
     char_end: int
     text: str
     text_preview: str
+    summary: str | None = Field(
+        default=None,
+        description="Extractive 1-2 sentence summary of this fold's text.",
+    )
     children: list["AnalyzeSection"] = []
 
 
@@ -270,6 +275,7 @@ async def analyze_structure(request: AnalyzeRequest):
             char_end=s.char_end,
             text=s.text,
             text_preview=s.text_preview,
+            summary=summarize_fold(s.text),
             children=[convert_section(c) for c in s.children],
         )
 
