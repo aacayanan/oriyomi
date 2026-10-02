@@ -13,21 +13,22 @@ interface ControlsProps {
   speed: number;
   onSpeedChange: (speed: number) => void;
   voices: Voice[];
-  disabled?: boolean;
+  /** Locks the voice select only — speed stays live during playback */
+  voiceDisabled?: boolean;
 }
 
-/** VOICE + TEMPO rail rows — outline chrome from the approved comp. */
+/** VOICE + SPEED rail rows — outline chrome from the approved comp. */
 export default function Controls({
   voice,
   onVoiceChange,
   speed,
   onSpeedChange,
   voices,
-  disabled = false,
+  voiceDisabled = false,
 }: ControlsProps) {
   return (
     <div className="flex flex-col">
-      <label className="group flex items-center gap-3 border-t border-hairline py-3">
+      <label className="flex items-center gap-3 border-t border-hairline py-3">
         <span className="label-ui w-[4.5rem] shrink-0 text-[11px] text-sumi-soft">
           Voice
         </span>
@@ -36,7 +37,7 @@ export default function Controls({
             className="w-full appearance-none border border-transparent bg-transparent py-0.5 pr-6 font-ui text-sm font-semibold text-sumi hover:border-hairline focus-visible:border-vermilion"
             value={voice}
             onChange={(e) => onVoiceChange(e.target.value)}
-            disabled={disabled || voices.length === 0}
+            disabled={voiceDisabled || voices.length === 0}
           >
             {voices.length === 0 ? (
               <option value={voice}>Emma</option>
@@ -56,7 +57,7 @@ export default function Controls({
 
       <label className="flex items-center gap-3 border-t border-hairline py-3">
         <span className="label-ui w-[4.5rem] shrink-0 text-[11px] text-sumi-soft">
-          Tempo
+          Speed
         </span>
         <span className="flex min-w-0 flex-1 items-center gap-3">
           <input
@@ -66,9 +67,8 @@ export default function Controls({
             step={0.1}
             value={speed}
             onChange={(e) => onSpeedChange(parseFloat(e.target.value))}
-            disabled={disabled}
             className="h-1 w-full cursor-pointer appearance-none rounded-full bg-hairline-deep accent-vermilion"
-            aria-label="Playback tempo"
+            aria-label="Playback speed"
           />
           <span className="w-12 shrink-0 text-right font-data text-sm tabular-nums text-sumi">
             {speed.toFixed(1)}x

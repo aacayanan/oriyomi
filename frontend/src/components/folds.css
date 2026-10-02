@@ -1,0 +1,167 @@
+/*
+ * FoldList — the fold-cards scroller lives here, not on the side rail.
+ * Parent should be a min-h-0 flex column; this box takes leftover height
+ * and scrolls internally.
+ */
+
+.fold-list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.fold-list__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Cap so a long document never eats the whole rail */
+  max-height: min(38vh, 18.5rem);
+}
+
+/* Active row: gold left bar accent */
+.fold-row--active {
+  border-left: 3px solid var(--color-gold, #c9a227);
+}
+
+.fold-row--active .crease-fold-active,
+.fold-row--active [class^="crease-fold-"] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #c9a227 55%, transparent);
+}
+
+/* Shared vermilion base for all crease thumbnails */
+[class^="crease-fold-"] {
+  background-color: #b8432f;
+}
+
+/* Fold 1 — single diagonal crease (top-left → bottom-right) */
+.crease-fold-1 {
+  background-image: linear-gradient(
+    135deg,
+    transparent 46%,
+    color-mix(in srgb, #f8f4ea 60%, white) 46.5%,
+    transparent 47.5%
+  );
+}
+
+/* Fold 2 — two crossing diagonals */
+.crease-fold-2 {
+  background-image:
+    linear-gradient(
+      135deg,
+      transparent 40%,
+      color-mix(in srgb, #f8f4ea 50%, white) 40.5%,
+      transparent 41.5%
+    ),
+    linear-gradient(
+      45deg,
+      transparent 40%,
+      color-mix(in srgb, #f8f4ea 50%, white) 40.5%,
+      transparent 41.5%
+    );
+}
+
+/* Fold 3 — horizontal + vertical cross */
+.crease-fold-3 {
+  background-image:
+    linear-gradient(
+      0deg,
+      transparent 47%,
+      color-mix(in srgb, #f8f4ea 45%, white) 47.4%,
+      transparent 48%
+    ),
+    linear-gradient(
+      90deg,
+      transparent 47%,
+      color-mix(in srgb, #f8f4ea 45%, white) 47.4%,
+      transparent 48%
+    );
+}
+
+/* Fold 4 — three radiating lines from center */
+.crease-fold-4 {
+  background-image:
+    linear-gradient(
+      0deg,
+      transparent 47%,
+      color-mix(in srgb, #f8f4ea 45%, white) 47.4%,
+      transparent 48%
+    ),
+    linear-gradient(
+      60deg,
+      transparent 44%,
+      color-mix(in srgb, #f8f4ea 40%, white) 44.4%,
+      transparent 45.2%
+    ),
+    linear-gradient(
+      120deg,
+      transparent 44%,
+      color-mix(in srgb, #f8f4ea 40%, white) 44.4%,
+      transparent 45.2%
+    );
+}
+
+/* Fold 5 — four-way asterisk */
+.crease-fold-5 {
+  background-image:
+    linear-gradient(
+      0deg,
+      transparent 47%,
+      color-mix(in srgb, #f8f4ea 42%, white) 47.4%,
+      transparent 48%
+    ),
+    linear-gradient(
+      90deg,
+      transparent 47%,
+      color-mix(in srgb, #f8f4ea 42%, white) 47.4%,
+      transparent 48%
+    ),
+    linear-gradient(
+      45deg,
+      transparent 44%,
+      color-mix(in srgb, #f8f4ea 38%, white) 44.4%,
+      transparent 45.2%
+    ),
+    linear-gradient(
+      135deg,
+      transparent 44%,
+      color-mix(in srgb, #f8f4ea 38%, white) 44.4%,
+      transparent 45.2%
+    );
+}
+
+/* Fold 6 — dense fan: five lines (shared by 6+) */
+.crease-fold-6,
+.crease-fold-more {
+  background-image:
+    linear-gradient(
+      0deg,
+      transparent 47%,
+      color-mix(in srgb, #f8f4ea 40%, white) 47.3%,
+      transparent 47.8%
+    ),
+    linear-gradient(
+      36deg,
+      transparent 44%,
+      color-mix(in srgb, #f8f4ea 35%, white) 44.3%,
+      transparent 45%
+    ),
+    linear-gradient(
+      72deg,
+      transparent 44%,
+      color-mix(in srgb, #f8f4ea 35%, white) 44.3%,
+      transparent 45%
+    ),
+    linear-gradient(
+      108deg,
+      transparent 44%,
+      color-mix(in srgb, #f8f4ea 35%, white) 44.3%,
+      transparent 45%
+    ),
+    linear-gradient(
+      144deg,
+      transparent 44%,
+      color-mix(in srgb, #f8f4ea 35%, white) 44.3%,
+      transparent 45%
+    );
+}

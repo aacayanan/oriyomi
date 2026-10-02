@@ -42,7 +42,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${unna.variable} ${merriweatherSans.variable} ${libertiusSerifDisplay.variable} ${libertiusSans.variable} h-full antialiased`}
     >
-      <body className="min-h-full">{children}</body>
+      <body className="h-full overflow-hidden">{children}</body>
     </html>
   );
 }

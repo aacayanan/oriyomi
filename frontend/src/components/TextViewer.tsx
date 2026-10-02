@@ -23,6 +23,8 @@ interface TextViewerProps {
   currentSectionTitle?: string | null;
   completedFolds?: number;
   totalFolds?: number;
+  /** When this number changes, scroll that sentence into view (fold jump). */
+  jumpToSentenceIndex?: number | null;
 }
 
 const MIN_SCALE = 0.75;
@@ -37,10 +39,14 @@ export default function TextViewer({
   currentSectionTitle,
   completedFolds = 0,
   totalFolds = 0,
+  jumpToSentenceIndex = null,
 }: TextViewerProps) {
   const activeRef = useRef<HTMLSpanElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const sentenceRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const [scale, setScale] = useState(1);
+  const [jumpIndex, setJumpIndex] = useState<number | null>(null);
+  const jumpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (activeSentenceIndex !== null && activeRef.current && scrollRef.current) {
@@ -50,6 +56,36 @@ export default function TextViewer({
       });
     }
   }, [activeSentenceIndex]);
+
+  // Jump-scroll: when jumpToSentenceIndex changes, scroll that sentence into view
+  useEffect(() => {
+    if (
+      jumpToSentenceIndex === null ||
+      jumpToSentenceIndex === undefined ||
+      !Number.isFinite(jumpToSentenceIndex) ||
+      jumpToSentenceIndex < 0 ||
+      jumpToSentenceIndex >= sentences.length
+    ) {
+      return;
+    }
+    const el = sentenceRefs.current[jumpToSentenceIndex];
+    const container = scrollRef.current;
+    if (el && container) {
+      container.scrollTo({
+        top:
+          el.offsetTop -
+          container.clientHeight / 2 +
+          el.clientHeight / 2,
+        behavior: "smooth",
+      });
+    }
+    setJumpIndex(jumpToSentenceIndex);
+    if (jumpTimer.current) clearTimeout(jumpTimer.current);
+    jumpTimer.current = setTimeout(() => setJumpIndex(null), 1200);
+    return () => {
+      if (jumpTimer.current) clearTimeout(jumpTimer.current);
+    };
+  }, [jumpToSentenceIndex, sentences.length]);
 
   const zoomOut = () =>
     setScale((s) => Math.max(MIN_SCALE, +(s - SCALE_STEP).toFixed(1)));
@@ -99,11 +135,11 @@ export default function TextViewer({
         </div>
       </div>
 
-      {/* document body */}
+      {/* document body — zoom scales this font-size; children use em */}
       <div
         ref={scrollRef}
-        className="min-h-0 flex-1 overflow-y-auto px-[var(--sheet-pad)] py-8 sm:px-10 sm:py-10"
-        style={{ fontSize: `${scale}rem` }}
+        className="sheet-scroll min-h-0 flex-1 overflow-y-auto px-[var(--sheet-pad)] py-8 sm:px-10 sm:py-10"
+        style={{ fontSize: `${(scale * 1.05).toFixed(3)}rem` }}
       >
         {sentences.length === 0 ? (
           text ? (
@@ -112,7 +148,7 @@ export default function TextViewer({
                 <p
                   key={i}
                   className="font-body text-sumi"
-                  style={{ lineHeight: 1.45, fontSize: "1.05rem" }}
+                  style={{ lineHeight: 1.45 }}
                 >
                   {paragraph}
                 </p>
@@ -127,11 +163,12 @@ export default function TextViewer({
               const isActive = i === activeSentenceIndex;
               const isDone =
                 activeSentenceIndex !== null && i < activeSentenceIndex;
+              const isJumping = i === jumpIndex;
               return (
                 <p
                   key={i}
                   className="flex items-start gap-3 font-body text-sumi"
-                  style={{ lineHeight: 1.45, fontSize: "1.05rem" }}
+                  style={{ lineHeight: 1.45 }}
                 >
                   <span
                     aria-hidden="true"
@@ -148,7 +185,10 @@ export default function TextViewer({
                     )}
                   </span>
                   <span
-                    ref={isActive ? activeRef : null}
+                    ref={(el) => {
+                      sentenceRefs.current[i] = el;
+                      if (isActive) activeRef.current = el;
+                    }}
                     onClick={() => onSentenceClick?.(i)}
                     className={`cursor-pointer transition-colors duration-200 ${
                       isActive
@@ -156,7 +196,7 @@ export default function TextViewer({
                         : isDone
                           ? "text-sumi-soft"
                           : "hover:text-vermilion-ink"
-                    }`}
+                    } ${isJumping ? "outline outline-[1px] outline-offset-[3px] outline-vermilion/60" : ""}`}
                     role={onSentenceClick ? "button" : undefined}
                     tabIndex={onSentenceClick ? 0 : undefined}
                     onKeyDown={(e) => {
