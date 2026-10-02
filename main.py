@@ -119,6 +119,49 @@ class TTSAsyncResponse(BaseModel):
     mode: str = "async"
 
 
+class DocumentFoldIn(BaseModel):
+    """One fold submitted for parallel TTS generation."""
+    index: int = Field(..., ge=0)
+    title: str = ""
+    text: str = Field(..., min_length=1, max_length=50000)
+    char_start: int = 0
+    char_end: int = 0
+
+
+class DocumentTTSRequest(BaseModel):
+    """Fan out TTS as one Celery task per fold so reading can start early."""
+    text: str = Field(..., min_length=1, max_length=50000)
+    voice: str = Field(default="en-US-EmmaMultilingualNeural")
+    speed: float = Field(default=1.0, ge=0.5, le=2.0)
+    folds: list[DocumentFoldIn] = Field(default_factory=list)
+
+
+class DocumentFoldStatus(BaseModel):
+    index: int
+    title: str
+    status: str  # queued | processing | complete | error
+    duration_ms: int | None = None
+    sentence_count: int | None = None
+    error: str | None = None
+
+
+class DocumentTTSResponse(BaseModel):
+    document_id: str
+    fold_count: int
+    folds: list[DocumentFoldStatus]
+
+
+class DocumentFoldResult(BaseModel):
+    """Audio + timings for a single completed fold."""
+    fold_index: int
+    title: str
+    audio_base64: str
+    sentences: list[SentenceTimestamp]
+    voice: str
+    speed: float
+    duration_ms: int
+
+
 class TTSJobStatus(BaseModel):
     """Status of an async TTS job."""
     task_id: str
@@ -430,6 +473,183 @@ async def tts_cancel(task_id: str):
     pubsub.close()
 
     return {"status": "cancelled", "task_id": task_id}
+
+
+# ---------------------------------------------------------------------------
+# Document TTS — one Celery task per fold, play as soon as a fold is ready
+# ---------------------------------------------------------------------------
+
+def _redis():
+    import redis as redis_lib
+    redis_url = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/1")
+    return redis_lib.from_url(redis_url)
+
+
+def _doc_status_key(document_id: str) -> str:
+    return f"tts_doc_status:{document_id}"
+
+
+def _load_doc_status(r, document_id: str) -> dict:
+    raw = r.get(_doc_status_key(document_id))
+    return json.loads(raw) if raw else {}
+
+
+def _save_doc_status(r, document_id: str, status: dict, ex: int = 3600) -> None:
+    r.set(_doc_status_key(document_id), json.dumps(status), ex=ex)
+
+
+@app.post("/api/tts/document", response_model=DocumentTTSResponse)
+async def tts_document(request: DocumentTTSRequest):
+    """
+    Queue one Celery TTS task per fold so the first fold can play while
+    later folds are still generating.
+
+    If `folds` is empty, structure is derived from `text` (including
+    paragraph packing for pasted bullet lists).
+    """
+    from tts_worker import generate_fold_task
+
+    folds_in = list(request.folds)
+    if not folds_in:
+        result = analyze_text_structure(request.text)
+        for i, s in enumerate(result.sections):
+            body = (s.text or "").strip()
+            if not body:
+                continue
+            folds_in.append(DocumentFoldIn(
+                index=i,
+                title=s.title,
+                text=body,
+                char_start=s.char_start,
+                char_end=s.char_end,
+            ))
+
+    if not folds_in:
+        raise HTTPException(status_code=400, detail="No readable folds to generate.")
+
+    document_id = str(uuid.uuid4())
+    statuses: dict[str, DocumentFoldStatus] = {}
+
+    for fold in folds_in:
+        key = str(fold.index)
+        statuses[key] = DocumentFoldStatus(
+            index=fold.index,
+            title=fold.title or f"Fold {fold.index + 1:02d}",
+            status="queued",
+        )
+        generate_fold_task.delay(
+            fold_index=fold.index,
+            text=fold.text,
+            voice=request.voice,
+            speed=request.speed,
+            document_id=document_id,
+            title=fold.title or f"Fold {fold.index + 1:02d}",
+        )
+
+    status_list = [statuses[k] for k in sorted(statuses, key=lambda x: int(x))]
+    _save_doc_status(_redis(), document_id, {
+        "voice": request.voice,
+        "speed": request.speed,
+        "folds": {str(s.index): s.model_dump() for s in status_list},
+    })
+
+    logger.info(
+        "Document TTS %s: %d folds queued (voice=%s speed=%.1f)",
+        document_id, len(status_list), request.voice, request.speed,
+    )
+    return DocumentTTSResponse(
+        document_id=document_id,
+        fold_count=len(status_list),
+        folds=status_list,
+    )
+
+
+@app.get("/api/tts/document/{document_id}/status", response_model=DocumentTTSResponse)
+async def tts_document_status(document_id: str):
+    r = _redis()
+    data = _load_doc_status(r, document_id)
+    if not data:
+        # Fold audio may still exist even if the status record expired
+        probe = r.get(f"tts_fold:{document_id}:0")
+        if not probe:
+            raise HTTPException(status_code=404, detail="Document not found or expired.")
+        data = {"folds": {}}
+
+    folds_map = data.get("folds") or {}
+    folds = [DocumentFoldStatus(**f) for f in folds_map.values()]
+
+    # If worker finished but status write lagged, infer complete from audio keys
+    known = {f.index for f in folds}
+    max_probe = max(known) if known else 7
+    for i in range(0, max(max_probe, 7) + 1):
+        if r.get(f"tts_fold:{document_id}:{i}"):
+            if i in known:
+                for f in folds:
+                    if f.index == i and f.status != "complete":
+                        f.status = "complete"
+            else:
+                folds.append(DocumentFoldStatus(index=i, title=f"Fold {i+1:02d}", status="complete"))
+
+    folds.sort(key=lambda f: f.index)
+    return DocumentTTSResponse(
+        document_id=document_id,
+        fold_count=len(folds),
+        folds=folds,
+    )
+
+
+@app.get("/api/tts/document/{document_id}/fold/{fold_index}", response_model=DocumentFoldResult)
+async def tts_document_fold(document_id: str, fold_index: int):
+    r = _redis()
+    raw = r.get(f"tts_fold:{document_id}:{fold_index}")
+    if not raw:
+        raise HTTPException(status_code=404, detail="Fold audio not ready or expired.")
+    result = json.loads(raw)
+    return DocumentFoldResult(
+        fold_index=result.get("fold_index", fold_index),
+        title=result.get("title", ""),
+        audio_base64=result["audio_base64"],
+        sentences=[SentenceTimestamp(**s) for s in result["sentences"]],
+        voice=result["voice"],
+        speed=result["speed"],
+        duration_ms=result.get("duration_ms", 0),
+    )
+
+
+@app.get("/api/tts/document/{document_id}/stream")
+async def tts_document_stream(document_id: str):
+    """SSE: fold processing / completion events for progressive playback."""
+    import redis as redis_lib
+
+    redis_url = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/1")
+    r = redis_lib.from_url(redis_url)
+    pubsub = r.pubsub()
+    pubsub.subscribe(f"tts_doc:{document_id}")
+
+    async def event_generator():
+        try:
+            for message in pubsub.listen():
+                if message["type"] != "message":
+                    continue
+                data = (
+                    message["data"].decode("utf-8")
+                    if isinstance(message["data"], bytes)
+                    else message["data"]
+                )
+                yield f"data: {data}\n\n"
+        finally:
+            pubsub.unsubscribe()
+            pubsub.close()
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @app.post("/api/quiz", response_model=QuizResponse)

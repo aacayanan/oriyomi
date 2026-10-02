@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import useAudioPlayer from "./useAudioPlayer";
-import useTTSJob from "@/hooks/useTTSJob";
+import useDocumentTTS from "@/hooks/useDocumentTTS";
 import TextBox from "./TextBox";
 import FileUpload from "./FileUpload";
 import TextViewer from "./TextViewer";
@@ -11,8 +11,8 @@ import Waveform from "./Waveform";
 import Quiz from "./Quiz";
 import FoldList from "./FoldList";
 import FoldCreaseArt from "./FoldCreaseArt";
+import BrainrotStage from "./BrainrotStage";
 import type { Section } from "./ChapterSelector";
-import CraneProgress from "./CraneProgress";
 import {
   CraneMark,
   PauseIcon,
@@ -60,6 +60,11 @@ export default function TextReader() {
   const [jumpToSentenceIndex, setJumpToSentenceIndex] = useState<number | null>(
     null,
   );
+  /** Fold whose audio is currently loaded / playing */
+  const [playingFoldIndex, setPlayingFoldIndex] = useState<number | null>(null);
+  /** Fold waiting on Celery TTS — auto-plays when ready */
+  const [waitingFold, setWaitingFold] = useState<number | null>(null);
+  const [autoPlayFold, setAutoPlayFold] = useState<number | null>(null);
 
   const [sections, setSections] = useState<Section[]>([]);
   const [selectedSection, setSelectedSection] = useState<Section | null>(null);
@@ -67,15 +72,24 @@ export default function TextReader() {
   const [docType, setDocType] = useState("flat");
 
   const audioPlayer = useAudioPlayer();
-  const ttsJob = useTTSJob();
+  const docTTS = useDocumentTTS();
 
   const sentencesRef = useRef<Sentence[]>([]);
+  const playingFoldRef = useRef<number | null>(null);
+  const sectionsRef = useRef<Section[]>([]);
   const analyzeTimerRef = useRef<number | null>(null);
   const updateSentences = useCallback((next: Sentence[]) => {
     sentencesRef.current = next;
     setSentences(next);
     if (next.length === 0) setHasCompletedRead(false);
   }, []);
+
+  useEffect(() => {
+    playingFoldRef.current = playingFoldIndex;
+  }, [playingFoldIndex]);
+  useEffect(() => {
+    sectionsRef.current = sections;
+  }, [sections]);
 
   useEffect(() => {
     return () => {
@@ -111,31 +125,63 @@ export default function TextReader() {
     };
   }, []);
 
-  const analyzeText = useCallback(async (textToAnalyze: string) => {
-    if (!textToAnalyze.trim() || textToAnalyze.trim().length < 50) {
-      setSections([]);
-      setSelectedSection(null);
-      setHasStructure(false);
-      return;
-    }
-
-    try {
-      const res = await fetch(apiUrl("/api/analyze"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: textToAnalyze }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setSections(data.sections || []);
-        setHasStructure(data.has_structure || false);
-        setDocType(data.doc_type || "flat");
+  const analyzeText = useCallback(
+    async (textToAnalyze: string, opts?: { autoplayFold?: number }) => {
+      if (!textToAnalyze.trim() || textToAnalyze.trim().length < 50) {
+        setSections([]);
         setSelectedSection(null);
+        setHasStructure(false);
+        return;
       }
-    } catch (err) {
-      console.error("Analysis failed:", err);
-    }
-  }, []);
+
+      try {
+        const res = await fetch(apiUrl("/api/analyze"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: textToAnalyze }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          const nextSections: Section[] = data.sections || [];
+          setSections(nextSections);
+          sectionsRef.current = nextSections;
+          // Paragraph-packed and structured docs both count as folds
+          setHasStructure(
+            Boolean(data.has_structure) || nextSections.length > 0,
+          );
+          setDocType(data.doc_type || "flat");
+          setSelectedSection(null);
+
+          // Queue one Celery task per fold immediately
+          if (nextSections.length > 0) {
+            // Begin reading as soon as fold 0 audio is ready
+            setAutoPlayFold(opts?.autoplayFold ?? 0);
+            try {
+              await docTTS.start({
+                text: textToAnalyze,
+                voice,
+                speed,
+                sections: nextSections,
+              });
+            } catch (err) {
+              console.error("Fold TTS queue failed:", err);
+              setError(
+                err instanceof Error
+                  ? err.message
+                  : "Could not reach the TTS service. Is the backend running?",
+              );
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Analysis failed:", err);
+        setError(
+          "Could not reach the TTS service. Start the backend (docker compose up).",
+        );
+      }
+    },
+    [docTTS, voice, speed],
+  );
 
   /** Auto-detect folds shortly after the learner stops typing/pasting. */
   const scheduleAnalyze = useCallback(
@@ -150,22 +196,33 @@ export default function TextReader() {
     [analyzeText],
   );
 
-  const handleTimeUpdate = useCallback((currentTime: number) => {
-    const current = sentencesRef.current;
-    if (current.length === 0) return;
+  const handleTimeUpdate = useCallback(
+    (currentTime: number) => {
+      const current = sentencesRef.current;
+      if (current.length === 0) return;
 
-    for (let i = current.length - 1; i >= 0; i--) {
-      if (currentTime >= current[i].start_ms / 1000) {
-        setActiveSentenceIndex(i);
-        if (i >= current.length - 1) setHasCompletedRead(true);
-        return;
+      for (let i = current.length - 1; i >= 0; i--) {
+        if (currentTime >= current[i].start_ms / 1000) {
+          setActiveSentenceIndex(i);
+          if (i >= current.length - 1) {
+            setHasCompletedRead(true);
+            // Advance to the next fold when its audio is already queued
+            const next = (playingFoldRef.current ?? -1) + 1;
+            const total = sectionsRef.current.length;
+            if (total > next) {
+              setWaitingFold(next);
+            }
+          }
+          return;
+        }
       }
-    }
-    setActiveSentenceIndex(0);
-  }, []);
+      setActiveSentenceIndex(0);
+    },
+    [],
+  );
 
   const resetReadingState = useCallback(() => {
-    ttsJob.cancelJob();
+    docTTS.cancel();
     audioPlayer.stop();
     updateSentences([]);
     setActiveSentenceIndex(null);
@@ -173,7 +230,10 @@ export default function TextReader() {
     setIsLoading(false);
     setHasCompletedRead(false);
     setJumpToSentenceIndex(null);
-  }, [audioPlayer, ttsJob, updateSentences]);
+    setPlayingFoldIndex(null);
+    setWaitingFold(null);
+    setAutoPlayFold(null);
+  }, [audioPlayer, docTTS, updateSentences]);
 
   const handleClear = useCallback(() => {
     resetReadingState();
@@ -194,66 +254,90 @@ export default function TextReader() {
     [resetReadingState, analyzeText],
   );
 
-  /**
-   * Generate speech for the full document and play from `startFraction`
-   * (0..1 of the document) so fold jumps can start mid-read on one track.
-   */
-  const regenerateTTS = useCallback(
-    async (newSpeed: number, startFraction?: number) => {
-      const textToGenerate = text;
-      if (!textToGenerate.trim()) return;
-
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const normalizedText = textToGenerate
-          .replace(/[\t\n\r]+/g, " ")
-          .replace(/ {2,}/g, " ")
-          .trim();
-
-        const result = await ttsJob.submitJob(normalizedText, voice, newSpeed);
-        if (!result) return;
-
-        const newSentences: Sentence[] = result.sentences || [];
-        const newDuration =
-          newSentences.length > 0
-            ? newSentences[newSentences.length - 1].end_ms / 1000
-            : 0;
-
-        let startOffset = 0;
-        if (startFraction !== undefined && newDuration > 0) {
-          startOffset = Math.min(1, Math.max(0, startFraction)) * newDuration;
-        }
-
-        setHasCompletedRead(false);
-        updateSentences(newSentences);
-        setActiveSentenceIndex(null);
-        setAudioBase64(result.audio_base64);
-
-        audioPlayer.setOffset(startOffset);
-        audioPlayer.play(result.audio_base64, handleTimeUpdate);
-      } catch (err) {
-        console.error("TTS request failed:", err);
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Failed to generate speech. Please try again.",
-        );
-      } finally {
-        setIsLoading(false);
+  /** Load a fold's Celery-generated audio and start playback. */
+  const startPlayingFold = useCallback(
+    (index: number) => {
+      const fold = docTTS.getFold(index);
+      if (!fold) {
+        setWaitingFold(index);
+        return false;
       }
+      audioPlayer.stop();
+      const foldSentences: Sentence[] = (fold.sentences || []).map((s, i) => ({
+        index: i,
+        text: s.text,
+        start_ms: s.start_ms,
+        end_ms: s.end_ms,
+      }));
+      updateSentences(foldSentences);
+      setActiveSentenceIndex(null);
+      setHasCompletedRead(false);
+      setAudioBase64(fold.audio_base64);
+      setPlayingFoldIndex(index);
+      playingFoldRef.current = index;
+      setWaitingFold(null);
+      setAutoPlayFold(null);
+      setIsLoading(false);
+      audioPlayer.setOffset(0);
+      audioPlayer.play(fold.audio_base64, handleTimeUpdate);
+      return true;
     },
-    [text, voice, audioPlayer, handleTimeUpdate, updateSentences, ttsJob],
+    [audioPlayer, docTTS, handleTimeUpdate, updateSentences],
   );
+
+  /** When a fold finishes generating, play it if the user is waiting on it. */
+  useEffect(() => {
+    const target = waitingFold ?? autoPlayFold;
+    if (target === null) return;
+    if (docTTS.hasFold(target)) {
+      startPlayingFold(target);
+    }
+  }, [docTTS.readyTick, waitingFold, autoPlayFold, docTTS, startPlayingFold]);
+
+  const ensureDocumentTTS = useCallback(async () => {
+    if (docTTS.documentId) return;
+    const secs = sectionsRef.current;
+    if (!secs.length || !text.trim()) return;
+    setIsLoading(true);
+    try {
+      await docTTS.start({ text, voice, speed, sections: secs });
+    } catch (err) {
+      console.error("TTS queue failed:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not reach the TTS service. Start the backend (docker compose up).",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [docTTS, text, voice, speed]);
 
   const handlePlay = useCallback(async () => {
     if (audioPlayer.isPaused && audioBase64) {
       audioPlayer.play(audioBase64, handleTimeUpdate);
       return;
     }
-    await regenerateTTS(speed);
-  }, [audioPlayer.isPaused, audioBase64, handleTimeUpdate, regenerateTTS, speed]);
+
+    const idx = playingFoldIndex ?? 0;
+    if (docTTS.hasFold(idx)) {
+      startPlayingFold(idx);
+      return;
+    }
+
+    // Fold audio not ready — queue generation and auto-play when it lands
+    setWaitingFold(idx);
+    setAutoPlayFold(idx);
+    await ensureDocumentTTS();
+  }, [
+    audioPlayer.isPaused,
+    audioBase64,
+    handleTimeUpdate,
+    docTTS,
+    playingFoldIndex,
+    startPlayingFold,
+    ensureDocumentTTS,
+  ]);
 
   const handleSpeedChange = useCallback(
     (newSpeed: number) => {
@@ -309,8 +393,6 @@ export default function TextReader() {
 
   const duration =
     sentences.length > 0 ? sentences[sentences.length - 1].end_ms / 1000 : 0;
-  const progress =
-    duration > 0 ? Math.min(1, audioPlayer.currentTime / duration) : 0;
 
   const foldTotal =
     hasStructure && sections.length > 0
@@ -321,7 +403,9 @@ export default function TextReader() {
 
   let foldIndex = 0;
   if (foldTotal > 0) {
-    if (selectedSection) {
+    if (playingFoldIndex !== null && sections[playingFoldIndex]) {
+      foldIndex = playingFoldIndex;
+    } else if (selectedSection) {
       const idx = sections.findIndex(
         (s) =>
           s.char_start === selectedSection.char_start &&
@@ -341,11 +425,6 @@ export default function TextReader() {
       if (foldIndex < 0) foldIndex = sections.length - 1;
     }
   }
-
-  const foldProgress =
-    foldTotal > 0
-      ? (foldIndex + (activeSentenceIndex !== null ? progress : 0)) / foldTotal
-      : progress;
 
   const activeSection = sections[foldIndex] ?? null;
   const completedFolds = Math.max(0, foldIndex);
@@ -371,8 +450,8 @@ export default function TextReader() {
 
   /**
    * Jump to a fold and start playback from its opening line.
-   * Uses existing audio when present; otherwise generates the full
-   * document and starts at this fold's content fraction.
+   * Plays immediately if that fold's Celery audio is ready; otherwise
+   * waits and auto-plays when generation completes.
    */
   const jumpToFold = useCallback(
     async (index: number) => {
@@ -380,53 +459,16 @@ export default function TextReader() {
       const section = sections[index] ?? null;
       if (section) setSelectedSection(section);
 
-      const totalChars =
-        sections.length > 0
-          ? sections[sections.length - 1].char_end
-          : text.length;
-      const fraction =
-        section && totalChars > 0
-          ? Math.min(1, Math.max(0, section.char_start / totalChars))
-          : 0;
-
-      const current = sentencesRef.current;
-      if (audioBase64 && current.length > 0) {
-        const target = Math.min(
-          current.length - 1,
-          Math.max(0, Math.floor(fraction * current.length)),
-        );
-        const startTime = current[target].start_ms / 1000;
-        audioPlayer.stop();
-        audioPlayer.setOffset(startTime);
-        setActiveSentenceIndex(target);
-        setJumpToSentenceIndex(target);
-        audioPlayer.play(audioBase64, handleTimeUpdate);
+      if (docTTS.hasFold(index)) {
+        startPlayingFold(index);
         return;
       }
 
-      if (!text.trim()) return;
-
-      setJumpToSentenceIndex(null);
-      await regenerateTTS(speed, fraction);
-      const sents = sentencesRef.current;
-      if (sents.length > 0) {
-        const target = Math.min(
-          sents.length - 1,
-          Math.max(0, Math.floor(fraction * sents.length)),
-        );
-        setJumpToSentenceIndex(target);
-        setActiveSentenceIndex(target);
-      }
+      setAutoPlayFold(null);
+      setWaitingFold(index);
+      await ensureDocumentTTS();
     },
-    [
-      sections,
-      text,
-      audioBase64,
-      audioPlayer,
-      handleTimeUpdate,
-      regenerateTTS,
-      speed,
-    ],
+    [sections, docTTS, startPlayingFold, ensureDocumentTTS],
   );
 
   const handleSelectFold = useCallback(
@@ -442,12 +484,21 @@ export default function TextReader() {
     if (!text.trim()) setSourceOpen(true);
   }, [text]);
 
-  // Play → generate; after audio exists, paused control reads Resume
+  // Play → pause when running; resume when audio exists; else queue folds
+  const foldStatusList = Object.values(docTTS.foldStatus);
+  const foldsComplete = foldStatusList.filter((s) => s === "complete").length;
+  const foldsQueued = foldStatusList.length;
+  const isPreparingFolds =
+    waitingFold !== null ||
+    (foldsQueued > 0 && foldsComplete < foldsQueued && !audioBase64);
+
   const playLabel = audioPlayer.isPlaying
     ? "Pause"
-    : audioBase64 && !isLoading
-      ? "Resume"
-      : "Play";
+    : isPreparingFolds
+      ? "Preparing…"
+      : audioBase64 && !isLoading
+        ? "Resume"
+        : "Play";
   const playIcon = audioPlayer.isPlaying ? (
     <PauseIcon className="h-4 w-4" />
   ) : (
@@ -578,13 +629,13 @@ export default function TextReader() {
                 <button
                   type="button"
                   onClick={audioPlayer.isPlaying ? handlePause : handlePlay}
-                  disabled={isLoading}
+                  disabled={isLoading || docTTS.isSubmitting}
                   className="gold-dot-btn h-12 w-full text-xs"
                   aria-label={playLabel}
                 >
                   {playIcon}
                   <span>{playLabel}</span>
-                  {isLoading && (
+                  {(isLoading || docTTS.isSubmitting || isPreparingFolds) && (
                     <span
                       className="ml-1 h-3 w-3 animate-spin rounded-full border border-fold border-t-transparent"
                       aria-hidden="true"
@@ -595,26 +646,26 @@ export default function TextReader() {
             )}
           </div>
 
-          {isLoading && ttsJob.progress && (
+          {foldsQueued > 0 && foldsComplete < foldsQueued && (
             <div className="mt-4 border border-hairline bg-fold p-3">
               <div className="flex items-center justify-between font-ui text-[11px] text-sumi-soft">
                 <span>Folding speech…</span>
                 <span className="font-data tabular-nums">
-                  {ttsJob.progress.chunk} / {ttsJob.progress.total}
+                  {foldsComplete} / {foldsQueued} folds
                 </span>
               </div>
               <div className="mt-2 h-1 overflow-hidden bg-hairline">
                 <div
                   className="h-full bg-vermilion transition-all duration-300"
                   style={{
-                    width: `${(ttsJob.progress.chunk / ttsJob.progress.total) * 100}%`,
+                    width: `${foldsQueued ? (foldsComplete / foldsQueued) * 100 : 0}%`,
                   }}
                 />
               </div>
             </div>
           )}
 
-          {(audioPlayer.isPlaying || audioPlayer.isPaused || isLoading) && (
+          {(audioPlayer.isPlaying || audioPlayer.isPaused || isLoading || isPreparingFolds) && (
             <div className="mt-4 flex gap-2">
               {(audioPlayer.isPlaying || audioPlayer.isPaused) && (
                 <button
@@ -626,7 +677,7 @@ export default function TextReader() {
                   Stop
                 </button>
               )}
-              {isLoading && (
+              {(isLoading || docTTS.isSubmitting) && (
                 <button
                   type="button"
                   onClick={handleStop}
@@ -675,12 +726,10 @@ export default function TextReader() {
           </div>
         </section>
 
-        {/* Right: crane + current/prev/next fold + quiz */}
+        {/* Right: companion videos + current/prev/next fold + quiz */}
         <aside className="flex min-h-0 flex-col gap-4 overflow-y-auto">
-          <CraneProgress
-            progress={progress}
-            foldProgress={foldProgress}
-            className="w-full shrink-0"
+          <BrainrotStage
+            className="aspect-square w-full shrink-0"
           />
 
           <div className="shrink-0 border border-hairline bg-fold px-4 py-4">

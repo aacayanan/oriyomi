@@ -90,6 +90,142 @@ def generate_chunk_task(
         raise self.retry(exc=exc)
 
 
+
+def _update_document_fold_status(
+    document_id: str,
+    fold_index: int,
+    status: str,
+    **extra,
+) -> None:
+    """
+    Persist fold status on the document record the API polls.
+
+    Without this, /api/tts/document/{id}/status stays "queued" forever and
+    the client never fetches finished fold audio (infinite Preparing).
+    """
+    key = f"tts_doc_status:{document_id}"
+    try:
+        raw = redis_client.get(key)
+        if not raw:
+            return
+        data = json.loads(raw)
+        folds = data.get("folds") or {}
+        k = str(fold_index)
+        if k not in folds:
+            return
+        folds[k]["status"] = status
+        for ek, ev in extra.items():
+            if ev is not None:
+                folds[k][ek] = ev
+        data["folds"] = folds
+        redis_client.set(key, json.dumps(data), ex=3600)
+    except Exception as exc:
+        logger.warning(
+            "Failed to update fold status doc=%s fold=%s: %s",
+            document_id, fold_index, exc,
+        )
+
+
+@app.task(bind=True, max_retries=2, default_retry_delay=5)
+def generate_fold_task(
+    self,
+    fold_index: int,
+    text: str,
+    voice: str,
+    speed: float,
+    document_id: str,
+    title: str = "",
+):
+    """
+    Generate TTS audio for one fold/section of a document.
+
+    Each fold is its own Celery task so folds generate in parallel while
+    the reader can already play whichever fold finishes first.
+
+    Result key: tts_fold:{document_id}:{fold_index}
+    Progress channel: tts_doc:{document_id}
+    """
+    try:
+        logger.info(
+            "Fold %s task doc=%s: %d chars",
+            fold_index, document_id, len(text or ""),
+        )
+
+        _update_document_fold_status(document_id, fold_index, "processing")
+        redis_client.publish(f"tts_doc:{document_id}", json.dumps({
+            "status": "processing",
+            "fold_index": fold_index,
+            "title": title,
+        }))
+
+        normalized = re_sub_ws(text or "")
+        if not normalized:
+            raise ValueError("Fold text is empty")
+
+        result = _run_async(generate_audio(text=normalized, voice=voice, speed=speed))
+        audio_b64 = base64.b64encode(result.audio_bytes).decode("utf-8")
+        sentences = [
+            {"text": s.text, "start_ms": s.start_ms, "end_ms": s.end_ms}
+            for i, s in enumerate(result.sentences)
+        ]
+        for i, s in enumerate(sentences):
+            s["index"] = i
+        duration_ms = result.sentences[-1].end_ms if result.sentences else 0
+
+        payload = {
+            "audio_base64": audio_b64,
+            "sentences": sentences,
+            "voice": voice,
+            "speed": speed,
+            "fold_index": fold_index,
+            "title": title,
+            "duration_ms": duration_ms,
+        }
+        redis_client.set(
+            f"tts_fold:{document_id}:{fold_index}",
+            json.dumps(payload),
+            ex=3600,
+        )
+        # Status must flip here or the client polls "Preparing…" forever
+        _update_document_fold_status(
+            document_id,
+            fold_index,
+            "complete",
+            duration_ms=duration_ms,
+            sentence_count=len(sentences),
+        )
+        redis_client.publish(f"tts_doc:{document_id}", json.dumps({
+            "status": "fold_complete",
+            "fold_index": fold_index,
+            "title": title,
+            "duration_ms": duration_ms,
+            "sentence_count": len(sentences),
+        }))
+        logger.info(
+            "Fold %s complete doc=%s: %d sentences, %d bytes",
+            fold_index, document_id, len(sentences), len(result.audio_bytes),
+        )
+        return {"fold_index": fold_index, "duration_ms": duration_ms}
+    except Exception as exc:
+        logger.error("Fold %s failed doc=%s: %s", fold_index, document_id, exc)
+        _update_document_fold_status(
+            document_id, fold_index, "error", error=str(exc),
+        )
+        redis_client.publish(f"tts_doc:{document_id}", json.dumps({
+            "status": "fold_error",
+            "fold_index": fold_index,
+            "error": str(exc),
+        }))
+        raise self.retry(exc=exc)
+
+
+def re_sub_ws(text: str) -> str:
+    """Collapse whitespace the same way the HTTP layer does before TTS."""
+    import re
+    text = re.sub(r"[\t\n\r]+", " ", text)
+    return re.sub(r" {2,}", " ", text).strip()
+
+
 @app.task
 def merge_chunks_callback(results: list, task_id: str, voice: str, speed: float):
     """

@@ -80,6 +80,9 @@ _TIER2_PATTERNS: list[tuple[str, str, int]] = [
         r'^\d+\.\d+\s+\S',
         "section", 2,
     ),
+    # Bare "1. Title" is too often a list item — only accept when the line
+    # looks like an outline heading (not a bullet/list marker) and later
+    # merged with tiny-section filtering.
     (
         r'^\d+\.\s+\S',
         "section", 2,
@@ -108,6 +111,20 @@ _ABBREV_MIN_LEN = 5
 _TOC_MIN_HEADINGS = 5
 _TOC_WINDOW = 2000
 _TOC_MIN_GAP = 200
+# Sections shorter than this (chars of body) are merged into the previous fold
+_MIN_SECTION_BODY = 140
+# Flat documents: group paragraphs into folds of ~this many characters
+_PARAGRAPH_FOLD_CHARS = 900
+
+# Bullet / list markers — never structural headings
+_LIST_ITEM_RE = re.compile(
+    r'^(?:'
+    r'[-*•·◦▪‣–—]\s+'          # bullets, dashes
+    r'|\d{1,3}[.)]\s+'           # 1. / 1)
+    r'|[a-zA-Z][.)]\s+'          # a) / A.
+    r'|\[[ xX]\]\s+'             # checkboxes
+    r')\S'
+)
 
 
 def _extract_number(match_text: str) -> str | None:
@@ -127,10 +144,17 @@ def _extract_number(match_text: str) -> str | None:
     return None
 
 
+def _is_list_item(stripped: str) -> bool:
+    """True for pasted bullets / numbered list lines — never fold headings."""
+    return bool(_LIST_ITEM_RE.match(stripped))
+
+
 def _is_body_text(line: str) -> bool:
     """Return True if the line is likely body text, not a heading."""
     stripped = line.strip()
     if not stripped:
+        return True
+    if _is_list_item(stripped):
         return True
     if len(stripped) > _BODY_LENGTH:
         return True
@@ -262,6 +286,119 @@ def _make_flat_section(text: str) -> Section:
     )
 
 
+def _merge_small_sections(
+    sections: list[Section],
+    min_body: int = _MIN_SECTION_BODY,
+) -> list[Section]:
+    """
+    Collapse tiny sections (pasted bullets, stub headings) into the previous fold.
+
+    Without this, "1. Item" / "• Item" lines that slipped past list filtering
+    each become their own fold.
+    """
+    if len(sections) <= 1:
+        return sections
+
+    merged: list[Section] = []
+    for s in sections:
+        body = (s.text or "").strip()
+        if merged and len(body) < min_body:
+            prev = merged[-1]
+            if body:
+                prev.text = f"{prev.text.rstrip()}\n\n{body}"
+            prev.char_end = max(prev.char_end, s.char_end)
+            prev.text_preview = prev.text[:200]
+            continue
+        # Copy so later merges don't mutate shared headings
+        merged.append(Section(
+            title=s.title,
+            level=s.level,
+            section_type=s.section_type,
+            number=s.number,
+            char_start=s.char_start,
+            char_end=s.char_end,
+            text=s.text,
+            text_preview=s.text_preview,
+            children=list(s.children),
+        ))
+
+    return merged if merged else sections[:1]
+
+
+def _clean_fold_title(raw: str, index: int) -> str:
+    """Human title for a paragraph-grouped fold."""
+    first = ""
+    for line in raw.splitlines():
+        line = line.strip()
+        if line:
+            first = line
+            break
+    if not first:
+        return f"Fold {index + 1:02d}"
+    # Strip only the list marker, never the first word character
+    first = re.sub(r"^[-*•·◦▪‣–—]\s+", "", first)
+    first = re.sub(r"^\d{1,3}[.)]\s+", "", first)
+    first = re.sub(r"^\[[ xX]\]\s+", "", first)
+    first = first.strip() or first
+    if len(first) > 42:
+        first = first[:41].rstrip() + "…"
+    return first
+
+
+def _paragraph_sections(text: str, target_chars: int = _PARAGRAPH_FOLD_CHARS) -> list[Section]:
+    """
+    Group blank-line paragraphs into readable folds.
+
+    Used when no chapter/section headings are found. Consecutive short
+    paragraphs (e.g. pasted bullets separated by blank lines) are packed
+    together instead of each becoming its own fold.
+    """
+    paras: list[tuple[int, int, str]] = []
+    offset = 0
+    for block in re.split(r"(\n[ \t]*\n)", text):
+        if not block:
+            continue
+        if re.match(r"^\n[ \t]*\n$", block):
+            offset += len(block)
+            continue
+        content = block.strip()
+        if content:
+            paras.append((offset, offset + len(block), content))
+        offset += len(block)
+
+    groups: list[list[tuple[int, int, str]]] = []
+    cur: list[tuple[int, int, str]] = []
+    cur_len = 0
+    for p in paras:
+        if cur and cur_len + len(p[2]) > target_chars:
+            groups.append(cur)
+            cur = []
+            cur_len = 0
+        cur.append(p)
+        cur_len += len(p[2])
+    if cur:
+        groups.append(cur)
+
+    sections: list[Section] = []
+    for i, group in enumerate(groups):
+        start = group[0][0]
+        end = group[-1][1]
+        body = text[start:end].strip()
+        if not body:
+            continue
+        sections.append(Section(
+            title=_clean_fold_title(body, i),
+            level=1,
+            section_type="paragraph",
+            number=None,
+            char_start=start,
+            char_end=end,
+            text=body,
+            text_preview=body[:200],
+        ))
+    return sections
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -292,7 +429,7 @@ def analyze_text_structure(text: str) -> DocumentStructure:
     tier1_headings = _filter_toc(tier1_headings)
 
     if len(tier1_headings) >= 2:
-        sections = _build_sections(tier1_headings, text)
+        sections = _merge_small_sections(_build_sections(tier1_headings, text))
         # Check if Tier 2 also found subsections for hierarchical mode
         tier2_headings = _find_headings(text, _TIER2_PATTERNS)
         has_subsections = any(h["level"] >= 2 for h in tier2_headings)
@@ -309,25 +446,37 @@ def analyze_text_structure(text: str) -> DocumentStructure:
     tier2_headings = _filter_toc(tier2_headings)
 
     if len(tier2_headings) >= 2:
-        sections = _build_sections(tier2_headings, text)
-        return DocumentStructure(
-            sections=sections,
-            doc_type="sections",
-            total_chars=total_chars,
-            detection_method="regex_tier2",
-        )
+        sections = _merge_small_sections(_build_sections(tier2_headings, text))
+        if len(sections) >= 2:
+            return DocumentStructure(
+                sections=sections,
+                doc_type="sections",
+                total_chars=total_chars,
+                detection_method="regex_tier2",
+            )
 
     # --- Tier 3: Heuristic patterns ---
     tier3_headings = _find_headings(text, _TIER3_PATTERNS)
     tier3_headings = _filter_toc(tier3_headings)
 
     if len(tier3_headings) >= 2:
-        sections = _build_sections(tier3_headings, text)
+        sections = _merge_small_sections(_build_sections(tier3_headings, text))
+        if len(sections) >= 2:
+            return DocumentStructure(
+                sections=sections,
+                doc_type="sections",
+                total_chars=total_chars,
+                detection_method="heuristic",
+            )
+
+    # --- Paragraph folds: pack short pasted blocks (bullets, fragments) ---
+    para_sections = _paragraph_sections(text)
+    if len(para_sections) >= 2:
         return DocumentStructure(
-            sections=sections,
-            doc_type="sections",
+            sections=para_sections,
+            doc_type="paragraphs",
             total_chars=total_chars,
-            detection_method="heuristic",
+            detection_method="paragraph",
         )
 
     # --- Fallback: flat document ---
