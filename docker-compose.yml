@@ -1,29 +1,4 @@
 services:
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 3
-
-  celery-worker:
-    build: .
-    command: celery -A celery_app worker --loglevel=info --concurrency=4 --pool=prefork
-    environment:
-      - PYTHONDONTWRITEBYTECODE=1
-      - PYTHONUNBUFFERED=1
-      - CELERY_BROKER_URL=redis://redis:6379/1
-      - CELERY_RESULT_BACKEND=redis://redis:6379/2
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-    depends_on:
-      redis:
-        condition: service_healthy
-
   tts-api:
     build: .
     ports:
@@ -31,14 +6,9 @@ services:
     environment:
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
-      - CELERY_BROKER_URL=redis://redis:6379/1
-      - CELERY_RESULT_BACKEND=redis://redis:6379/2
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       # Browser origin when hitting the API directly (proxy makes this optional)
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
-    depends_on:
-      redis:
-        condition: service_healthy
 
   frontend:
     build:
@@ -52,6 +22,3 @@ services:
       - "3000:3000"
     depends_on:
       - tts-api
-
-volumes:
-  redis-data:

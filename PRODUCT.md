@@ -20,7 +20,7 @@ Sentence-sync read-along. The player highlights the exact sentence being spoken 
 
 ## Operating Context
 
-Portfolio piece — the craft of the build matters as much as serving users; the product demonstrates skill. Work runs locally via Docker Compose: FastAPI + Celery + Redis backend (edge-tts; Gemini for quizzes) and a Next.js / React / Tailwind frontend.
+Portfolio piece — the craft of the build matters as much as serving users; the product demonstrates skill. Work runs locally via Docker Compose: FastAPI backend (edge-tts; Gemini for quizzes) and a Next.js / React / Tailwind frontend. Deploys to Vercel as two services (Next.js frontend + FastAPI app) with `/api/*` routed to the backend.
 
 Learner workflow: upload or paste text → structure detection offers chapters/sections → generate speech per section → read along with sentence highlighting and zoom → optional Gemini comprehension quiz.
 
@@ -32,7 +32,7 @@ Confirmed capabilities:
 - Automatic document-structure detection (chapters/sections) with section-level TTS generation
 - 9 curated free Microsoft Edge neural US English voices; speed 0.5×–2.0×
 - Sentence-level timestamps drive read-along highlighting; text zoom controls
-- Long texts are chunked through a Celery chord with SSE progress and job cancel
+- Long texts are chunked in-process (asyncio.gather + ffmpeg merge); the client fans out one parallel request per fold so the first fold plays while the rest generate
 - Optional Gemini-powered multiple-choice comprehension quiz (1–8 questions) with explanations
 
 Durable constraints:

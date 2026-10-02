@@ -93,6 +93,8 @@ Returns the 9 highest-quality US English voices, ordered best first.
 
 Generate speech audio from text.
 
+Always synchronous: long texts split at sentence boundaries and every chunk generates concurrently inside the request, then merges with ffmpeg — no task queue, no polling.
+
 **Request body:**
 ```json
 {
@@ -104,7 +106,7 @@ Generate speech audio from text.
 
 | Field    | Type   | Default                       | Description                               |
 |----------|--------|-------------------------------|-------------------------------------------|
-| `text`   | string | (required)                    | Text to synthesize (1–5000 chars)         |
+| `text`   | string | (required)                    | Text to synthesize (1–50000 chars)        |
 | `voice`  | string | `en-US-EmmaMultilingualNeural` | Voice short name                          |
 | `speed`  | float  | `1.0`                         | Speech rate (0.5 = half, 2.0 = double)   |
 
@@ -128,6 +130,31 @@ Generate speech audio from text.
   "speed": 1.0
 }
 ```
+
+### `POST /api/tts/fold`
+
+Generate one fold (section) of a document. The reader client fires these in parallel — one request per fold — so folds generate concurrently and the first completed fold plays while the rest are still running.
+
+**Request body:**
+```json
+{
+  "text": "Glycolysis is the first step in cellular respiration...",
+  "voice": "en-US-EmmaMultilingualNeural",
+  "speed": 1.0,
+  "fold_index": 0,
+  "title": "Glycolysis"
+}
+```
+
+| Field        | Type   | Default                        | Description                          |
+|--------------|--------|--------------------------------|--------------------------------------|
+| `text`       | string | (required)                     | This fold's text (1–50000 chars)     |
+| `voice`      | string | `en-US-EmmaMultilingualNeural` | Voice short name                     |
+| `speed`      | float  | `1.0`                          | Speech rate                          |
+| `fold_index` | int    | `0`                            | Position of the fold in the document |
+| `title`      | string | `""`                           | Section title (defaults to Fold NN)  |
+
+**Response:** same shape as `/api/tts` plus `fold_index`, `title`, and `duration_ms`.
 
 ### `GET /api/health`
 
@@ -177,7 +204,7 @@ The four **Multilingual** voices are Microsoft's newest HD generation. The rest 
 ## Project structure
 
 ```
-├── main.py           # FastAPI app with /api/voices, /api/tts, /api/health
+├── main.py           # FastAPI app with /api/voices, /api/tts, /api/tts/fold, /api/health
 ├── tts.py            # TTS engine (edge-tts wrapper, sentence splitting, timestamp mapping)
 ├── requirements.txt  # Python dependencies
 ├── Dockerfile        # Container image definition

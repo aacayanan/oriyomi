@@ -7,11 +7,16 @@ timestamps using edge-tts's built-in SentenceBoundary events.
 
 import asyncio
 import logging
+import os
 import re
+import subprocess
+import tempfile
 import time
 from dataclasses import dataclass
 
 import edge_tts
+
+from tts_chunks import split_into_chunks
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +26,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 # Avoids a network round-trip on every TTS request.
-# Each process (uvicorn, celery worker) maintains its own cache.
+# Each process (uvicorn worker) maintains its own cache.
 _voice_cache: set[str] | None = None
 _voice_cache_time: float = 0
 _VOICE_CACHE_TTL: float = 3600  # 1 hour
@@ -301,3 +306,123 @@ def _speed_to_rate(speed: float) -> str:
     pct = int((speed - 1.0) * 100)
     sign = "+" if pct >= 0 else ""
     return f"{sign}{pct}%"
+
+
+# ---------------------------------------------------------------------------
+# Chunked generation (in-process parallelism)
+# ---------------------------------------------------------------------------
+
+async def generate_audio_chunked(
+    text: str,
+    voice: str = "en-US-EmmaMultilingualNeural",
+    speed: float = 1.0,
+    max_chars: int = 2500,
+) -> TTSResult:
+    """
+    Generate speech for arbitrary-length text.
+
+    Short texts go straight to generate_audio. Longer texts split at sentence
+    boundaries (tts_chunks) and every chunk generates concurrently on one
+    event loop, then merges via ffmpeg — the same parallelism a task queue
+    provided, now in-process so it runs inside a single request.
+
+    Args:
+        text: The text to synthesize.
+        voice: The voice short name.
+        speed: Speech rate multiplier.
+        max_chars: Target chunk size; produces ~30-60s of audio per chunk.
+
+    Returns:
+        TTSResult with merged MP3 audio and sentence timestamps whose
+        start/end offsets are cumulative across the whole text.
+    """
+    if not text or not text.strip():
+        raise ValueError("Text must not be empty.")
+
+    normalized = _normalize_text(text)
+    chunks = split_into_chunks(normalized, max_chars=max_chars)
+
+    if len(chunks) == 1:
+        return await generate_audio(normalized, voice=voice, speed=speed)
+
+    logger.info(
+        "Chunked TTS: %d chunks for %d chars (voice=%s speed=%.1f)",
+        len(chunks), len(normalized), voice, speed,
+    )
+    results = await asyncio.gather(
+        *(generate_audio(c["text"], voice=voice, speed=speed) for c in chunks)
+    )
+    return _merge_chunk_results(list(results))
+
+
+def _merge_chunk_results(results: list[TTSResult]) -> TTSResult:
+    """
+    Concatenate chunk audio with ffmpeg (lossless, no re-encoding) and
+    stitch sentence timestamps with cumulative offsets.
+    """
+    if len(results) == 1:
+        return results[0]
+
+    audio_files: list[str] = []
+    all_sentences: list[SentenceTimestamp] = []
+    cumulative_ms = 0
+    concat_list_name = ""
+    output_name = ""
+
+    try:
+        for result in results:
+            tmp = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
+            tmp.write(result.audio_bytes)
+            tmp.close()
+            audio_files.append(tmp.name)
+
+            for s in result.sentences:
+                all_sentences.append(
+                    SentenceTimestamp(
+                        text=s.text,
+                        start_ms=s.start_ms + cumulative_ms,
+                        end_ms=s.end_ms + cumulative_ms,
+                    )
+                )
+            if result.sentences:
+                cumulative_ms += result.sentences[-1].end_ms
+
+        concat_list = tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False)
+        for f in audio_files:
+            concat_list.write(f"file '{f}'\n")
+        concat_list.close()
+        concat_list_name = concat_list.name
+
+        output_file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
+        output_file.close()
+        output_name = output_file.name
+
+        subprocess.run(
+            [
+                "ffmpeg", "-y",
+                "-f", "concat",
+                "-safe", "0",
+                "-i", concat_list_name,
+                "-c", "copy",
+                output_name,
+            ],
+            check=True,
+            capture_output=True,
+        )
+
+        with open(output_name, "rb") as f:
+            merged_audio = f.read()
+
+        return TTSResult(audio_bytes=merged_audio, sentences=all_sentences)
+    finally:
+        for f in audio_files:
+            try:
+                os.unlink(f)
+            except OSError:
+                pass
+        for name in (concat_list_name, output_name):
+            if name:
+                try:
+                    os.unlink(name)
+                except OSError:
+                    pass

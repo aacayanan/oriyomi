@@ -64,7 +64,7 @@ export default function TextReader() {
   );
   /** Fold whose audio is currently loaded / playing */
   const [playingFoldIndex, setPlayingFoldIndex] = useState<number | null>(null);
-  /** Fold waiting on Celery TTS — auto-plays when ready */
+  /** Fold waiting on parallel TTS — auto-plays when ready */
   const [waitingFold, setWaitingFold] = useState<number | null>(null);
   const [autoPlayFold, setAutoPlayFold] = useState<number | null>(null);
 
@@ -98,7 +98,7 @@ export default function TextReader() {
 
   /**
    * Whole-document viewer model: every fold at once, in reading order.
-   * Folds whose Celery audio has landed contribute sentence-split text
+   * Folds whose audio has landed contribute sentence-split text
    * (with global indices for cross-fold highlight/seek); the rest show
    * plain section text until they finish folding.
    */
@@ -207,7 +207,7 @@ export default function TextReader() {
           setDocType(data.doc_type || "flat");
           setSelectedSection(null);
 
-          // Queue one Celery task per fold immediately
+          // Fan out one TTS request per fold immediately
           if (nextSections.length > 0) {
             // Begin reading as soon as fold 0 audio is ready
             setAutoPlayFold(opts?.autoplayFold ?? 0);
@@ -310,7 +310,7 @@ export default function TextReader() {
     [resetReadingState, analyzeText],
   );
 
-  /** Load a fold's Celery-generated audio and start playback. */
+  /** Load a fold's generated audio and start playback. */
   const startPlayingFold = useCallback(
     (index: number) => {
       const fold = docTTS.getFold(index);
@@ -522,7 +522,7 @@ export default function TextReader() {
 
   /**
    * Jump to a fold and start playback from its opening line.
-   * Plays immediately if that fold's Celery audio is ready; otherwise
+   * Plays immediately if that fold's audio is ready; otherwise
    * waits and auto-plays when generation completes.
    */
   const jumpToFold = useCallback(
