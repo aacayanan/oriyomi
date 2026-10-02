@@ -1,0 +1,6 @@
+{
+  "prompt": "A flat desktop web app interface screenshot for Text Reader, a student listen-and-read tool, rendered as a film cutting bench. True black background with coarse film grain. A horizontal perforated film rail crosses the upper third at a fixed height, sprocket holes punched along both edges; sentence segments hang as rectangular frame cells on the rail; the active cell is a bright punched white window containing black body text of the current sentence; two earlier cells carry small white grease-pencil crosses in their corners; a folded orange tape flag (FF6A00) doubles over the perforation at the stop point. Below the rail, four finished passage trims hang on small pins in an open bin, each a narrow white strip of text. Left edge: condensed white capital labels stacked vertically reading VOICE, TEMPO 1.0x, PASSAGE 2 OF 4. Document text appears only inside punched white windows. Orange is the only color on screen. Flat vector UI, no photorealistic equipment, no people, 16:9.",
+  "model": "seedream_5_0_flash",
+  "job_id": "215f98dd-3d96-425f-bad5-b10be11584a4",
+  "approved": false
+}

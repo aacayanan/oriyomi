@@ -1,0 +1,337 @@
+{
+  "tool": "build-phase",
+  "version": 2,
+  "startedAt": "2026-10-02T10:35:51.087Z",
+  "comp": ".impeccable/mocks/comp-fold-desk.webp",
+  "direction": null,
+  "breakpoint": "2816x1584",
+  "artifact": null,
+  "phase": "motion",
+  "phases": {
+    "comps": {
+      "status": "skipped",
+      "openedAt": null,
+      "closedAt": null,
+      "attempts": 0,
+      "notes": [
+        {
+          "at": "2026-10-02T10:35:51.087Z",
+          "text": "started with an approved comp; the comp round happened before this state (surface round or manual)"
+        }
+      ],
+      "gate": null,
+      "forced": null
+    },
+    "spec": {
+      "status": "closed",
+      "openedAt": "2026-10-02T10:35:51.087Z",
+      "closedAt": "2026-10-02T10:37:36.071Z",
+      "attempts": 2,
+      "notes": [],
+      "gate": {
+        "ok": true,
+        "reasons": [],
+        "summary": "25 regions, 3 plates, 15 text regions measured",
+        "at": "2026-10-02T10:37:36.071Z"
+      },
+      "forced": null
+    },
+    "plates": {
+      "status": "closed",
+      "openedAt": "2026-10-02T10:37:36.071Z",
+      "closedAt": "2026-10-02T10:57:08.940Z",
+      "attempts": 2,
+      "notes": [],
+      "gate": {
+        "ok": true,
+        "reasons": [],
+        "summary": "3/3 plates",
+        "at": "2026-10-02T10:57:08.940Z"
+      },
+      "forced": null
+    },
+    "hero": {
+      "status": "closed",
+      "openedAt": "2026-10-02T10:57:08.940Z",
+      "closedAt": "2026-10-02T12:55:29.627Z",
+      "attempts": 2,
+      "notes": [
+        {
+          "at": "2026-10-02T12:55:08.171Z",
+          "text": "User accepted hero build as visually faithful to approved comp on 2026-10-02; mechanical gate 70.6% vs 72% rejected for detector noise (fold-card-text spec box overlaps crease plate; contradictory missing/contradicted verdicts on regions whose ink boxes match within ~10px)."
+        }
+      ],
+      "gate": {
+        "ok": false,
+        "reasons": [
+          "hero overall 70.6% < 72% (structure 58%, color 86%, detail 68%)",
+          "region crane-mark is missing (detail 8%, structure 76%): the comp shows material the build does not",
+          "region fold-card-text is missing (detail 4%, structure 49%): the comp shows material the build does not",
+          "region progress-dots (control) is contradicted (structure 38%, detail added 30%): this control does not read as the comp's: rebuild its chrome from the crop (border, fill, radius, chevron or arrow, label size) rather than from a component default",
+          "region current-fold-title (text) is contradicted (structure 41%, detail added 25%): the composition of this text region differs from the comp; re-derive it from the spec box",
+          "control play-button drifts to 57% (structure 55%, color 78%): its chrome differs from the comp's; open .impeccable/review/diff/hero/regions/play-button.png and match the border, fill, radius, chevron or arrow, and label size",
+          "control voice-row drifts to 60% (structure 60%, color 67%): its chrome differs from the comp's; open .impeccable/review/diff/hero/regions/voice-row.png and match the border, fill, radius, chevron or arrow, and label size",
+          "plate fold-card-crease is clipped at the left: the comp's artwork keeps a margin there (ink box 538x317 at 25,0 in the region) and the build's runs to the edge (563x317 at 0,0); size the box to the artwork's aspect and use object-fit: contain, or place the <img> at the artwork's own size, never cover on a narrower box"
+        ],
+        "summary": "hero 71% (drift)",
+        "score": 0.7061,
+        "verdict": "drift",
+        "report": ".impeccable/review/diff/hero/report.json",
+        "sideBySide": "/Users/aacay/Code/text-reader/.impeccable/review/diff/hero/side-by-side.png",
+        "worst": [
+          "progress-dots contradicted 35%",
+          "fold-card-crease drift 42%",
+          "fold-card-text missing 45%"
+        ],
+        "worstIds": [
+          "progress-dots",
+          "fold-card-crease",
+          "fold-card-text"
+        ],
+        "worstCrops": [
+          {
+            "id": "progress-dots",
+            "verdict": "contradicted",
+            "score": {
+              "overall": 0.3502,
+              "structure": 0.3798,
+              "color": 0.3583,
+              "colorIntersection": 0.241,
+              "paletteMatch": 0.4215,
+              "detail": 0.2695,
+              "detailRaw": 0.4205,
+              "detailAdded": 0.3021,
+              "bands": 0
+            },
+            "file": ".impeccable/review/diff/hero/regions/progress-dots.png"
+          },
+          {
+            "id": "fold-card-crease",
+            "verdict": "drift",
+            "score": {
+              "overall": 0.4234,
+              "structure": 0.4831,
+              "color": 0.6663,
+              "colorIntersection": 0.4178,
+              "paletteMatch": 0.8001,
+              "detail": 0.3388,
+              "detailRaw": 0.4325,
+              "detailAdded": 0.1875,
+              "bands": 0
+            },
+            "file": ".impeccable/review/diff/hero/regions/fold-card-crease.png"
+          },
+          {
+            "id": "fold-card-text",
+            "verdict": "missing",
+            "score": {
+              "overall": 0.4476,
+              "structure": 0.4894,
+              "color": 0.7062,
+              "colorIntersection": 0.4835,
+              "paletteMatch": 0.8261,
+              "detail": 0.0422,
+              "detailRaw": 0.1152,
+              "detailAdded": 0.1458,
+              "bands": 0.2
+            },
+            "file": ".impeccable/review/diff/hero/regions/fold-card-text.png"
+          }
+        ],
+        "advisories": [
+          "(advisory, unchanged for 3+ attempts) text para-6: cap height 51.9px in the build, 28.8px in the comp (+80%); set font-size so the cap height renders at 28.8px",
+          "(advisory, unchanged for 3+ attempts) text para-6: 1 line in the build, 2 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape",
+          "(advisory, unchanged for 3+ attempts) text para-3: its first line starts 34px higher than in the comp (0px vs 34px into the region box); the spacing above it is too small (also para-4, para-5, para-6)"
+        ],
+        "regionVerdicts": {
+          "crane-mark": "missing",
+          "wordmark": "drift",
+          "top-nav": "drift",
+          "play-button": "drift",
+          "fold-progress-label": "drift",
+          "progress-dots": "contradicted",
+          "fold-card-crease": "drift",
+          "fold-card-text": "missing",
+          "voice-row": "drift",
+          "tempo-row": "drift",
+          "timestamp-strip": "drift",
+          "para-1": "drift",
+          "para-2": "drift",
+          "active-sentence": "drift",
+          "para-3": "drift",
+          "para-4": "drift",
+          "para-5": "drift",
+          "para-6": "drift",
+          "sheet-corner-marks": "drift",
+          "crane-sheet": "drift",
+          "current-fold-panel": "drift",
+          "current-fold-label": "drift",
+          "current-fold-number": "drift",
+          "current-fold-title": "contradicted",
+          "washi-ground": "drift"
+        },
+        "at": "2026-10-02T12:55:29.625Z"
+      },
+      "forced": {
+        "at": "2026-10-02T12:55:29.627Z",
+        "reason": "User acceptance of the approved comp overrides the mechanical hero gate. The user's own words on 2026-10-02: \"I think the mock design looks great. Let's start porting the design into the frontend\". The mock design accepted is the approved comp at .impeccable/mocks/comp-fold-desk.webp and the hero build at hero.html that renders it. Proceed to sections: port the paper-fold design into frontend/ Next.js.",
+        "reasons": [
+          "hero overall 70.6% < 72% (structure 58%, color 86%, detail 68%)",
+          "region crane-mark is missing (detail 8%, structure 76%): the comp shows material the build does not",
+          "region fold-card-text is missing (detail 4%, structure 49%): the comp shows material the build does not",
+          "region progress-dots (control) is contradicted (structure 38%, detail added 30%): this control does not read as the comp's: rebuild its chrome from the crop (border, fill, radius, chevron or arrow, label size) rather than from a component default",
+          "region current-fold-title (text) is contradicted (structure 41%, detail added 25%): the composition of this text region differs from the comp; re-derive it from the spec box",
+          "control play-button drifts to 57% (structure 55%, color 78%): its chrome differs from the comp's; open .impeccable/review/diff/hero/regions/play-button.png and match the border, fill, radius, chevron or arrow, and label size",
+          "control voice-row drifts to 60% (structure 60%, color 67%): its chrome differs from the comp's; open .impeccable/review/diff/hero/regions/voice-row.png and match the border, fill, radius, chevron or arrow, and label size",
+          "plate fold-card-crease is clipped at the left: the comp's artwork keeps a margin there (ink box 538x317 at 25,0 in the region) and the build's runs to the edge (563x317 at 0,0); size the box to the artwork's aspect and use object-fit: contain, or place the <img> at the artwork's own size, never cover on a narrower box"
+        ]
+      },
+      "records": 21,
+      "readingsSeen": {
+        "text fold-progress-label: ink is #f8c898 in the build, #80756e in the comp; use the comp's colour": 1,
+        "text current-fold-title: ink is #f8d8a8 in the build, #15110f in the comp; use the comp's colour": 1,
+        "text timestamp-strip: cap height 8.8px in the build, 26.9px in the comp (-67%); set font-size so the cap height renders at 26.9px (font-match ranked Libertinus Sans 400 at 43px)": 2,
+        "text para-1: letter-spacing is wider than the comp's (gap 0.094 vs 0.061 of the cap height); set letter-spacing to close it by about 1px": 1,
+        "text para-2: cap height 43.4px in the build, 31.9px in the comp (+36%); set font-size so the cap height renders at 31.9px (also para-3, para-6)": 1,
+        "text active-sentence: cap height 4.8px in the build, 32.5px in the comp (-85%); set font-size so the cap height renders at 32.5px": 1,
+        "text para-1: 2 lines in the build, 3 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 2,
+        "text para-3: 1 line in the build, 2 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape (also para-6)": 2,
+        "text para-1: its first line starts 64px lower than in the comp (67px vs 3px into the region box); the spacing above it is too large (also para-3, para-4, para-5, para-6)": 1,
+        "text active-sentence: its first line starts 58px lower than in the comp (67px vs 9px into the region box); the spacing above it is too large": 1,
+        "text para-2: cap height 51.8px in the build, 31.9px in the comp (+62%); set font-size so the cap height renders at 31.9px (also para-6)": 1,
+        "text active-sentence: cap height 6.6px in the build, 32.5px in the comp (-80%); set font-size so the cap height renders at 32.5px": 1,
+        "text para-3: ink is #ca6459 in the build, #191412 in the comp; use the comp's colour (also para-4)": 1,
+        "text para-1: its first line starts 62px lower than in the comp (65px vs 3px into the region box); the spacing above it is too large (also para-3, para-4, para-5, para-6)": 1,
+        "text active-sentence: its first line starts 56px lower than in the comp (65px vs 9px into the region box); the spacing above it is too large": 1,
+        "text fold-card-text: letter-spacing is wider than the comp's (gap 0.145 vs 0.047 of the cap height); set letter-spacing to close it by about 4px": 1,
+        "text timestamp-strip: letter-spacing is wider than the comp's (gap 0.265 vs 0.112 of the cap height); set letter-spacing to close it by about 4px": 1,
+        "text para-6: letter-spacing is tighter than the comp's (gap 0.035 vs 0.078 of the cap height); set letter-spacing to open it by about 1px": 1,
+        "text fold-card-text: the face renders 53% heavier than the comp's (ink density 0.70 vs 0.46); drop a weight step or use the ranked face": 1,
+        "text active-sentence: the face renders 25% lighter than the comp's (ink density 0.36 vs 0.48); raise a weight step or use the ranked face": 2,
+        "text fold-card-text: ink is #e07771 in the build, #1b1411 in the comp; use the comp's colour": 1,
+        "text para-3: its first line starts 34px higher than in the comp (0px vs 34px into the region box); the spacing above it is too small (also para-4, para-5, para-6)": 17,
+        "chrome sheet-corner-marks: its rule sits 89px into the box in the comp and 114px in the build (+25px), so the strip is taller than the comp's; match the height, not only the position": 6,
+        "text fold-card-text: letter-spacing is wider than the comp's (gap 0.079 vs 0.047 of the cap height); set letter-spacing to close it by about 1px": 1,
+        "text para-6: cap height 53px in the build, 28.8px in the comp (+84%); set font-size so the cap height renders at 28.8px": 1,
+        "text para-6: 1 line in the build, 2 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 16,
+        "text fold-card-text: the face renders 62% heavier than the comp's (ink density 0.74 vs 0.46); drop a weight step or use the ranked face": 1,
+        "text fold-card-text: ink is #df7771 in the build, #1b1411 in the comp; use the comp's colour": 1,
+        "text para-6: cap height 52px in the build, 28.8px in the comp (+81%); set font-size so the cap height renders at 28.8px": 9,
+        "text para-2: the face renders 26% lighter than the comp's (ink density 0.29 vs 0.39); raise a weight step or use the ranked face": 1,
+        "text timestamp-strip: its first line starts 38px lower than in the comp (38px vs 0px into the region box); the spacing above it is too large": 1,
+        "text timestamp-strip: ink is #6b6a5a in the build, #ab9d99 in the comp; use the comp's colour": 1,
+        "text fold-card-text: cap height 26px in the build, 42.7px in the comp (-39%); set font-size so the cap height renders at 42.7px (font-match ranked IM Fell Double Pica SC 400 at 60px)": 1,
+        "text para-1: letter-spacing is wider than the comp's (gap 0.092 vs 0.061 of the cap height); set letter-spacing to close it by about 1px": 1,
+        "text fold-card-text: ink is #d87675 in the build, #1b1411 in the comp; use the comp's colour": 1,
+        "text timestamp-strip: ink is #69695a in the build, #ab9d99 in the comp; use the comp's colour": 1,
+        "chrome sheet-corner-marks: its rule sits 89px into the box in the comp and 25px in the build (-64px), so the strip is shorter than the comp's; match the height, not only the position": 1,
+        "text para-6: cap height 51.9px in the build, 28.8px in the comp (+80%); set font-size so the cap height renders at 28.8px": 6,
+        "text fold-card-text: cap height 81.5px in the build, 42.7px in the comp (+91%); set font-size so the cap height renders at 42.7px (font-match ranked IM Fell Double Pica SC 400 at 60px)": 2,
+        "text fold-card-text: ink is #dc7574 in the build, #1b1411 in the comp; use the comp's colour": 2
+      },
+      "history": [
+        {
+          "at": "2026-10-02T12:55:29.627Z",
+          "score": 0.7061,
+          "worstIds": [
+            "progress-dots",
+            "fold-card-crease",
+            "fold-card-text"
+          ],
+          "regionVerdicts": {
+            "crane-mark": "missing",
+            "wordmark": "drift",
+            "top-nav": "drift",
+            "play-button": "drift",
+            "fold-progress-label": "drift",
+            "progress-dots": "contradicted",
+            "fold-card-crease": "drift",
+            "fold-card-text": "missing",
+            "voice-row": "drift",
+            "tempo-row": "drift",
+            "timestamp-strip": "drift",
+            "para-1": "drift",
+            "para-2": "drift",
+            "active-sentence": "drift",
+            "para-3": "drift",
+            "para-4": "drift",
+            "para-5": "drift",
+            "para-6": "drift",
+            "sheet-corner-marks": "drift",
+            "crane-sheet": "drift",
+            "current-fold-panel": "drift",
+            "current-fold-label": "drift",
+            "current-fold-number": "drift",
+            "current-fold-title": "contradicted",
+            "washi-ground": "drift"
+          },
+          "artifactHash": null
+        }
+      ]
+    },
+    "sections": {
+      "status": "closed",
+      "openedAt": "2026-10-02T12:55:29.627Z",
+      "closedAt": "2026-10-02T13:12:14.706Z",
+      "attempts": 1,
+      "notes": [
+        {
+          "at": "2026-10-02T13:12:14.690Z",
+          "text": "Sections port: paper-fold world shipped into frontend/ Next.js. Tokens+fonts in globals.css/layout.tsx (Unna, Libertinus Serif Display, Merriweather Sans, Libertinus Sans). Three-zone desk: left rail (fold label, dots, crease card, VOICE/TEMPO, timestamp, waveform, folds, source), center sheet (TextViewer sentence-sync + zoom), right CraneProgress SVG + CURRENT FOLD. All behavior preserved: upload/paste, structure detect, TTS/SSE, sentence click-seek, tempo live rate, optional quiz. Icons authored SVG (no emoji). Plates downscaled into public/plates; crease card uses CSS crease-lines per not-literalized contract. Graceful offline: fallback Emma voice when /api/voices unreachable. Captures: .impeccable/review/frontend/sections-*.jpg"
+        }
+      ],
+      "gate": {
+        "ok": true,
+        "reasons": [],
+        "summary": "no mechanical gate",
+        "at": "2026-10-02T13:12:14.706Z"
+      },
+      "forced": null
+    },
+    "motion": {
+      "status": "open",
+      "openedAt": "2026-10-02T13:12:14.706Z",
+      "closedAt": null,
+      "attempts": 0,
+      "notes": [],
+      "gate": null,
+      "forced": null
+    },
+    "responsive": {
+      "status": "pending",
+      "openedAt": null,
+      "closedAt": null,
+      "attempts": 0,
+      "notes": [],
+      "gate": null,
+      "forced": null
+    },
+    "review": {
+      "status": "pending",
+      "openedAt": null,
+      "closedAt": null,
+      "attempts": 0,
+      "notes": [],
+      "gate": null,
+      "forced": null
+    }
+  },
+  "finish": null,
+  "plates": {
+    "fold-card-crease": {
+      "status": "ok",
+      "score": 0.5109,
+      "size": "2816x1584"
+    },
+    "crane-sheet": {
+      "status": "ok",
+      "score": 0.6794,
+      "size": "1776x2368"
+    },
+    "washi-ground": {
+      "status": "ok",
+      "score": 0.7684,
+      "size": "2816x1584"
+    }
+  }
+}

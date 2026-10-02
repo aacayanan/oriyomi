@@ -1,0 +1,1442 @@
+{
+  "tool": "comp-spec",
+  "version": 1,
+  "createdAt": "2026-10-02T10:45:23.883Z",
+  "comp": ".impeccable/mocks/comp-fold-desk.webp",
+  "warnings": [],
+  "uncoveredInkCells": [
+    "D6",
+    "E6",
+    "F6"
+  ],
+  "compSize": {
+    "width": 2816,
+    "height": 1584
+  },
+  "aspect": 1.7778,
+  "orientation": "landscape",
+  "palette": [
+    {
+      "hex": "#f7f1e6",
+      "coverage": 0.8481
+    },
+    {
+      "hex": "#c3574b",
+      "coverage": 0.1146
+    },
+    {
+      "hex": "#d0c5ba",
+      "coverage": 0.0176
+    },
+    {
+      "hex": "#1c1613",
+      "coverage": 0.0158
+    },
+    {
+      "hex": "#484240",
+      "coverage": 0.0039
+    }
+  ],
+  "bands": [
+    {
+      "y": 0.0417,
+      "strength": 0.2374
+    },
+    {
+      "y": 0.0694,
+      "strength": 0.2671
+    },
+    {
+      "y": 0.1389,
+      "strength": 0.2354
+    },
+    {
+      "y": 0.2222,
+      "strength": 0.2344
+    },
+    {
+      "y": 0.2778,
+      "strength": 0.2754
+    },
+    {
+      "y": 0.3611,
+      "strength": 0.2145
+    },
+    {
+      "y": 0.5278,
+      "strength": 0.3113
+    },
+    {
+      "y": 0.6111,
+      "strength": 0.288
+    },
+    {
+      "y": 0.7083,
+      "strength": 0.2818
+    },
+    {
+      "y": 0.7639,
+      "strength": 0.3619
+    },
+    {
+      "y": 0.8333,
+      "strength": 0.2449
+    }
+  ],
+  "regions": [
+    {
+      "id": "crane-mark",
+      "kind": "chrome",
+      "note": "small vermilion crane line mark left of the wordmark",
+      "grid": "A0:A0",
+      "box": {
+        "x": 0,
+        "y": 0,
+        "w": 0.1,
+        "h": 0.1
+      },
+      "px": {
+        "x": 0,
+        "y": 0,
+        "w": 282,
+        "h": 158
+      },
+      "aspect": 1.7848,
+      "palette": [
+        {
+          "hex": "#f8f3e8",
+          "coverage": 0.9381
+        },
+        {
+          "hex": "#e06f62",
+          "coverage": 0.0249
+        },
+        {
+          "hex": "#191311",
+          "coverage": 0.0232
+        },
+        {
+          "hex": "#eb8f84",
+          "coverage": 0.0083
+        },
+        {
+          "hex": "#f1b0a6",
+          "coverage": 0.0056
+        }
+      ],
+      "detail": {
+        "energy": 16.7805
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "wordmark",
+      "kind": "text",
+      "note": "serif Text Reader wordmark, text only",
+      "grid": "B0:C0",
+      "box": {
+        "x": 0.12,
+        "y": 0.015,
+        "w": 0.13,
+        "h": 0.06
+      },
+      "px": {
+        "x": 338,
+        "y": 24,
+        "w": 366,
+        "h": 95
+      },
+      "aspect": 3.8526,
+      "palette": [
+        {
+          "hex": "#f8f5e8",
+          "coverage": 0.9578
+        },
+        {
+          "hex": "#16100e",
+          "coverage": 0.0299
+        },
+        {
+          "hex": "#302d26",
+          "coverage": 0.0059
+        },
+        {
+          "hex": "#5c5a4f",
+          "coverage": 0.0039
+        },
+        {
+          "hex": "#d3c6c6",
+          "coverage": 0.0026
+        }
+      ],
+      "detail": {
+        "energy": 16.5981
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "top-nav",
+      "kind": "text",
+      "note": "small-caps letterspaced nav: READ FOLDS GUIDE QUIZ in sumi",
+      "grid": "E0:G0",
+      "coverBox": {
+        "x": 0.4,
+        "y": 0,
+        "w": 0.3,
+        "h": 0.1
+      },
+      "box": {
+        "x": 0.5107,
+        "y": 0.0379,
+        "w": 0.0426,
+        "h": 0.0303
+      },
+      "px": {
+        "x": 1438,
+        "y": 60,
+        "w": 120,
+        "h": 48
+      },
+      "aspect": 2.5,
+      "palette": [
+        {
+          "hex": "#f6f1e8",
+          "coverage": 0.7564
+        },
+        {
+          "hex": "#1f1816",
+          "coverage": 0.1354
+        },
+        {
+          "hex": "#4b4741",
+          "coverage": 0.0541
+        },
+        {
+          "hex": "#aea7a4",
+          "coverage": 0.0287
+        },
+        {
+          "hex": "#7d7976",
+          "coverage": 0.0255
+        }
+      ],
+      "detail": {
+        "energy": 27.2129
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null,
+      "type": {
+        "comp": {
+          "lines": 1,
+          "glyphs": 5,
+          "capHeightPx": 25.7,
+          "inkIsDark": true,
+          "allCaps": true,
+          "advance": 0.8161,
+          "advTall": 0.8161,
+          "advX": null,
+          "gap": 0.1943,
+          "xRatio": null,
+          "stemW": 0.1864,
+          "contrast": 1.2543,
+          "serif": 2.1734,
+          "densTall": 0.5076,
+          "densX": null,
+          "weight": 0.5076
+        },
+        "widthClass": "wide",
+        "weightClass": "medium",
+        "chosen": {
+          "family": "Merriweather Sans",
+          "weight": 400,
+          "fontSizePx": 34,
+          "source": "index",
+          "fp": {
+            "lines": 1,
+            "glyphs": 18,
+            "capHeightPx": 25.8,
+            "inkIsDark": true,
+            "allCaps": false,
+            "advance": 0.7378,
+            "advTall": 0.7378,
+            "advX": null,
+            "gap": 0.1553,
+            "xRatio": 0.8345,
+            "stemW": 0.1722,
+            "contrast": 1.2489,
+            "serif": 2.8219,
+            "densTall": 0.5006,
+            "densX": null,
+            "weight": 0.5006
+          },
+          "stamp": "7ab2fbc3cc53"
+        }
+      }
+    },
+    {
+      "id": "play-button",
+      "kind": "control",
+      "note": "vermilion rounded PLAY button with one gold dot and white play triangle",
+      "grid": "I0:J0",
+      "coverBox": {
+        "x": 0.8,
+        "y": 0,
+        "w": 0.2,
+        "h": 0.1
+      },
+      "box": {
+        "x": 0.8981,
+        "y": 0.0227,
+        "w": 0.081,
+        "h": 0.0606
+      },
+      "px": {
+        "x": 2529,
+        "y": 36,
+        "w": 228,
+        "h": 96
+      },
+      "aspect": 2.375,
+      "palette": [
+        {
+          "hex": "#c34838",
+          "coverage": 0.5997
+        },
+        {
+          "hex": "#f8f1e6",
+          "coverage": 0.34
+        },
+        {
+          "hex": "#f1c1b7",
+          "coverage": 0.0259
+        },
+        {
+          "hex": "#a3433c",
+          "coverage": 0.0229
+        },
+        {
+          "hex": "#ca8178",
+          "coverage": 0.0115
+        }
+      ],
+      "detail": {
+        "energy": 14.7041
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "fold-progress-label",
+      "kind": "text",
+      "note": "small-caps ink-fade label FOLD 02 OF 04",
+      "grid": "A1:B1",
+      "coverBox": {
+        "x": 0,
+        "y": 0.1,
+        "w": 0.2,
+        "h": 0.1
+      },
+      "box": {
+        "x": 0.0234,
+        "y": 0.1414,
+        "w": 0.0362,
+        "h": 0.0265
+      },
+      "px": {
+        "x": 66,
+        "y": 224,
+        "w": 102,
+        "h": 42
+      },
+      "aspect": 2.4286,
+      "palette": [
+        {
+          "hex": "#f7ebe1",
+          "coverage": 0.8109
+        },
+        {
+          "hex": "#80756e",
+          "coverage": 0.1387
+        },
+        {
+          "hex": "#cdc6bb",
+          "coverage": 0.0399
+        },
+        {
+          "hex": "#a39393",
+          "coverage": 0.0063
+        },
+        {
+          "hex": "#585848",
+          "coverage": 0.0042
+        }
+      ],
+      "detail": {
+        "energy": 14.2548
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "progress-dots",
+      "kind": "control",
+      "note": "row of four dots, second solid gold, others ink-fade outline",
+      "grid": "A2:B2",
+      "coverBox": {
+        "x": 0,
+        "y": 0.2,
+        "w": 0.2,
+        "h": 0.1
+      },
+      "box": {
+        "x": 0.032,
+        "y": 0.2607,
+        "w": 0.0938,
+        "h": 0.0391
+      },
+      "px": {
+        "x": 90,
+        "y": 413,
+        "w": 264,
+        "h": 62
+      },
+      "aspect": 4.2581,
+      "palette": [
+        {
+          "hex": "#f6eadf",
+          "coverage": 0.4888
+        },
+        {
+          "hex": "#c14e44",
+          "coverage": 0.4326
+        },
+        {
+          "hex": "#ecb8a9",
+          "coverage": 0.0486
+        },
+        {
+          "hex": "#baad9e",
+          "coverage": 0.0218
+        },
+        {
+          "hex": "#b36254",
+          "coverage": 0.0082
+        }
+      ],
+      "detail": {
+        "energy": 20.8841
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "fold-card-crease",
+      "kind": "plate",
+      "note": "small square vermilion crease-pattern thumbnail with white folded crane figure",
+      "grid": "A3:B4",
+      "box": {
+        "x": 0,
+        "y": 0.3,
+        "w": 0.2,
+        "h": 0.2
+      },
+      "px": {
+        "x": 0,
+        "y": 475,
+        "w": 563,
+        "h": 317
+      },
+      "aspect": 1.776,
+      "palette": [
+        {
+          "hex": "#f7ebe3",
+          "coverage": 0.7461
+        },
+        {
+          "hex": "#bf4d43",
+          "coverage": 0.21
+        },
+        {
+          "hex": "#c6b7aa",
+          "coverage": 0.03
+        },
+        {
+          "hex": "#1a1310",
+          "coverage": 0.0075
+        },
+        {
+          "hex": "#a54f43",
+          "coverage": 0.0065
+        }
+      ],
+      "detail": {
+        "energy": 23.0004
+      },
+      "medium": "raster",
+      "plate": "assets/plates/fold-card-crease.png",
+      "text": null
+    },
+    {
+      "id": "fold-card-text",
+      "kind": "text",
+      "note": "large vermilion serif number 02, title Glycolysis in serif, caption 6:38",
+      "grid": "B3:C4",
+      "coverBox": {
+        "x": 0.1,
+        "y": 0.3,
+        "w": 0.2,
+        "h": 0.2
+      },
+      "box": {
+        "x": 0.1349,
+        "y": 0.3466,
+        "w": 0.0866,
+        "h": 0.0783
+      },
+      "px": {
+        "x": 380,
+        "y": 549,
+        "w": 244,
+        "h": 124
+      },
+      "aspect": 1.9677,
+      "palette": [
+        {
+          "hex": "#f7ede5",
+          "coverage": 0.8791
+        },
+        {
+          "hex": "#1b1411",
+          "coverage": 0.0676
+        },
+        {
+          "hex": "#645a54",
+          "coverage": 0.024
+        },
+        {
+          "hex": "#978f87",
+          "coverage": 0.0205
+        },
+        {
+          "hex": "#c2beb7",
+          "coverage": 0.0088
+        }
+      ],
+      "detail": {
+        "energy": 32.29
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null,
+      "type": {
+        "comp": {
+          "lines": 1,
+          "glyphs": 9,
+          "capHeightPx": 42.7,
+          "inkIsDark": true,
+          "allCaps": false,
+          "advance": 0.4212,
+          "advTall": 0.2808,
+          "advX": 0.6084,
+          "gap": 0.0468,
+          "xRatio": 0.6175,
+          "stemW": 0.1391,
+          "contrast": 1.62,
+          "serif": 2.0397,
+          "densTall": 0.4569,
+          "densX": 0.4453,
+          "weight": 0.4569
+        },
+        "widthClass": "normal",
+        "weightClass": "regular",
+        "chosen": {
+          "family": "IM Fell Double Pica SC",
+          "weight": 400,
+          "fontSizePx": 60,
+          "source": "index",
+          "fp": {
+            "lines": 1,
+            "glyphs": 14,
+            "capHeightPx": 43,
+            "inkIsDark": true,
+            "allCaps": false,
+            "advance": 0.5814,
+            "advTall": 0.7907,
+            "advX": 0.593,
+            "gap": 0.093,
+            "xRatio": 0.6279,
+            "stemW": 0.1391,
+            "contrast": 1.298,
+            "serif": 3.5981,
+            "densTall": 0.4456,
+            "densX": 0.4597,
+            "weight": 0.4456
+          },
+          "stamp": "142099db9f1d"
+        }
+      }
+    },
+    {
+      "id": "voice-row",
+      "kind": "control",
+      "note": "outline row with speaker glyph, small-caps VOICE, value Emma",
+      "grid": "A7:C7",
+      "coverBox": {
+        "x": 0,
+        "y": 0.7,
+        "w": 0.3,
+        "h": 0.1
+      },
+      "box": {
+        "x": 0.1513,
+        "y": 0.7001,
+        "w": 0.0405,
+        "h": 0.0303
+      },
+      "px": {
+        "x": 426,
+        "y": 1109,
+        "w": 114,
+        "h": 48
+      },
+      "aspect": 2.375,
+      "palette": [
+        {
+          "hex": "#f6ece4",
+          "coverage": 0.7737
+        },
+        {
+          "hex": "#1f1612",
+          "coverage": 0.1314
+        },
+        {
+          "hex": "#97908a",
+          "coverage": 0.0383
+        },
+        {
+          "hex": "#4f4741",
+          "coverage": 0.0383
+        },
+        {
+          "hex": "#c5beb7",
+          "coverage": 0.0183
+        }
+      ],
+      "detail": {
+        "energy": 25.4544
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "tempo-row",
+      "kind": "control",
+      "note": "outline row with clock glyph, small-caps TEMPO, value 1.0x",
+      "grid": "A8:C8",
+      "coverBox": {
+        "x": 0,
+        "y": 0.8,
+        "w": 0.3,
+        "h": 0.1
+      },
+      "box": {
+        "x": 0.0384,
+        "y": 0.8226,
+        "w": 0.2152,
+        "h": 0.0114
+      },
+      "px": {
+        "x": 108,
+        "y": 1303,
+        "w": 606,
+        "h": 18
+      },
+      "aspect": 33.6667,
+      "palette": [
+        {
+          "hex": "#f8ebe4",
+          "coverage": 0.8366
+        },
+        {
+          "hex": "#b8aca4",
+          "coverage": 0.1634
+        }
+      ],
+      "detail": {
+        "energy": 15.4774
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "timestamp-strip",
+      "kind": "text",
+      "note": "monospace timestamps 00:42:180 and 00:47:900 in ink-fade",
+      "grid": "A9:C9",
+      "coverBox": {
+        "x": 0,
+        "y": 0.9,
+        "w": 0.3,
+        "h": 0.1
+      },
+      "box": {
+        "x": 0.0234,
+        "y": 0.9003,
+        "w": 0.2301,
+        "h": 0.0644
+      },
+      "px": {
+        "x": 66,
+        "y": 1426,
+        "w": 648,
+        "h": 102
+      },
+      "aspect": 6.3529,
+      "palette": [
+        {
+          "hex": "#f6eadf",
+          "coverage": 0.9339
+        },
+        {
+          "hex": "#bbb6a6",
+          "coverage": 0.031
+        },
+        {
+          "hex": "#ab9d99",
+          "coverage": 0.0172
+        },
+        {
+          "hex": "#362c25",
+          "coverage": 0.0113
+        },
+        {
+          "hex": "#89693d",
+          "coverage": 0.0066
+        }
+      ],
+      "detail": {
+        "energy": 29.5539
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null,
+      "type": {
+        "comp": {
+          "lines": 1,
+          "glyphs": 18,
+          "capHeightPx": 26.9,
+          "inkIsDark": true,
+          "allCaps": true,
+          "advance": 0.6517,
+          "advTall": 0.6703,
+          "advX": null,
+          "gap": 0.1117,
+          "xRatio": null,
+          "stemW": 0.1539,
+          "contrast": 1.0762,
+          "serif": 0.9343,
+          "densTall": 0.4575,
+          "densX": null,
+          "weight": 0.4575
+        },
+        "widthClass": "normal",
+        "weightClass": "regular",
+        "chosen": {
+          "family": "Libertinus Sans",
+          "weight": 400,
+          "fontSizePx": 43,
+          "source": "index",
+          "fp": {
+            "lines": 1,
+            "glyphs": 18,
+            "capHeightPx": 26.3,
+            "inkIsDark": true,
+            "allCaps": false,
+            "advance": 0.6461,
+            "advTall": 0.6461,
+            "advX": 0.209,
+            "gap": 0.114,
+            "xRatio": 0.6766,
+            "stemW": 0.1539,
+            "contrast": 1.1631,
+            "serif": 1.1706,
+            "densTall": 0.4575,
+            "densX": 0.4382,
+            "weight": 0.4575
+          },
+          "stamp": "26e3087395a9"
+        }
+      }
+    },
+    {
+      "id": "para-1",
+      "kind": "text",
+      "note": "first body paragraph Glycolysis is the first step in cellular respiration... ATP and NADH; vermilion check tick sits just left of its first line",
+      "grid": "D2:H3",
+      "coverBox": {
+        "x": 0.3,
+        "y": 0.2,
+        "w": 0.5,
+        "h": 0.2
+      },
+      "box": {
+        "x": 0.3178,
+        "y": 0.2001,
+        "w": 0.3565,
+        "h": 0.0997
+      },
+      "px": {
+        "x": 895,
+        "y": 317,
+        "w": 1004,
+        "h": 158
+      },
+      "aspect": 6.3544,
+      "palette": [
+        {
+          "hex": "#f7f5ea",
+          "coverage": 0.8529
+        },
+        {
+          "hex": "#1b1513",
+          "coverage": 0.0769
+        },
+        {
+          "hex": "#bdb8b4",
+          "coverage": 0.0289
+        },
+        {
+          "hex": "#6e6864",
+          "coverage": 0.0234
+        },
+        {
+          "hex": "#45403b",
+          "coverage": 0.0179
+        }
+      ],
+      "detail": {
+        "energy": 67.776
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "para-2",
+      "kind": "text",
+      "note": "second paragraph This process does not require oxygen... all living cells",
+      "grid": "D3:H4",
+      "box": {
+        "x": 0.318,
+        "y": 0.285,
+        "w": 0.36,
+        "h": 0.085
+      },
+      "px": {
+        "x": 895,
+        "y": 451,
+        "w": 1014,
+        "h": 135
+      },
+      "aspect": 7.5111,
+      "palette": [
+        {
+          "hex": "#f8f6ea",
+          "coverage": 0.9161
+        },
+        {
+          "hex": "#1b1512",
+          "coverage": 0.0443
+        },
+        {
+          "hex": "#c6c2bd",
+          "coverage": 0.0206
+        },
+        {
+          "hex": "#474440",
+          "coverage": 0.0107
+        },
+        {
+          "hex": "#6d6963",
+          "coverage": 0.0083
+        }
+      ],
+      "detail": {
+        "energy": 37.6069
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "active-sentence",
+      "kind": "text",
+      "note": "active sentence Glycolysis takes place in the cytoplasm with a gold dot in its left margin and a vermilion crease underline",
+      "grid": "D4:G4",
+      "coverBox": {
+        "x": 0.3,
+        "y": 0.4,
+        "w": 0.4,
+        "h": 0.1
+      },
+      "box": {
+        "x": 0.3171,
+        "y": 0.4306,
+        "w": 0.2472,
+        "h": 0.0455
+      },
+      "px": {
+        "x": 893,
+        "y": 682,
+        "w": 696,
+        "h": 72
+      },
+      "aspect": 9.6667,
+      "palette": [
+        {
+          "hex": "#f8f4ea",
+          "coverage": 0.8033
+        },
+        {
+          "hex": "#1d1210",
+          "coverage": 0.0831
+        },
+        {
+          "hex": "#dda197",
+          "coverage": 0.0425
+        },
+        {
+          "hex": "#b54a3c",
+          "coverage": 0.0383
+        },
+        {
+          "hex": "#5e5150",
+          "coverage": 0.0329
+        }
+      ],
+      "detail": {
+        "energy": 89.5211
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "para-3",
+      "kind": "text",
+      "note": "paragraph The overall reaction is: C6H12O6 + 2 NAD+ ... + 2 H2O",
+      "grid": "D5:H6",
+      "box": {
+        "x": 0.318,
+        "y": 0.485,
+        "w": 0.4,
+        "h": 0.075
+      },
+      "px": {
+        "x": 895,
+        "y": 768,
+        "w": 1126,
+        "h": 119
+      },
+      "aspect": 9.4622,
+      "palette": [
+        {
+          "hex": "#f8f6eb",
+          "coverage": 0.8922
+        },
+        {
+          "hex": "#191412",
+          "coverage": 0.0567
+        },
+        {
+          "hex": "#706a67",
+          "coverage": 0.0191
+        },
+        {
+          "hex": "#433c39",
+          "coverage": 0.0173
+        },
+        {
+          "hex": "#d5ccc6",
+          "coverage": 0.0147
+        }
+      ],
+      "detail": {
+        "energy": 49.6727
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "para-4",
+      "kind": "text",
+      "note": "paragraph Glycolysis consists of two phases... energy-payoff phase",
+      "grid": "D6:H7",
+      "box": {
+        "x": 0.318,
+        "y": 0.575,
+        "w": 0.4,
+        "h": 0.075
+      },
+      "px": {
+        "x": 895,
+        "y": 911,
+        "w": 1126,
+        "h": 119
+      },
+      "aspect": 9.4622,
+      "palette": [
+        {
+          "hex": "#f8f6ea",
+          "coverage": 0.93
+        },
+        {
+          "hex": "#1c1513",
+          "coverage": 0.036
+        },
+        {
+          "hex": "#bfb9b5",
+          "coverage": 0.014
+        },
+        {
+          "hex": "#918d89",
+          "coverage": 0.0119
+        },
+        {
+          "hex": "#343429",
+          "coverage": 0.0082
+        }
+      ],
+      "detail": {
+        "energy": 31.5619
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "para-5",
+      "kind": "text",
+      "note": "paragraph During the energy-investment phase, two ATP molecules are used to activate glucose",
+      "grid": "D7:H8",
+      "box": {
+        "x": 0.318,
+        "y": 0.675,
+        "w": 0.4,
+        "h": 0.075
+      },
+      "px": {
+        "x": 895,
+        "y": 1069,
+        "w": 1126,
+        "h": 119
+      },
+      "aspect": 9.4622,
+      "palette": [
+        {
+          "hex": "#f8f7ea",
+          "coverage": 0.9216
+        },
+        {
+          "hex": "#181411",
+          "coverage": 0.0331
+        },
+        {
+          "hex": "#d1cbc5",
+          "coverage": 0.0209
+        },
+        {
+          "hex": "#9d9893",
+          "coverage": 0.0137
+        },
+        {
+          "hex": "#47413f",
+          "coverage": 0.0107
+        }
+      ],
+      "detail": {
+        "energy": 29.4457
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "para-6",
+      "kind": "text",
+      "note": "paragraph In the energy-payoff phase, four ATP molecules are produced by substrate-level phosphorylation",
+      "grid": "D8:H9",
+      "box": {
+        "x": 0.318,
+        "y": 0.775,
+        "w": 0.4,
+        "h": 0.085
+      },
+      "px": {
+        "x": 895,
+        "y": 1228,
+        "w": 1126,
+        "h": 135
+      },
+      "aspect": 8.3407,
+      "palette": [
+        {
+          "hex": "#f8f5e9",
+          "coverage": 0.9136
+        },
+        {
+          "hex": "#171010",
+          "coverage": 0.0297
+        },
+        {
+          "hex": "#2b2820",
+          "coverage": 0.0224
+        },
+        {
+          "hex": "#928e8a",
+          "coverage": 0.019
+        },
+        {
+          "hex": "#ccc5bf",
+          "coverage": 0.0153
+        }
+      ],
+      "detail": {
+        "energy": 35.0231
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "sheet-corner-marks",
+      "kind": "chrome",
+      "note": "small sumi play and previous triangle marks at the sheet's bottom corners",
+      "grid": "D9:H9",
+      "box": {
+        "x": 0.3,
+        "y": 0.9,
+        "w": 0.5,
+        "h": 0.1
+      },
+      "px": {
+        "x": 845,
+        "y": 1426,
+        "w": 1408,
+        "h": 158
+      },
+      "aspect": 8.9114,
+      "palette": [
+        {
+          "hex": "#f7ede4",
+          "coverage": 0.9845
+        },
+        {
+          "hex": "#cdc4b5",
+          "coverage": 0.0155
+        }
+      ],
+      "detail": {
+        "energy": 6.3212
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "crane-sheet",
+      "kind": "plate",
+      "note": "large vermilion kozo washi square with fold-white crease lines and a photographic white folded paper crane",
+      "grid": "H1:J7",
+      "box": {
+        "x": 0.7,
+        "y": 0.1,
+        "w": 0.3,
+        "h": 0.7
+      },
+      "px": {
+        "x": 1971,
+        "y": 158,
+        "w": 845,
+        "h": 1109
+      },
+      "aspect": 0.7619,
+      "palette": [
+        {
+          "hex": "#f4eae0",
+          "coverage": 0.4845
+        },
+        {
+          "hex": "#c4584c",
+          "coverage": 0.4839
+        },
+        {
+          "hex": "#8e2620",
+          "coverage": 0.0138
+        },
+        {
+          "hex": "#d0bbaf",
+          "coverage": 0.0102
+        },
+        {
+          "hex": "#dca595",
+          "coverage": 0.0076
+        }
+      ],
+      "detail": {
+        "energy": 17.9115
+      },
+      "medium": "raster",
+      "plate": "assets/plates/crane-sheet.png",
+      "text": null
+    },
+    {
+      "id": "current-fold-panel",
+      "kind": "chrome",
+      "note": "hairline-bordered panel bottom-right holding the current-fold readout",
+      "grid": "H8:J9",
+      "box": {
+        "x": 0.7,
+        "y": 0.8,
+        "w": 0.3,
+        "h": 0.2
+      },
+      "px": {
+        "x": 1971,
+        "y": 1267,
+        "w": 845,
+        "h": 317
+      },
+      "aspect": 2.6656,
+      "palette": [
+        {
+          "hex": "#f7f2ec",
+          "coverage": 0.9664
+        },
+        {
+          "hex": "#d6ccbc",
+          "coverage": 0.0188
+        },
+        {
+          "hex": "#181412",
+          "coverage": 0.0061
+        },
+        {
+          "hex": "#c04838",
+          "coverage": 0.0053
+        },
+        {
+          "hex": "#6b6565",
+          "coverage": 0.0034
+        }
+      ],
+      "detail": {
+        "energy": 15.4687
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "current-fold-label",
+      "kind": "text",
+      "note": "small-caps ink-fade label CURRENT FOLD",
+      "grid": "I8:I8",
+      "coverBox": {
+        "x": 0.8,
+        "y": 0.8,
+        "w": 0.1,
+        "h": 0.1
+      },
+      "box": {
+        "x": 0.8001,
+        "y": 0.8378,
+        "w": 0.0405,
+        "h": 0.0265
+      },
+      "px": {
+        "x": 2253,
+        "y": 1327,
+        "w": 114,
+        "h": 42
+      },
+      "aspect": 2.7143,
+      "palette": [
+        {
+          "hex": "#f7f6ee",
+          "coverage": 0.7989
+        },
+        {
+          "hex": "#6d6864",
+          "coverage": 0.1147
+        },
+        {
+          "hex": "#b0aba4",
+          "coverage": 0.0808
+        },
+        {
+          "hex": "#534d43",
+          "coverage": 0.0056
+        }
+      ],
+      "detail": {
+        "energy": 16.5361
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "current-fold-number",
+      "kind": "text",
+      "note": "large vermilion serif number 02",
+      "grid": "J8:J8",
+      "coverBox": {
+        "x": 0.9,
+        "y": 0.8,
+        "w": 0.1,
+        "h": 0.1
+      },
+      "box": {
+        "x": 0.9169,
+        "y": 0.815,
+        "w": 0.0405,
+        "h": 0.053
+      },
+      "px": {
+        "x": 2582,
+        "y": 1291,
+        "w": 114,
+        "h": 84
+      },
+      "aspect": 1.3571,
+      "palette": [
+        {
+          "hex": "#f8f2e8",
+          "coverage": 0.7021
+        },
+        {
+          "hex": "#c14738",
+          "coverage": 0.187
+        },
+        {
+          "hex": "#ae5149",
+          "coverage": 0.0583
+        },
+        {
+          "hex": "#c88578",
+          "coverage": 0.0329
+        },
+        {
+          "hex": "#e8b0a9",
+          "coverage": 0.0197
+        }
+      ],
+      "detail": {
+        "energy": 13.4357
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "current-fold-title",
+      "kind": "text",
+      "note": "serif title Glycolysis under the number",
+      "grid": "J9:J9",
+      "coverBox": {
+        "x": 0.9,
+        "y": 0.9,
+        "w": 0.1,
+        "h": 0.1
+      },
+      "box": {
+        "x": 0.8999,
+        "y": 0.9003,
+        "w": 0.0575,
+        "h": 0.0189
+      },
+      "px": {
+        "x": 2534,
+        "y": 1426,
+        "w": 162,
+        "h": 30
+      },
+      "aspect": 5.4,
+      "palette": [
+        {
+          "hex": "#f8f7f3",
+          "coverage": 0.8483
+        },
+        {
+          "hex": "#15110f",
+          "coverage": 0.0712
+        },
+        {
+          "hex": "#706a69",
+          "coverage": 0.0318
+        },
+        {
+          "hex": "#3e3934",
+          "coverage": 0.0318
+        },
+        {
+          "hex": "#ada3a3",
+          "coverage": 0.0169
+        }
+      ],
+      "detail": {
+        "energy": 26.0503
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "washi-ground",
+      "kind": "texture",
+      "note": "clean washi-cream rail ground with subtle kozo fiber, no ink, no rules",
+      "grid": "A5:B6",
+      "box": {
+        "x": 0,
+        "y": 0.5,
+        "w": 0.2,
+        "h": 0.2
+      },
+      "px": {
+        "x": 0,
+        "y": 792,
+        "w": 563,
+        "h": 317
+      },
+      "aspect": 1.776,
+      "palette": [
+        {
+          "hex": "#f8ede5",
+          "coverage": 0.9869
+        },
+        {
+          "hex": "#c9bcb3",
+          "coverage": 0.0131
+        }
+      ],
+      "detail": {
+        "energy": 6.7338
+      },
+      "medium": "raster",
+      "plate": "assets/plates/washi-ground.png",
+      "text": null
+    }
+  ]
+}
