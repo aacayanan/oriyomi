@@ -263,13 +263,13 @@ export default function TextReader() {
       for (let i = current.length - 1; i >= 0; i--) {
         if (currentTime >= current[i].start_ms / 1000) {
           setActiveSentenceIndex(i);
+          // Mark complete only when the last sentence has finished —
+          // fold advance itself runs from the player's onEnded callback.
+          // (Advancing on last.start_ms used to kill the final line.)
           if (i >= current.length - 1) {
-            setHasCompletedRead(true);
-            // Advance to the next fold when its audio is already queued
-            const next = (playingFoldRef.current ?? -1) + 1;
-            const total = sectionsRef.current.length;
-            if (total > next) {
-              setWaitingFold(next);
+            const last = current[current.length - 1];
+            if (last.end_ms > 0 && currentTime >= last.end_ms / 1000) {
+              setHasCompletedRead(true);
             }
           }
           return;
@@ -279,6 +279,19 @@ export default function TextReader() {
     },
     [],
   );
+
+  /**
+   * Called when the current fold's audio ends naturally (not stop/pause).
+   * Queues the next fold for playback if one exists.
+   */
+  const advanceAfterFold = useCallback(() => {
+    setHasCompletedRead(true);
+    const next = (playingFoldRef.current ?? -1) + 1;
+    const total = sectionsRef.current.length;
+    if (total > next) {
+      setWaitingFold(next);
+    }
+  }, []);
 
   const resetReadingState = useCallback(() => {
     docTTS.cancel();
@@ -352,10 +365,13 @@ export default function TextReader() {
         audioPlayer.setOffset(0);
         setActiveSentenceIndex(null);
       }
-      audioPlayer.play(fold.audio_base64, handleTimeUpdate);
+
+      // Advance only when this fold's audio actually finishes, not when
+      // the last sentence starts (that skipped the final line).
+      audioPlayer.play(fold.audio_base64, handleTimeUpdate, advanceAfterFold);
       return true;
     },
-    [audioPlayer, docTTS, handleTimeUpdate, updateSentences],
+    [audioPlayer, docTTS, handleTimeUpdate, updateSentences, advanceAfterFold],
   );
 
   /** When a fold finishes generating, play it if the user is waiting on it. */
@@ -388,7 +404,7 @@ export default function TextReader() {
 
   const handlePlay = useCallback(async () => {
     if (audioPlayer.isPaused && audioBase64) {
-      audioPlayer.play(audioBase64, handleTimeUpdate);
+      audioPlayer.play(audioBase64, handleTimeUpdate, advanceAfterFold);
       return;
     }
 
@@ -406,6 +422,7 @@ export default function TextReader() {
     audioPlayer.isPaused,
     audioBase64,
     handleTimeUpdate,
+    advanceAfterFold,
     docTTS,
     playingFoldIndex,
     startPlayingFold,
@@ -436,9 +453,9 @@ export default function TextReader() {
           break;
         }
       }
-      audioPlayer.play(audioBase64, handleTimeUpdate);
+      audioPlayer.play(audioBase64, handleTimeUpdate, advanceAfterFold);
     },
-    [audioBase64, audioPlayer, handleTimeUpdate],
+    [audioBase64, audioPlayer, handleTimeUpdate, advanceAfterFold],
   );
 
   const handlePause = useCallback(() => {
@@ -563,7 +580,7 @@ export default function TextReader() {
         audioPlayer.stop();
         audioPlayer.setOffset(entry.start_ms / 1000);
         setActiveSentenceIndex(entry.local);
-        audioPlayer.play(audioBase64, handleTimeUpdate);
+        audioPlayer.play(audioBase64, handleTimeUpdate, advanceAfterFold);
         return;
       }
 
@@ -793,12 +810,6 @@ export default function TextReader() {
             >
               {playIcon}
               <span>{playLabel}</span>
-              {(isLoading || docTTS.isSubmitting || isPreparingFolds) && (
-                <span
-                  className="ml-1 h-3 w-3 animate-spin rounded-full border border-fold border-t-transparent"
-                  aria-hidden="true"
-                />
-              )}
             </button>
           </div>
 

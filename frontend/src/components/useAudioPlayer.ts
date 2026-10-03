@@ -10,7 +10,11 @@ interface Sentence {
 }
 
 interface AudioPlayerReturn {
-  play: (base64Audio: string, onTimeUpdate: (time: number) => void) => void;
+  play: (
+    base64Audio: string,
+    onTimeUpdate: (time: number) => void,
+    onEnded?: () => void,
+  ) => void;
   pause: () => void;
   stop: () => void;
   setPlaybackRate: (rate: number) => void;
@@ -35,6 +39,7 @@ export default function useAudioPlayer(): AudioPlayerReturn {
   // compute the current position using elapsed real time * playback rate.
   const audioPositionRef = useRef<number>(0); // position in the buffer (seconds)
   const snapshotTimeRef = useRef<number>(0);   // AudioContext time of snapshot
+  const onEndedRef = useRef<(() => void) | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -59,8 +64,13 @@ export default function useAudioPlayer(): AudioPlayerReturn {
   }, []);
 
   const play = useCallback(
-    (base64Audio: string, onTimeUpdate: (time: number) => void) => {
+    (
+      base64Audio: string,
+      onTimeUpdate: (time: number) => void,
+      onEnded?: () => void,
+    ) => {
       onTimeUpdateRef.current = onTimeUpdate;
+      onEndedRef.current = onEnded ?? null;
 
       // Initialize AudioContext if needed
       if (!audioContextRef.current) {
@@ -120,6 +130,11 @@ export default function useAudioPlayer(): AudioPlayerReturn {
           setCurrentTime(0);
           offsetRef.current = 0;
           audioPositionRef.current = 0;
+          // Natural end only — stop/pause null out onended before this runs.
+          // Fire after state clears so fold advance can start the next audio.
+          const ended = onEndedRef.current;
+          onEndedRef.current = null;
+          ended?.();
         };
       });
     },
@@ -137,12 +152,13 @@ export default function useAudioPlayer(): AudioPlayerReturn {
     audioPositionRef.current = pos;
     snapshotTimeRef.current = audioContextRef.current?.currentTime ?? 0;
 
-    // Stop source node
+    // Stop source node — clearing onended so pause never looks like EOF
     if (sourceNodeRef.current) {
       sourceNodeRef.current.onended = null;
       sourceNodeRef.current.stop();
       sourceNodeRef.current.disconnect();
     }
+    onEndedRef.current = null;
 
     cancelAnimationFrame(animFrameRef.current);
     setIsPaused(true);
@@ -155,6 +171,7 @@ export default function useAudioPlayer(): AudioPlayerReturn {
       sourceNodeRef.current.stop();
       sourceNodeRef.current.disconnect();
     }
+    onEndedRef.current = null;
 
     cancelAnimationFrame(animFrameRef.current);
     setIsPlaying(false);
