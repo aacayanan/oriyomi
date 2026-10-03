@@ -53,6 +53,9 @@ export default function Waveform({
   const onSeekRef = useRef(onSeek);
   const applyHighlightRef = useRef<(() => void) | null>(null);
 
+  /** Hover seek preview: x position (px) within the waveform + target time. */
+  const [hover, setHover] = useState<{ x: number; time: number } | null>(null);
+
   useEffect(() => {
     onSeekRef.current = onSeek;
   }, [onSeek]);
@@ -154,15 +157,46 @@ export default function Waveform({
     wsRef.current?.setTime(currentTime);
   }, [currentTime]);
 
+  const handleWaveMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    const rect = el.getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const x = Math.min(Math.max(e.clientX - rect.left, 0), rect.width);
+    const ratio = rect.width > 0 ? x / rect.width : 0;
+    const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 0;
+    setHover({ x, time: ratio * safeDuration });
+  };
+
+  const clearHover = () => setHover(null);
+
   return (
     <div className="flex flex-col gap-2 border-t border-hairline pt-3">
       {audioBase64 ? (
         <>
           <div className="flex items-center justify-between font-data text-[11px] tabular-nums text-ink-fade">
             <span>{formatTime(Math.min(currentTime, duration > 0 ? duration : Infinity))}</span>
-            <span>{formatTime(duration)}</span>
+            {/* Hover target time — shows where a click would seek */}
+            <span className={hover ? "text-sumi" : undefined}>
+              {hover ? formatTime(hover.time) : formatTime(duration)}
+            </span>
           </div>
-          <div ref={containerRef} className="w-full" aria-label="Audio waveform" />
+          <div
+            className="relative w-full"
+            onMouseMove={handleWaveMove}
+            onMouseLeave={clearHover}
+          >
+            <div ref={containerRef} className="w-full" aria-label="Audio waveform" />
+            {/* Seek-preview bar: vertical line where click would play from */}
+            {hover && (
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute top-0 bottom-0 z-10 w-px -translate-x-1/2 bg-sumi/80"
+                style={{ left: hover.x }}
+              >
+                <span className="absolute -top-0.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-sumi" />
+              </div>
+            )}
+          </div>
         </>
       ) : (
         <div className="flex h-12 items-center justify-center border border-dashed border-hairline font-ui text-[10px] tracking-[0.12em] text-ink-mute uppercase">

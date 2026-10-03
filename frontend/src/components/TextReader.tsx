@@ -447,6 +447,8 @@ export default function TextReader() {
 
   const handleStop = useCallback(() => {
     resetReadingState();
+    // Bring source back after stop so new text can be pasted
+    setSourceOpen(true);
   }, [resetReadingState]);
 
   const duration =
@@ -624,6 +626,18 @@ export default function TextReader() {
     <PlayIcon className="h-4 w-4" />
   );
 
+  /** Hide Source once audio is ready or playback/fold work has started. */
+  const hideSource =
+    Boolean(audioBase64) ||
+    audioPlayer.isPlaying ||
+    audioPlayer.isPaused ||
+    isPreparingFolds ||
+    docTTS.isSubmitting;
+
+  const showStop = audioPlayer.isPlaying || audioPlayer.isPaused;
+  const showCancel = (isLoading || docTTS.isSubmitting) && !showStop;
+  const hasSecondTransport = showStop || showCancel;
+
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       {/* ——— Top bar: logo + tagline ——— */}
@@ -708,7 +722,8 @@ export default function TextReader() {
 
           {/* Source + transport pinned to the bottom of the rail */}
           <div className="mt-auto flex shrink-0 flex-col pt-5">
-          {/* source: upload + paste (auto-detects folds) */}
+          {/* source: upload + paste — hidden once audio is ready / playing */}
+          {!hideSource && (
           <div id="source">
             <div className="flex items-center justify-between gap-2">
               <h2 className="label-ui text-[11px] text-sumi-soft">Source</h2>
@@ -741,24 +756,49 @@ export default function TextReader() {
                   }}
                   onClear={handleClear}
                 />
-                {/* Play lives under the paste box */}
-                <button
-                  type="button"
-                  onClick={audioPlayer.isPlaying ? handlePause : handlePlay}
-                  disabled={isLoading || docTTS.isSubmitting}
-                  className="gold-dot-btn h-12 w-full text-xs"
-                  aria-label={playLabel}
-                >
-                  {playIcon}
-                  <span>{playLabel}</span>
-                  {(isLoading || docTTS.isSubmitting || isPreparingFolds) && (
-                    <span
-                      className="ml-1 h-3 w-3 animate-spin rounded-full border border-fold border-t-transparent"
-                      aria-hidden="true"
-                    />
-                  )}
-                </button>
               </div>
+            )}
+          </div>
+          )}
+
+          {/* Transport — Play always visible; Stop/Cancel beside it */}
+          <div className="mt-4 flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={audioPlayer.isPlaying ? handlePause : handlePlay}
+              disabled={isLoading || docTTS.isSubmitting}
+              className={`gold-dot-btn h-12 text-xs ${
+                hasSecondTransport ? "flex-1" : "w-full"
+              }`}
+              aria-label={playLabel}
+            >
+              {playIcon}
+              <span>{playLabel}</span>
+              {(isLoading || docTTS.isSubmitting || isPreparingFolds) && (
+                <span
+                  className="ml-1 h-3 w-3 animate-spin rounded-full border border-fold border-t-transparent"
+                  aria-hidden="true"
+                />
+              )}
+            </button>
+            {showStop && (
+              <button
+                type="button"
+                onClick={handleStop}
+                className="outline-btn h-12 shrink-0 px-5 text-[10px]"
+              >
+                <StopIcon className="h-3.5 w-3.5" />
+                Stop
+              </button>
+            )}
+            {showCancel && (
+              <button
+                type="button"
+                onClick={handleStop}
+                className="outline-btn h-12 shrink-0 px-5 text-[10px]"
+              >
+                Cancel
+              </button>
             )}
           </div>
 
@@ -778,30 +818,6 @@ export default function TextReader() {
                   }}
                 />
               </div>
-            </div>
-          )}
-
-          {(audioPlayer.isPlaying || audioPlayer.isPaused || isLoading || isPreparingFolds) && (
-            <div className="mt-4 flex gap-2">
-              {(audioPlayer.isPlaying || audioPlayer.isPaused) && (
-                <button
-                  type="button"
-                  onClick={handleStop}
-                  className="outline-btn h-9 flex-1 text-[10px]"
-                >
-                  <StopIcon className="h-3.5 w-3.5" />
-                  Stop
-                </button>
-              )}
-              {(isLoading || docTTS.isSubmitting) && (
-                <button
-                  type="button"
-                  onClick={handleStop}
-                  className="outline-btn h-9 flex-1 text-[10px]"
-                >
-                  Cancel
-                </button>
-              )}
             </div>
           )}
 
