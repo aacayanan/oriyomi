@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useRef, useEffect, useState } from "react";
-import { ZoomInIcon, ZoomOutIcon, CheckIcon } from "./Icons";
+import { ZoomInIcon, ZoomOutIcon } from "./Icons";
 
 interface Sentence {
   index: number;
@@ -192,18 +192,15 @@ export default function TextViewer({
                       >
                         <span
                           aria-hidden="true"
-                          className={`mt-[0.55em] flex h-[0.7em] w-[0.7em] shrink-0 items-center justify-center rounded-full ${
+                          className={`mt-[0.55em] flex shrink-0 items-center justify-center ${
                             isActive
-                              ? "bg-gold"
+                              ? "h-[0.7em] w-[0.7em] rounded-full bg-gold"
                               : isDone
-                                ? "bg-vermilion/70"
-                                : "bg-transparent"
+                                ? // Folded mark — a short crease bar, not a check badge
+                                  "mt-[0.72em] h-[2px] w-[0.95em] bg-ink-mute/80"
+                                : "h-[0.7em] w-[0.7em]"
                           }`}
-                        >
-                          {isDone && !isActive && (
-                            <CheckIcon className="h-[0.55em] w-[0.55em] text-fold" />
-                          )}
-                        </span>
+                        />
                         <span
                           ref={(el) => {
                             sentenceRefs.current[g] = el;
@@ -214,7 +211,7 @@ export default function TextViewer({
                             isActive
                               ? "crease-active"
                               : isDone
-                                ? "text-sumi-soft"
+                                ? "text-ink-mute"
                                 : "hover:text-vermilion-ink"
                           } ${isJumping ? "outline outline-[1px] outline-offset-[3px] outline-vermilion/60" : ""}`}
                           role={onSentenceClick ? "button" : undefined}
