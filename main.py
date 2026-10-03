@@ -156,7 +156,7 @@ class AnalyzeSection(BaseModel):
     text_preview: str
     summary: str | None = Field(
         default=None,
-        description="Extractive 1-2 sentence summary of this fold's text.",
+        description="Extractive 2-3 sentence summary of this fold's text.",
     )
     children: list["AnalyzeSection"] = []
 
