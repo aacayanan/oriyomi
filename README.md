@@ -1,29 +1,55 @@
-# Text Reader — TTS API
+# Oriyomi
 
-Free text-to-speech API using Microsoft Edge's neural TTS voices. Returns audio with sentence-level timestamps for synchronizing text highlighting with playback.
+> ori—to fold, yomi—to read. Sentence-sync read-along that folds a document into speech.
+
+Oriyomi turns dense study material into something you can actually get through. Upload a textbook chapter, notes, or a PDF, and it becomes a listen-along experience: natural neural speech plays while the exact sentence being spoken is highlighted on screen. Optional comprehension quizzes close the loop — because hearing a chapter and understanding it are not the same thing.
+
+## Why Oriyomi
+
+Dense textbooks are overwhelming. A wall of text is hard to start, hard to stay oriented inside, and easy to abandon halfway through a chapter. Existing read-aloud tools either don't lock eyes and ears on the same sentence, or hide good neural voices behind API keys and paid usage.
+
+Oriyomi was built from that frustration. The name blends two Japanese words — **ori** (折り, to fold) and **yomi** (読み, to read). Like origami, you start with a flat, overwhelming sheet of paper. The parser creases it into logical sections; each section folds into clean speech you can follow along with. You aren't just hearing a textbook — you're reshaping it into something structured and digestible, one fold at a time.
+
+## What it does
+
+1. **Bring your material** — upload `.txt`, `.md`, `.pdf`, or `.docx`, or paste text directly.
+2. **Fold the document** — structure detection surfaces chapters and sections automatically.
+3. **Listen and read along** — sentence-level timestamps highlight the exact sentence being spoken, at any speed (0.5×–2.0×).
+4. **Check yourself** — an optional Gemini-powered comprehension quiz verifies you actually understood the fold.
+
+No accounts. No subscriptions. No paid speech APIs. Free Microsoft Edge neural voices power the whole reading experience.
 
 ## Features
 
-- **9 curated high-quality US English voices** — the best neural voices from Microsoft Edge TTS (free, no API key needed)
-- **Sentence-level timestamps** — word boundary events mapped to sentences for text highlighting
-- **Adjustable speed** — 0.5x to 2.0x speech rate
-- **Base64 audio response** — easy to consume from any frontend
+- **Sentence-sync read-along** — the player highlights the sentence being spoken, driven by word-boundary timestamps from the TTS engine
+- **Document structure detection** — chapters and sections are detected and turned into parallel "folds"; the first fold plays while the rest are still generating
+- **9 curated free US English voices** — the best Microsoft Edge neural voices, no API key required
+- **Adjustable speed** — 0.5× to 2.0×, applied live without re-generating audio
+- **Text zoom** — scale the reading pane to your eyes
+- **Optional comprehension quiz** — Gemini-generated multiple-choice questions with explanations; the reader works fully without a Gemini key
+- **Zero gates** — paste or upload and listen; nothing stands between you and the material
 
-## Setup
+## Quick start
 
 ### Prerequisites
 
 - Docker and Docker Compose
 
-### Run with Docker
+### Run everything
 
 ```bash
+cp .env.example .env   # optional: add GEMINI_API_KEY for the quiz
 docker compose up --build
 ```
 
-The API starts at **http://localhost:8000**.
+- Frontend: **http://localhost:3000**
+- API: **http://localhost:8000**
+
+The Next.js app proxies `/api/*` to the backend, so the browser never needs to know where the API lives.
 
 ### Run without Docker
+
+Backend:
 
 ```bash
 python3 -m venv .venv
@@ -32,7 +58,26 @@ pip install -r requirements.txt
 python main.py
 ```
 
-## API
+Frontend:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open **http://localhost:3000**. Point the frontend at the API with `API_PROXY_URL=http://localhost:8000` (or `NEXT_PUBLIC_API_URL` if you prefer a direct browser call).
+
+### Environment
+
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `GEMINI_API_KEY` | No | Enables the comprehension quiz. Without it, the reader still works; the quiz degrades gracefully. |
+| `ALLOWED_ORIGINS` | No | CORS origins for direct browser → API calls. Defaults to `http://localhost:3000,http://127.0.0.1:3000`. Unused when the Next.js proxy is in play. |
+
+## The TTS API
+
+The FastAPI backend is also usable on its own — free text-to-speech with sentence-level timestamps, no API key.
 
 ### `GET /api/voices`
 
@@ -160,7 +205,7 @@ Generate one fold (section) of a document. The reader client fires these in para
 
 Health check. Returns `{"status": "ok"}`.
 
-## Usage from JavaScript
+### Usage from JavaScript
 
 ```javascript
 const res = await fetch('http://localhost:8000/api/tts', {
@@ -183,7 +228,7 @@ audio.play();
 // sentences[i].start_ms / end_ms tell you when each sentence plays
 ```
 
-## Voice List
+## Voices
 
 The `/api/voices` endpoint returns 9 curated high-quality US English voices, ordered best first:
 
@@ -204,11 +249,15 @@ The four **Multilingual** voices are Microsoft's newest HD generation. The rest 
 ## Project structure
 
 ```
-├── main.py           # FastAPI app with /api/voices, /api/tts, /api/tts/fold, /api/health
-├── tts.py            # TTS engine (edge-tts wrapper, sentence splitting, timestamp mapping)
-├── requirements.txt  # Python dependencies
-├── Dockerfile        # Container image definition
-├── docker-compose.yml # Docker Compose config
+├── main.py            # FastAPI app — /api/voices, /api/tts, /api/tts/fold, /api/health
+├── tts.py             # TTS engine (edge-tts, sentence splitting, timestamp mapping)
+├── text_structure.py  # Chapter/section detection for fold generation
+├── summaries.py       # Optional per-fold summaries
+├── requirements.txt   # Python dependencies
+├── Dockerfile         # Backend container image
+├── docker-compose.yml # Frontend + backend
+├── vercel.json        # Vercel deploy: Next.js frontend + FastAPI backend
+├── frontend/          # Next.js / React / Tailwind reader UI
 └── README.md
 ```
 
