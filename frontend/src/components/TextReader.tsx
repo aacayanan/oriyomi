@@ -20,6 +20,7 @@ import {
   PlayIcon,
   StopIcon,
   AlertIcon,
+  ChevronIcon,
 } from "./Icons";
 import { apiUrl } from "@/lib/api";
 
@@ -58,6 +59,9 @@ export default function TextReader() {
   const [audioBase64, setAudioBase64] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sourceOpen, setSourceOpen] = useState(false);
+  /** Companion stage: open when empty; collapses once text is pasted (quiz-style). */
+  const [companionOpen, setCompanionOpen] = useState(true);
+  const hadCompanionTextRef = useRef(false);
   const [hasCompletedRead, setHasCompletedRead] = useState(false);
   const [jumpToSentenceIndex, setJumpToSentenceIndex] = useState<number | null>(
     null,
@@ -587,6 +591,18 @@ export default function TextReader() {
     if (!text.trim()) setSourceOpen(true);
   }, [text]);
 
+  // Companion: expand when empty; auto-collapse the first time text arrives
+  useEffect(() => {
+    const hasText = Boolean(text.trim());
+    if (!hasText) {
+      setCompanionOpen(true);
+      hadCompanionTextRef.current = false;
+    } else if (!hadCompanionTextRef.current) {
+      setCompanionOpen(false);
+      hadCompanionTextRef.current = true;
+    }
+  }, [text]);
+
   // Play → pause when running; resume when audio exists; else queue folds
   const foldStatusList = Object.values(docTTS.foldStatus);
   const foldsComplete = foldStatusList.filter((s) => s === "complete").length;
@@ -611,10 +627,10 @@ export default function TextReader() {
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       {/* ——— Top bar: logo + tagline ——— */}
-      <header className="z-30 flex shrink-0 items-center gap-4 border-b border-hairline bg-fold px-4 py-3 sm:px-6 lg:px-8">
-        <div className="flex shrink-0 items-center gap-2.5">
-          <CraneMark className="h-7 w-7 text-vermilion-ink" />
-          <span className="font-display text-xl leading-none text-sumi sm:text-2xl">
+      <header className="z-30 flex shrink-0 items-center gap-2 border-b border-hairline bg-fold px-3 py-2 sm:gap-4 sm:px-6 sm:py-3 lg:px-8">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
+          <CraneMark className="h-5 w-5 text-vermilion-ink sm:h-7 sm:w-7" />
+          <span className="font-display text-base leading-none text-sumi sm:text-2xl">
             oriyomi
           </span>
         </div>
@@ -625,9 +641,10 @@ export default function TextReader() {
       </header>
 
       {/* ——— Three-zone desk (viewport-locked; only the sheet scrolls long content) ——— */}
+      {/* Mobile order: source/play → playback chrome → sheet. Desktop: rail | sheet | right. */}
       <main className="mx-auto grid w-full max-w-[1600px] min-h-0 flex-1 grid-cols-1 gap-[var(--zone-gap)] overflow-y-auto px-4 py-4 sm:px-6 lg:grid-cols-[var(--rail-w)_minmax(0,1fr)_minmax(16rem,22rem)] lg:overflow-hidden lg:px-8 lg:py-5">
         {/* Left rail — panel itself does not scroll; fold cards scroll inside FoldList */}
-        <aside className="flex min-h-0 flex-col gap-0 overflow-hidden border border-hairline bg-washi/40 px-4 py-4">
+        <aside className="order-1 flex min-h-0 flex-col gap-0 overflow-hidden border border-hairline bg-washi/40 px-4 py-4">
           <div className="label-ui shrink-0 text-[11px] text-ink-fade">
             Fold {foldTotal > 0 ? String(foldIndex + 1).padStart(2, "0") : "—"}
             {" of "}
@@ -679,8 +696,9 @@ export default function TextReader() {
           </div>
 
           {/* Scrollable fold cards when structure exists (this box scrolls, not the rail) */}
+          {/* order-5: after source on mobile; DOM order on lg keeps list above pinned source */}
           {hasStructure && sections.length > 0 && (
-            <div className="mt-4 flex min-h-0 flex-1 flex-col">
+            <div className="order-5 mt-4 flex min-h-0 flex-1 flex-col lg:order-none">
               <FoldList
                 sections={sections}
                 activeFoldIndex={foldIndex}
@@ -690,8 +708,8 @@ export default function TextReader() {
             </div>
           )}
 
-          {/* Source + transport pinned to the bottom of the rail */}
-          <div className="mt-auto flex shrink-0 flex-col pt-5">
+          {/* Source + transport — early on mobile (right under fold card); pinned bottom on desktop */}
+          <div className="order-4 mt-5 flex shrink-0 flex-col lg:order-none lg:mt-auto lg:pt-5">
           {/* source: upload + paste (auto-detects folds) */}
           <div id="source">
             <div className="flex items-center justify-between gap-2">
@@ -804,7 +822,7 @@ export default function TextReader() {
         </aside>
 
         {/* Center sheet — the only long scroller on desktop */}
-        <section className="flex min-h-[24rem] min-h-0 flex-col lg:min-h-0">
+        <section className="order-3 flex min-h-[24rem] min-h-0 flex-col lg:order-2 lg:min-h-0">
           <div className="min-h-0 flex-1">
             <TextViewer
               folds={viewerFolds}
@@ -819,20 +837,61 @@ export default function TextReader() {
           </div>
           <div className="flex shrink-0 items-center justify-between px-2 pt-2 font-ui text-xs text-vermilion-soft">
             <span aria-hidden="true">▶</span>
-            <span className="label-ui text-[9px] text-ink-mute">
-              Sentence-sync read-along
-            </span>
+            <a
+              href="https://buymeacoffee.com/aaroncayanan"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="label-ui text-[9px] text-ink-mute transition-colors hover:text-vermilion"
+            >
+              ☕ Buy me a coffee - help keep this app free
+            </a>
             <span aria-hidden="true">◀</span>
           </div>
         </section>
 
-        {/* Right: companion videos + current/prev/next fold + quiz */}
-        <aside className="flex min-h-0 flex-col gap-4 overflow-y-auto">
-          <BrainrotStage
-            className="aspect-square w-full shrink-0"
-          />
+        {/* Right: companion + current fold + playback + quiz */}
+        {/* Mobile: playback first so controls are near the play button; companion collapses after text. */}
+        <aside className="order-2 flex min-h-0 flex-col gap-4 overflow-y-auto lg:order-3">
+          {/* Companion — quiz-style collapse; open when empty, optional once text is pasted */}
+          <section
+            className="order-2 shrink-0 border border-hairline bg-fold/80 lg:order-1"
+            aria-label="Reading companion"
+          >
+            <button
+              type="button"
+              onClick={() => setCompanionOpen((v) => !v)}
+              aria-expanded={companionOpen}
+              className="flex w-full cursor-pointer items-center justify-between gap-3 border-b border-hairline px-4 py-3 text-left transition-colors hover:bg-washi/60"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="label-ui text-[11px] text-sumi-soft">
+                  Companion
+                </span>
+                {Boolean(text.trim()) && (
+                  <span className="font-data text-[10px] text-ink-mute">
+                    optional
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="label-ui text-[10px] text-ink-fade">
+                  {companionOpen ? "Hide" : "Show"}
+                </span>
+                <ChevronIcon
+                  className={`h-4 w-4 shrink-0 text-ink-fade transition-transform ${
+                    companionOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </div>
+            </button>
+            {companionOpen && (
+              <div className="p-2">
+                <BrainrotStage className="aspect-square w-full" />
+              </div>
+            )}
+          </section>
 
-          <div className="shrink-0 border border-hairline bg-fold px-4 py-4">
+          <div className="order-3 shrink-0 border border-hairline bg-fold px-4 py-4 lg:order-2">
             <div className="label-ui text-[11px] text-ink-mute">Current fold</div>
             <div className="mt-2 flex items-stretch gap-3">
               <FoldCreaseArt
@@ -888,8 +947,8 @@ export default function TextReader() {
             )}
           </div>
 
-          {/* Voice / speed / waveform — under current fold, above quiz */}
-          <div className="shrink-0 border border-hairline bg-fold px-4 py-3">
+          {/* Voice / speed / waveform — first on mobile (near play); under current fold on desktop */}
+          <div className="order-1 shrink-0 border border-hairline bg-fold px-4 py-3 lg:order-3">
             <div className="label-ui mb-1 text-[11px] text-ink-mute">Playback</div>
             <Controls
               voice={voice}
@@ -912,7 +971,9 @@ export default function TextReader() {
             </div>
           </div>
 
-          <Quiz text={text} fullyRead={hasCompletedRead} />
+          <div className="order-4 lg:order-4">
+            <Quiz text={text} fullyRead={hasCompletedRead} />
+          </div>
         </aside>
       </main>
     </div>
