@@ -10,8 +10,10 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY main.py tts.py celery_app.py tts_chunks.py tts_worker.py text_structure.py summaries.py ./
+COPY main.py tts.py tts_chunks.py text_structure.py summaries.py ./
 
 EXPOSE 8000
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Long keep-alive + no hard concurrency cap: fold responses are large base64
+# JSON and the client pools requests; abrupt closes surface as proxy resets.
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-keep-alive", "75"]

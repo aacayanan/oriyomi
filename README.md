@@ -1,14 +1,14 @@
-# Oriyomi
+# oriyomi
 
 > ori—to fold, yomi—to read. Sentence-sync read-along that folds a document into speech.
 
-Oriyomi turns dense study material into something you can actually get through. Upload a textbook chapter, notes, or a PDF, and it becomes a listen-along experience: natural neural speech plays while the exact sentence being spoken is highlighted on screen. Optional comprehension quizzes close the loop — because hearing a chapter and understanding it are not the same thing.
+oriyomi turns dense study material into something you can actually get through. Upload a textbook chapter, notes, or a PDF, and it becomes a listen-along experience: natural neural speech plays while the exact sentence being spoken is highlighted on screen. Optional comprehension quizzes close the loop — because hearing a chapter and understanding it are not the same thing.
 
-## Why Oriyomi
+## Why oriyomi
 
 Dense textbooks are overwhelming. A wall of text is hard to start, hard to stay oriented inside, and easy to abandon halfway through a chapter. Existing read-aloud tools either don't lock eyes and ears on the same sentence, or hide good neural voices behind API keys and paid usage.
 
-Oriyomi was built from that frustration. The name blends two Japanese words — **ori** (折り, to fold) and **yomi** (読み, to read). Like origami, you start with a flat, overwhelming sheet of paper. The parser creases it into logical sections; each section folds into clean speech you can follow along with. You aren't just hearing a textbook — you're reshaping it into something structured and digestible, one fold at a time.
+oriyomi was built from that frustration. The name blends two Japanese words — **ori** (折り, to fold) and **yomi** (読み, to read). Like origami, you start with a flat, overwhelming sheet of paper. The parser creases it into logical sections; each section folds into clean speech you can follow along with. You aren't just hearing a textbook — you're reshaping it into something structured and digestible, one fold at a time.
 
 ## What it does
 

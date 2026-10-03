@@ -627,10 +627,10 @@ export default function TextReader() {
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       {/* ——— Top bar: logo + tagline ——— */}
-      <header className="z-30 flex shrink-0 items-center gap-2 border-b border-hairline bg-fold px-3 py-2 sm:gap-4 sm:px-6 sm:py-3 lg:px-8">
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
-          <CraneMark className="h-5 w-5 text-vermilion-ink sm:h-7 sm:w-7" />
-          <span className="font-display text-base leading-none text-sumi sm:text-2xl">
+      <header className="z-30 flex shrink-0 items-center gap-4 border-b border-hairline bg-fold px-4 py-3 sm:px-6 lg:px-8">
+        <div className="flex shrink-0 items-center gap-2.5">
+          <CraneMark className="h-7 w-7 text-vermilion-ink" />
+          <span className="font-display text-xl leading-none text-sumi sm:text-2xl">
             oriyomi
           </span>
         </div>
@@ -641,10 +641,9 @@ export default function TextReader() {
       </header>
 
       {/* ——— Three-zone desk (viewport-locked; only the sheet scrolls long content) ——— */}
-      {/* Mobile order: source/play → playback chrome → sheet. Desktop: rail | sheet | right. */}
       <main className="mx-auto grid w-full max-w-[1600px] min-h-0 flex-1 grid-cols-1 gap-[var(--zone-gap)] overflow-y-auto px-4 py-4 sm:px-6 lg:grid-cols-[var(--rail-w)_minmax(0,1fr)_minmax(16rem,22rem)] lg:overflow-hidden lg:px-8 lg:py-5">
         {/* Left rail — panel itself does not scroll; fold cards scroll inside FoldList */}
-        <aside className="order-1 flex min-h-0 flex-col gap-0 overflow-hidden border border-hairline bg-washi/40 px-4 py-4">
+        <aside className="flex min-h-0 flex-col gap-0 overflow-hidden border border-hairline bg-washi/40 px-4 py-4">
           <div className="label-ui shrink-0 text-[11px] text-ink-fade">
             Fold {foldTotal > 0 ? String(foldIndex + 1).padStart(2, "0") : "—"}
             {" of "}
@@ -696,9 +695,8 @@ export default function TextReader() {
           </div>
 
           {/* Scrollable fold cards when structure exists (this box scrolls, not the rail) */}
-          {/* order-5: after source on mobile; DOM order on lg keeps list above pinned source */}
           {hasStructure && sections.length > 0 && (
-            <div className="order-5 mt-4 flex min-h-0 flex-1 flex-col lg:order-none">
+            <div className="mt-4 flex min-h-0 flex-1 flex-col">
               <FoldList
                 sections={sections}
                 activeFoldIndex={foldIndex}
@@ -708,8 +706,8 @@ export default function TextReader() {
             </div>
           )}
 
-          {/* Source + transport — early on mobile (right under fold card); pinned bottom on desktop */}
-          <div className="order-4 mt-5 flex shrink-0 flex-col lg:order-none lg:mt-auto lg:pt-5">
+          {/* Source + transport pinned to the bottom of the rail */}
+          <div className="mt-auto flex shrink-0 flex-col pt-5">
           {/* source: upload + paste (auto-detects folds) */}
           <div id="source">
             <div className="flex items-center justify-between gap-2">
@@ -822,7 +820,7 @@ export default function TextReader() {
         </aside>
 
         {/* Center sheet — the only long scroller on desktop */}
-        <section className="order-3 flex min-h-[24rem] min-h-0 flex-col lg:order-2 lg:min-h-0">
+        <section className="flex min-h-[24rem] min-h-0 flex-col lg:min-h-0">
           <div className="min-h-0 flex-1">
             <TextViewer
               folds={viewerFolds}
@@ -850,11 +848,10 @@ export default function TextReader() {
         </section>
 
         {/* Right: companion + current fold + playback + quiz */}
-        {/* Mobile: playback first so controls are near the play button; companion collapses after text. */}
-        <aside className="order-2 flex min-h-0 flex-col gap-4 overflow-y-auto lg:order-3">
+        <aside className="flex min-h-0 flex-col gap-4 overflow-y-auto">
           {/* Companion — quiz-style collapse; open when empty, optional once text is pasted */}
           <section
-            className="order-2 shrink-0 border border-hairline bg-fold/80 lg:order-1"
+            className="shrink-0 border border-hairline bg-fold/80"
             aria-label="Reading companion"
           >
             <button
@@ -891,7 +888,7 @@ export default function TextReader() {
             )}
           </section>
 
-          <div className="order-3 shrink-0 border border-hairline bg-fold px-4 py-4 lg:order-2">
+          <div className="shrink-0 border border-hairline bg-fold px-4 py-4">
             <div className="label-ui text-[11px] text-ink-mute">Current fold</div>
             <div className="mt-2 flex items-stretch gap-3">
               <FoldCreaseArt
@@ -947,8 +944,8 @@ export default function TextReader() {
             )}
           </div>
 
-          {/* Voice / speed / waveform — first on mobile (near play); under current fold on desktop */}
-          <div className="order-1 shrink-0 border border-hairline bg-fold px-4 py-3 lg:order-3">
+          {/* Voice / speed / waveform — under current fold, above quiz */}
+          <div className="shrink-0 border border-hairline bg-fold px-4 py-3">
             <div className="label-ui mb-1 text-[11px] text-ink-mute">Playback</div>
             <Controls
               voice={voice}
@@ -971,9 +968,7 @@ export default function TextReader() {
             </div>
           </div>
 
-          <div className="order-4 lg:order-4">
-            <Quiz text={text} fullyRead={hasCompletedRead} />
-          </div>
+          <Quiz text={text} fullyRead={hasCompletedRead} />
         </aside>
       </main>
     </div>

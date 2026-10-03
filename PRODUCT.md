@@ -50,7 +50,7 @@ Open product facts (recorded, not decided):
 
 ## Brand Commitments
 
-Working name "Text Reader" (repo and README). No committed visual identity, voice, or brand assets; page metadata still carries the create-next-app default. Nothing else is binding.
+Brand name **oriyomi** (lowercase): ori (to fold) + yomi (to read). Visual identity includes a crane mark, paper-fold palette, and fold-card design language; page metadata title is `oriyomi`.
 
 ## Evidence on Hand
 

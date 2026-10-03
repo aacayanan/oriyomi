@@ -21,6 +21,11 @@ const backend = (process.env.API_PROXY_URL || "http://localhost:8000").replace(
 const nextConfig: NextConfig = {
   // Standalone output exists for the Docker runner; Vercel builds Next natively.
   ...(onVercel ? {} : { output: "standalone" as const }),
+  // Large /api/tts/fold JSON (base64 audio) needs a long proxy read window;
+  // default rewrite proxy timeouts show up as socket hang up / ECONNRESET.
+  experimental: {
+    proxyTimeout: 300_000,
+  },
   async rewrites() {
     if (onVercel) return [];
     return [

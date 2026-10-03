@@ -33,7 +33,7 @@ load_dotenv()
 # ---------------------------------------------------------------------------
 
 app = FastAPI(
-    title="Text Reader TTS API",
+    title="oriyomi TTS API",
     description="Free text-to-speech using Microsoft Edge neural voices with sentence timestamps.",
     version="1.0.0",
 )

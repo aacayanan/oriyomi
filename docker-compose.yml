@@ -14,9 +14,11 @@ services:
     build:
       context: ./frontend
       args:
-        # Same-origin /api proxy — browser never needs the backend host
-        NEXT_PUBLIC_API_URL: ""
-        # Compose-network route: Next server → tts-api service
+        # Browser calls the published backend port directly — avoids the Next
+        # rewrite proxy resetting on large base64 fold responses (ECONNRESET).
+        # CORS on tts-api already allows http://localhost:3000.
+        NEXT_PUBLIC_API_URL: "http://localhost:8000"
+        # Still set for any same-origin proxy path that remains in the image
         API_PROXY_URL: http://tts-api:8000
     ports:
       - "3000:3000"

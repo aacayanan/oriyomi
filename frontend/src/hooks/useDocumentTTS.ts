@@ -42,14 +42,25 @@ interface UseDocumentTTSReturn {
 }
 
 /**
- * Parallel fold generation: one POST /api/tts/fold per section, all fired
- * at once. Each request is an independent serverless invocation that
- * generates that fold in-process; responses land in any order and the
- * first completed fold is playable immediately (readyTick bumps per fold).
+ * Parallel fold generation: one POST /api/tts/fold per section.
  *
- * No queue, no polling — progress is the set of in-flight fetches.
+ * Requests are pooled (MAX_CONCURRENT_FOLDS) rather than all fired at once —
+ * each response carries full base64 audio, and an unbounded fan-out resets
+ * the Next.js /api proxy under Docker (socket hang up / ECONNRESET).
+ * Network failures are retried once before the fold is marked error.
+ *
+ * The first completed fold is playable immediately (readyTick bumps per fold).
  * Cancel aborts every in-flight fold request.
  */
+const MAX_CONCURRENT_FOLDS = 3;
+const FOLD_RETRY_DELAY_MS = 400;
+
+interface FoldJob {
+  index: number;
+  title: string;
+  text: string;
+}
+
 export default function useDocumentTTS(): UseDocumentTTSReturn {
   const [documentId, setDocumentId] = useState<string | null>(null);
   const [foldStatus, setFoldStatus] = useState<Record<number, FoldStatus>>({});
@@ -72,7 +83,7 @@ export default function useDocumentTTS(): UseDocumentTTSReturn {
     async (opts: StartOpts): Promise<string | null> => {
       cancel();
 
-      const folds = opts.sections
+      const folds: FoldJob[] = opts.sections
         .map((s, i) => ({
           index: i,
           title: s.title || `Fold ${String(i + 1).padStart(2, "0")}`,
@@ -105,14 +116,26 @@ export default function useDocumentTTS(): UseDocumentTTSReturn {
         }
       };
 
-      // Fan out: every fold starts generating immediately.
-      for (const f of folds) {
-        void (async () => {
+      const sleep = (ms: number) =>
+        new Promise<void>((resolve) => {
+          const t = window.setTimeout(resolve, ms);
+          abort.signal.addEventListener(
+            "abort",
+            () => {
+              window.clearTimeout(t);
+              resolve();
+            },
+            { once: true },
+          );
+        });
+
+      const fetchFold = async (f: FoldJob): Promise<FoldAudio> => {
+        let lastErr: unknown;
+        // One retry for transport/proxy resets and flaky TTS upstreams.
+        for (let attempt = 0; attempt < 2; attempt++) {
           if (abort.signal.aborted) {
-            settle();
-            return;
+            throw new DOMException("Aborted", "AbortError");
           }
-          setFoldStatus((s) => ({ ...s, [f.index]: "processing" }));
           try {
             const res = await fetch(apiUrl("/api/tts/fold"), {
               method: "POST",
@@ -130,8 +153,32 @@ export default function useDocumentTTS(): UseDocumentTTSReturn {
             if (!res.ok) {
               throw new Error(data.detail || `Server error (${res.status})`);
             }
+            return data as FoldAudio;
+          } catch (err) {
+            if (abort.signal.aborted) throw err;
+            lastErr = err;
+            if (attempt === 0) {
+              await sleep(FOLD_RETRY_DELAY_MS);
+              continue;
+            }
+            throw err;
+          }
+        }
+        throw lastErr;
+      };
+
+      // Bounded worker pool: at most MAX_CONCURRENT_FOLDS in flight.
+      let cursor = 0;
+      const worker = async () => {
+        while (cursor < folds.length) {
+          if (abort.signal.aborted) return;
+          const f = folds[cursor];
+          cursor += 1;
+          setFoldStatus((s) => ({ ...s, [f.index]: "processing" }));
+          try {
+            const data = await fetchFold(f);
             if (abort.signal.aborted) return;
-            foldAudioRef.current.set(f.index, data as FoldAudio);
+            foldAudioRef.current.set(f.index, data);
             setFoldStatus((s) => ({ ...s, [f.index]: "complete" }));
             setReadyTick((t) => t + 1);
           } catch (err) {
@@ -141,8 +188,11 @@ export default function useDocumentTTS(): UseDocumentTTSReturn {
           } finally {
             settle();
           }
-        })();
-      }
+        }
+      };
+
+      const poolSize = Math.min(MAX_CONCURRENT_FOLDS, folds.length);
+      await Promise.all(Array.from({ length: poolSize }, () => worker()));
 
       return docId;
     },

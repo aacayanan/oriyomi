@@ -32,7 +32,7 @@ const libertiusSans = Libertinus_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "oriyomi— text reader",
+  title: "oriyomi",
   description:
     "ori—to fold, yomi—to read. Sentence-sync read-along that folds a document into speech.",
   icons: {
