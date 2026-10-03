@@ -761,13 +761,32 @@ export default function TextReader() {
           </div>
           )}
 
-          {/* Transport — Play always visible; Stop/Cancel beside it */}
-          <div className="mt-4 flex items-center justify-between gap-2">
+          {/* Transport — Stop left, Play/Pause right; matching pill shapes */}
+          <div className="mt-4 flex items-center gap-2">
+            {showStop && (
+              <button
+                type="button"
+                onClick={handleStop}
+                className="outline-btn h-11 shrink-0 rounded-full px-4 text-[10px]"
+              >
+                <StopIcon className="h-3.5 w-3.5" />
+                Stop
+              </button>
+            )}
+            {showCancel && (
+              <button
+                type="button"
+                onClick={handleStop}
+                className="outline-btn h-11 shrink-0 rounded-full px-4 text-[10px]"
+              >
+                Cancel
+              </button>
+            )}
             <button
               type="button"
               onClick={audioPlayer.isPlaying ? handlePause : handlePlay}
               disabled={isLoading || docTTS.isSubmitting}
-              className={`gold-dot-btn h-12 text-xs ${
+              className={`gold-dot-btn h-11 text-[11px] ${
                 hasSecondTransport ? "flex-1" : "w-full"
               }`}
               aria-label={playLabel}
@@ -781,25 +800,6 @@ export default function TextReader() {
                 />
               )}
             </button>
-            {showStop && (
-              <button
-                type="button"
-                onClick={handleStop}
-                className="outline-btn h-12 shrink-0 px-5 text-[10px]"
-              >
-                <StopIcon className="h-3.5 w-3.5" />
-                Stop
-              </button>
-            )}
-            {showCancel && (
-              <button
-                type="button"
-                onClick={handleStop}
-                className="outline-btn h-12 shrink-0 px-5 text-[10px]"
-              >
-                Cancel
-              </button>
-            )}
           </div>
 
           {foldsQueued > 0 && foldsComplete < foldsQueued && (
