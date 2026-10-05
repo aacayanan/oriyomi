@@ -47,15 +47,14 @@ export default function LandingPage() {
             Sentence-sync read-along · edition of one
           </span>
         </div>
+        <Link className="landing-nav-cta" href="/app">
+          Open the reader
+        </Link>
       </header>
 
       <main>
         {/* Hero */}
         <section className="cover" aria-labelledby="title-h">
-          <div className="seal" aria-hidden="true">
-            折
-          </div>
-
           <div className="cover-grid">
             <div>
               <h1 className="landing-title" id="title-h">

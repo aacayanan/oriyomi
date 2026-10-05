@@ -76,6 +76,7 @@ export default function TextReader() {
   const [selectedSection, setSelectedSection] = useState<Section | null>(null);
   const [hasStructure, setHasStructure] = useState(false);
   const [docType, setDocType] = useState("flat");
+  const [foldsUnfolded, setFoldsUnfolded] = useState(0);
 
   const audioPlayer = useAudioPlayer();
   const docTTS = useDocumentTTS();
@@ -181,6 +182,27 @@ export default function TextReader() {
       });
     return () => {
       cancelled = true;
+    };
+  }, []);
+
+  // Poll global folds-unfolded counter every 15s
+  useEffect(() => {
+    let cancelled = false;
+    const fetchStats = () => {
+      fetch(apiUrl("/api/stats"))
+        .then((res) => res.json())
+        .then((data) => {
+          if (!cancelled && typeof data?.folds_unfolded === "number") {
+            setFoldsUnfolded(data.folds_unfolded);
+          }
+        })
+        .catch(() => {});
+    };
+    fetchStats();
+    const id = setInterval(fetchStats, 15_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
     };
   }, []);
 
@@ -661,7 +683,8 @@ export default function TextReader() {
       <header className="z-30 flex shrink-0 items-center gap-4 border-b border-hairline bg-fold px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex shrink-0 items-center gap-2.5">
           <CraneMark className="h-7 w-7 text-vermilion-ink" />
-          <span className="font-display text-xl leading-none text-sumi sm:text-2xl">
+          {/* Matches the landing .wordmark: Shippori Mincho 700 @ 28px */}
+          <span className="font-display text-[28px] font-bold leading-none tracking-[0.012em] text-sumi">
             oriyomi
           </span>
         </div>
@@ -860,15 +883,18 @@ export default function TextReader() {
               jumpToSentenceIndex={jumpToSentenceIndex}
             />
           </div>
-          <div className="flex shrink-0 items-center justify-between px-2 pt-2 font-ui text-xs text-vermilion-soft">
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2 pt-2 font-ui text-xs text-vermilion-soft">
             <span aria-hidden="true">▶</span>
+            <span className="label-ui text-[9px] text-ink-mute tabular-nums">
+              Helped read {foldsUnfolded.toLocaleString()} fold{foldsUnfolded === 1 ? "" : "s"}.
+            </span>
             <a
               href="https://buymeacoffee.com/aaroncayanan"
               target="_blank"
               rel="noopener noreferrer"
               className="label-ui text-[9px] text-ink-mute transition-colors hover:text-vermilion"
             >
-              ☕ Buy me a coffee - help keep this app free
+              ☕ Buy me a coffee
             </a>
             <span aria-hidden="true">◀</span>
           </div>

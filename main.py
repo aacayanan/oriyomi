@@ -41,6 +41,13 @@ app = FastAPI(
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s: %(message)s")
 
+# ---------------------------------------------------------------------------
+# Global stats counter
+# ---------------------------------------------------------------------------
+# In-process fold counter — resets on server restart.  Incremented on every
+# successful TTS fold (/api/tts/fold → +1, /api/tts → +1 per call).
+_folds_unfolded: int = 0
+
 def _cors_origins() -> list[str]:
     """Browser origins allowed to call the API directly.
 
@@ -133,6 +140,11 @@ class VoiceResponse(BaseModel):
     name: str
     locale: str
     display_name: str
+
+
+class StatsResponse(BaseModel):
+    """Global usage statistics."""
+    folds_unfolded: int = Field(description="Total folds successfully generated since last server restart.")
 
 
 # ---------------------------------------------------------------------------
@@ -274,6 +286,9 @@ async def text_to_speech(request: TTSRequest):
     except RuntimeError as e:
         raise HTTPException(status_code=500, detail=f"TTS generation failed: {e}")
 
+    global _folds_unfolded
+    _folds_unfolded += 1
+
     return TTSResponse(
         audio_base64=base64.b64encode(result.audio_bytes).decode("utf-8"),
         sentences=_sentence_models(result),
@@ -308,6 +323,11 @@ async def tts_fold(request: FoldTTSRequest):
     except RuntimeError as e:
         raise HTTPException(status_code=500, detail=f"TTS generation failed: {e}")
 
+    duration_val = result.sentences[-1].end_ms if result.sentences else 0
+
+    global _folds_unfolded
+    _folds_unfolded += 1
+
     return DocumentFoldResult(
         fold_index=request.fold_index,
         title=title,
@@ -315,7 +335,7 @@ async def tts_fold(request: FoldTTSRequest):
         sentences=_sentence_models(result),
         voice=request.voice,
         speed=request.speed,
-        duration_ms=result.sentences[-1].end_ms if result.sentences else 0,
+        duration_ms=duration_val,
     )
 
 
@@ -418,6 +438,12 @@ async def generate_quiz(request: QuizRequest):
 async def health():
     """Health check endpoint."""
     return {"status": "ok"}
+
+
+@app.get("/api/stats", response_model=StatsResponse)
+async def stats():
+    """Return global usage stats (in-memory, resets on restart)."""
+    return StatsResponse(folds_unfolded=_folds_unfolded)
 
 
 # ---------------------------------------------------------------------------
