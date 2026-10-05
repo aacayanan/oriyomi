@@ -283,12 +283,12 @@ function FoldDivider({
       aria-label={`Fold ${number}${title ? `: ${title}` : ""}`}
     >
       <span
-        className={`label-ui shrink-0 text-[10px] ${active ? "text-vermilion" : "text-ink-fade"}`}
+        className={`label-ui shrink-0 text-[0.595em] ${active ? "text-vermilion" : "text-ink-fade"}`}
       >
         Fold {number}
       </span>
       {title && (
-        <span className="max-w-[40%] truncate font-display text-sm text-sumi-soft">
+        <span className="max-w-[40%] truncate font-display text-[0.833em] text-sumi-soft">
           {title}
         </span>
       )}
@@ -302,12 +302,12 @@ function FoldDivider({
         <span className="h-px flex-1" style={dashStyle} />
       </span>
       {status === "pending" && (
-        <span className="label-ui shrink-0 text-[9px] text-ink-mute">
+        <span className="label-ui shrink-0 text-[0.536em] text-ink-mute">
           folding…
         </span>
       )}
       {status === "error" && (
-        <span className="label-ui shrink-0 text-[9px] text-vermilion">
+        <span className="label-ui shrink-0 text-[0.536em] text-vermilion">
           failed
         </span>
       )}
@@ -318,14 +318,14 @@ function FoldDivider({
 function EmptySheet() {
   return (
     <div className="mx-auto flex h-full min-h-[22rem] max-w-[36rem] flex-col items-start justify-center gap-4 px-2">
-      <p className="font-display text-3xl leading-tight text-sumi sm:text-4xl">
+      <p className="font-display leading-tight text-sumi text-[1.786em] sm:text-[2.143em]">
         Fold a document into speech.
       </p>
-      <p className="max-w-[34ch] font-body text-base leading-relaxed text-ink-fade">
+      <p className="max-w-[34ch] font-body leading-relaxed text-ink-fade text-[0.952em]">
         Paste text or drop a file in the source panel. Play reads it aloud
         sentence by sentence — the active crease lights gold as it goes.
       </p>
-      <p className="label-ui text-[11px] text-ink-mute">
+      <p className="label-ui text-ink-mute text-[0.655em]">
         .txt · .md · .pdf · .docx
       </p>
     </div>

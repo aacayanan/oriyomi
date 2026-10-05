@@ -16,7 +16,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </p>
         <p className="gate-fine">折り to fold · 読み to read</p>
       </div>
-      <div className="app-desktop-only">{children}</div>
+      <div className="app-desktop-only h-full">{children}</div>
     </div>
   );
 }

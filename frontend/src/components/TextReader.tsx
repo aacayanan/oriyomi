@@ -672,7 +672,7 @@ export default function TextReader() {
       </header>
 
       {/* ——— Three-zone desk (viewport-locked; only the sheet scrolls long content) ——— */}
-      <main className="mx-auto grid w-full max-w-[1600px] min-h-0 flex-1 grid-cols-1 gap-[var(--zone-gap)] overflow-y-auto px-4 py-4 sm:px-6 lg:grid-cols-[var(--rail-w)_minmax(0,1fr)_minmax(16rem,22rem)] lg:overflow-hidden lg:px-8 lg:py-5">
+      <main className="mx-auto grid w-full max-w-[1600px] min-h-0 flex-1 grid-cols-1 gap-[var(--zone-gap)] overflow-y-auto px-4 py-4 sm:px-6 lg:grid-cols-[var(--rail-w)_minmax(0,1fr)_minmax(16rem,22rem)] lg:grid-rows-1 lg:overflow-hidden lg:px-8 lg:py-5">
         {/* Left rail — panel itself does not scroll; fold cards scroll inside FoldList */}
         <aside className="flex min-h-0 flex-col gap-0 overflow-hidden border border-hairline bg-washi/40 px-4 py-4">
           <div className="label-ui shrink-0 text-[11px] text-ink-fade">
@@ -725,9 +725,10 @@ export default function TextReader() {
             </div>
           </div>
 
-          {/* Scrollable fold cards when structure exists (this box scrolls, not the rail) */}
+          {/* Scrollable upper region — fold cards + source share it; the rail itself never scrolls */}
+          <div className="mt-4 flex min-h-0 flex-1 flex-col overflow-y-auto">
           {hasStructure && sections.length > 0 && (
-            <div className="mt-4 flex min-h-0 flex-1 flex-col">
+            <div className="flex min-h-0 flex-col">
               <FoldList
                 sections={sections}
                 activeFoldIndex={foldIndex}
@@ -736,9 +737,6 @@ export default function TextReader() {
               />
             </div>
           )}
-
-          {/* Source + transport pinned to the bottom of the rail */}
-          <div className="mt-auto flex shrink-0 flex-col pt-5">
           {/* source: upload + paste — hidden once audio is ready / playing */}
           {!hideSource && (
           <div id="source">
@@ -778,8 +776,41 @@ export default function TextReader() {
           </div>
           )}
 
-          {/* Transport — Stop left, Play/Pause right; matching pill shapes */}
-          <div className="mt-4 flex items-center gap-2">
+          {foldsQueued > 0 && foldsComplete < foldsQueued && (
+            <div className="mt-4 border border-hairline bg-fold p-3">
+              <div className="flex items-center justify-between font-ui text-[11px] text-sumi-soft">
+                <span>Folding speech…</span>
+                <span className="font-data tabular-nums">
+                  {foldsComplete} / {foldsQueued} folds
+                </span>
+              </div>
+              <div className="mt-2 h-1 overflow-hidden bg-hairline">
+                <div
+                  className="h-full bg-vermilion transition-all duration-300"
+                  style={{
+                    width: `${foldsQueued ? (foldsComplete / foldsQueued) * 100 : 0}%`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div
+              role="alert"
+              className="mt-4 flex items-start gap-2 border border-vermilion-soft/60 bg-fold p-3"
+            >
+              <AlertIcon className="mt-0.5 h-4 w-4 shrink-0 text-vermilion" />
+              <p className="font-ui text-xs leading-relaxed text-vermilion-ink">
+                {error}
+              </p>
+            </div>
+          )}
+          </div>
+
+          {/* Transport — pinned at the rail bottom, always visible */}
+          <div className="shrink-0 pt-5">
+          <div className="flex items-center gap-2">
             {showStop && (
               <button
                 type="button"
@@ -812,42 +843,11 @@ export default function TextReader() {
               <span>{playLabel}</span>
             </button>
           </div>
-
-          {foldsQueued > 0 && foldsComplete < foldsQueued && (
-            <div className="mt-4 border border-hairline bg-fold p-3">
-              <div className="flex items-center justify-between font-ui text-[11px] text-sumi-soft">
-                <span>Folding speech…</span>
-                <span className="font-data tabular-nums">
-                  {foldsComplete} / {foldsQueued} folds
-                </span>
-              </div>
-              <div className="mt-2 h-1 overflow-hidden bg-hairline">
-                <div
-                  className="h-full bg-vermilion transition-all duration-300"
-                  style={{
-                    width: `${foldsQueued ? (foldsComplete / foldsQueued) * 100 : 0}%`,
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
-          {error && (
-            <div
-              role="alert"
-              className="mt-4 flex items-start gap-2 border border-vermilion-soft/60 bg-fold p-3"
-            >
-              <AlertIcon className="mt-0.5 h-4 w-4 shrink-0 text-vermilion" />
-              <p className="font-ui text-xs leading-relaxed text-vermilion-ink">
-                {error}
-              </p>
-            </div>
-          )}
           </div>
         </aside>
 
         {/* Center sheet — the only long scroller on desktop */}
-        <section className="flex min-h-[24rem] min-h-0 flex-col lg:min-h-0">
+        <section className="flex min-h-0 flex-col">
           <div className="min-h-0 flex-1">
             <TextViewer
               folds={viewerFolds}
