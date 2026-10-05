@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 864 1152" width="864" height="1152" fill="none" role="img" aria-label="Paper-cut collage of an origami crane rotated forty-five degrees on a 3D plane, transparent ground">
+  <!-- 3D XYZ construction: 45° between X and Y on the ground plane -->
+  <g stroke="#1a1513" stroke-width="2" stroke-linecap="square" opacity=".55">
+    <!-- Z up -->
+    <line x1="432" y1="780" x2="432" y2="220"/>
+    <path d="M420 240 L432 200 L444 240" fill="#1a1513" stroke="none" opacity=".8"/>
+    <!-- X lower-right (45° in plan) -->
+    <line x1="432" y1="780" x2="720" y2="940"/>
+    <path d="M690 918 L736 948 L700 970" fill="#1a1513" stroke="none" opacity=".8"/>
+    <!-- Y lower-left (45° in plan) -->
+    <line x1="432" y1="780" x2="144" y2="940"/>
+    <path d="M174 918 L128 948 L164 970" fill="#1a1513" stroke="none" opacity=".8"/>
+  </g>
+  <!-- ground plane diamond hint -->
+  <path d="M432 780 L720 940 L432 1100 L144 940 Z" stroke="#1a1513" stroke-width="1" opacity=".12" fill="none"/>
+
+  <!-- Paper-cut crane body: flat polygons, isometric fold facets -->
+  <!-- tail / back wing -->
+  <polygon points="432,470 610,300 640,520 500,610" fill="#c34838"/>
+  <polygon points="610,300 700,360 640,520" fill="#9e3226"/>
+  <!-- near wing (lifted, 45° to XY) -->
+  <polygon points="300,520 470,340 520,560 360,640" fill="#c34838"/>
+  <polygon points="470,340 520,560 400,600" fill="#e07a6a"/>
+  <!-- body core -->
+  <polygon points="360,640 520,560 560,720 400,780" fill="#f6eee2" stroke="#1a1513" stroke-width="3" stroke-linejoin="round"/>
+  <polygon points="400,780 560,720 540,820 420,860" fill="#efe4d4" stroke="#1a1513" stroke-width="3" stroke-linejoin="round"/>
+  <!-- neck + head -->
+  <polygon points="360,640 300,520 250,560 320,700" fill="#c34838"/>
+  <polygon points="250,560 200,540 220,600 300,590" fill="#9e3226"/>
+  <polygon points="200,540 160,555 200,575 220,600" fill="#f6eee2" stroke="#1a1513" stroke-width="2.5" stroke-linejoin="round"/>
+  <!-- beak -->
+  <polygon points="160,555 100,575 165,590" fill="#1a1513"/>
+  <!-- crest fold -->
+  <polygon points="300,520 270,450 340,500" fill="#e07a6a"/>
+  <!-- tail point -->
+  <polygon points="540,820 620,900 500,860" fill="#9e3226"/>
+  <!-- fold crease cuts (paper-cut white slits) -->
+  <g stroke="#f6eee2" stroke-width="4" stroke-linecap="square" opacity=".9">
+    <line x1="470" y1="360" x2="420" y2="600"/>
+    <line x1="600" y1="340" x2="540" y2="560"/>
+    <line x1="400" y1="660" x2="480" y2="740"/>
+  </g>
+  <!-- soft contact shadow only -->
+  <ellipse cx="430" cy="880" rx="150" ry="22" fill="#1a1513" opacity=".08"/>
+</svg>

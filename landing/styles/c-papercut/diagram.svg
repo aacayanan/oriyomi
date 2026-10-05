@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 320" width="900" height="320" fill="none" role="img" aria-label="Paper-cut diagram: flat plane, creased folds, speech; arrows all point right">
+  <!-- flat paper-cut polygons, right-pointing chevrons, no frame -->
+  <!-- 1 flat plane -->
+  <g transform="translate(30,70)">
+    <polygon points="20,90 130,40 250,75 140,130" fill="#f6eee2" stroke="#1a1513" stroke-width="3" stroke-linejoin="round"/>
+    <polygon points="20,90 140,130 140,145 20,105" fill="#efe4d4" stroke="#1a1513" stroke-width="2"/>
+    <polygon points="140,130 250,75 250,90 140,145" fill="#e5d7c2" stroke="#1a1513" stroke-width="2"/>
+  </g>
+  <!-- chevron → -->
+  <g transform="translate(300,120)" fill="none" stroke="#c34838" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="0,-16 18,0 0,16"/>
+    <polyline points="18,-16 36,0 18,16"/>
+  </g>
+  <!-- 2 creased folds as stacked paper facets -->
+  <g transform="translate(370,50)">
+    <polygon points="20,140 70,40 120,140" fill="#f6eee2" stroke="#1a1513" stroke-width="3"/>
+    <polygon points="100,140 150,25 200,140" fill="#f8f4ea" stroke="#1a1513" stroke-width="3"/>
+    <polygon points="180,140 230,15 280,140" fill="#c34838" stroke="#1a1513" stroke-width="3"/>
+    <polygon points="260,140 310,40 360,140" fill="#f6eee2" stroke="#1a1513" stroke-width="3"/>
+    <!-- paper edge thickness -->
+    <polygon points="20,140 360,140 360,155 20,155" fill="#e5d7c2" stroke="#1a1513" stroke-width="2"/>
+  </g>
+  <!-- chevron → -->
+  <g transform="translate(760,120)" fill="none" stroke="#c34838" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="0,-16 18,0 0,16"/>
+    <polyline points="18,-16 36,0 18,16"/>
+  </g>
+  <!-- 3 speech: paper-cut sound blades opening to the right -->
+  <g transform="translate(820,40)">
+    <polygon points="10,40 10,140 50,90" fill="#c34838"/>
+    <polygon points="60,20 60,160 120,90" fill="#c34838" opacity=".7"/>
+    <polygon points="130,0 130,180 200,90" fill="#c34838" opacity=".4"/>
+  </g>
+</svg>

@@ -1,0 +1,30 @@
+---
+version: 1
+slug: "v2-index-html"
+primary_target: "v2/index.html"
+related_targets: []
+---
+
+# Surface: Landing v2 — JOB LOG
+
+Mode: Persuade. The visitor becomes curious and tries the app.
+
+Audience: learners holding dense course material. Job: understand what oriyomi does and believe it will get them through a chapter. Action: press "Try it out" (hero, repeated at the end). Proof/content: the pipeline printed as job sections; the excerpt printed with the spoken line flagged and its timestamp; real voice names and speeds. Constraints: free Edge TTS only, no accounts; no invented social proof; hero imagery arrives later — its slot is a flat CSS stand-in at final geometry with a placement note.
+
+Chosen direction: JOB LOG — the page is the continuous-feed printout the document returns. Memorable moment: the page prints itself line by line and the spoken line is flagged with a vermilion caret while the lines already read fade to ribbon gray.
+
+Unresolved: CTA href is a placeholder until the app URL is fixed.
+
+## Direction contract
+
+THESIS: Uploading a chapter runs a job, and the landing page is the printout that comes back — line-numbered, timestamped, one line spoken at a time. Refuses the app-store screenshot montage.
+
+OWN-WORLD: Continuous-feed paper (#E7E3D8) with alternating fanfold bands; sumi ink (#211B17); exactly one warm accent, ribbon vermilion (#C34838), owning the spoken-line caret, the stamps and the CTA; tractor-feed perforations rule both margins. Azeret Mono 800 at banner scale; Courier Prime at 10–11px for labels, line numbers and status lines; everything in fixed character cells.
+
+STORY: INPUT, FOLD SEQUENCE, SPEECH and QUIZ print as job sections; the excerpt prints with the spoken line flagged; the tear-off strip at the end is the CTA.
+
+FIRST VIEWPORT: Printer status line across the top; monumental banner headline in Azeret Mono; the hero ASCII plate slot beneath it, 5:2, full column width; "Try it out" stamped on a tear-off strip; line numbers 001-onwards run the whole page.
+
+FORM: Fanfold printout; candidate 4 of the grounded structural list, dealt by seed 2b17851d. Raise named for donor medium-native-ebru-floated-pigment: every mark displaces the last — the spoken line prints dark while the lines already read fade to ribbon gray.
+
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance

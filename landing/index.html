@@ -1,0 +1,1212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>oriyomi — fold a chapter into speech</title>
+<meta name="description" content="ori—to fold, yomi—to read. Oriyomi folds a document into neural speech and lights the exact sentence being spoken. Free, no account, no API key.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;700&family=Sometype+Mono:wght@400..700&display=swap" rel="stylesheet">
+<style>
+  /* ── LANDING · FINAL COMPOSITE · oriyomi ──────────────────────────── */
+  :root {
+    --washi: #f6eee2;
+    --washi-deep: #efe4d4;
+    --fold: #f8f4ea;
+    --vermilion: #c34838;
+    --vermilion-soft: #c3574b;
+    --vermilion-ink: #9e3226;
+    --sumi: #1a1513;
+    --sumi-soft: #2a2420;
+    --ink-fade: #6e645c;
+    --ink-mute: #80756e;
+    --gold: #c9a227;
+    --gold-lit: #e8c55a;
+    --hairline: #d6ccbc;
+    --hairline-deep: #c9beb0;
+
+    --font-display: "Shippori Mincho", "Hiragino Mincho ProN", serif;
+    --font-mono: "Sometype Mono", ui-monospace, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--washi);
+    color: var(--sumi);
+    font-family: var(--font-display);
+    font-size: 16px;
+    line-height: 1.65;
+    font-variant-numeric: tabular-nums;
+    caret-color: var(--vermilion-ink);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    background-image: url("plates/washi-ground.png");
+    background-size: 280px 158px;
+    background-repeat: repeat;
+    background-blend-mode: lighten;
+  }
+
+  ::selection { background: rgba(195, 72, 56, .25); color: var(--sumi); }
+  :focus { outline: none; }
+  :focus-visible { outline: 2px solid var(--vermilion-ink); outline-offset: 3px; }
+  a { color: inherit; }
+
+  * { scrollbar-width: thin; scrollbar-color: var(--hairline-deep) transparent; }
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb { background: var(--hairline-deep); border: 3px solid transparent; background-clip: content-box; }
+  *::-webkit-scrollbar-thumb:hover { background: var(--ink-mute); background-clip: content-box; }
+
+  .mono {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--ink-fade);
+    line-height: 1.8;
+  }
+  .mono-sumi { color: var(--sumi-soft); }
+  .mono-on-verm { color: #f0d9c6; }
+
+  /* ── page frame ──────────────────────────────────────────────────── */
+  .page {
+    max-width: 1340px;
+    margin: 0 auto;
+    padding: 0 clamp(18px, 3.4vw, 48px);
+    position: relative;
+  }
+
+  /* ── registration crosses (V5 marginalia) ────────────────────────── */
+  .reg {
+    position: absolute;
+    width: 12px; height: 12px;
+    color: var(--hairline-deep);
+    pointer-events: none;
+    opacity: .6;
+  }
+  .reg-tl { top: 18px; left: 6px; }
+  .reg-tr { top: 18px; right: 6px; }
+  .reg-bl { bottom: 18px; left: 6px; }
+  .reg-br { bottom: 18px; right: 6px; }
+  .folio {
+    position: absolute;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: .14em;
+    color: var(--hairline-deep);
+    writing-mode: vertical-rl;
+    pointer-events: none;
+    opacity: .5;
+  }
+  .folio-l { left: 0; top: 140px; }
+  .folio-r { right: 0; top: 140px; transform: rotate(180deg); }
+
+  /* ── masthead (V5 style, live colors) ────────────────────────────── */
+  .masthead {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 22px 0 16px;
+    border-bottom: 1px solid var(--hairline-deep);
+  }
+  .masthead::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0;
+    bottom: -8px;
+    height: 0;
+    border-top: 2px solid var(--sumi);
+    border-bottom: 1px solid var(--hairline-deep);
+    padding-bottom: 5px;
+  }
+  .mark { width: 30px; height: 30px; color: var(--vermilion-ink); flex: none; }
+  .wordmark {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 28px;
+    line-height: 1;
+    letter-spacing: .012em;
+  }
+  .issue {
+    margin-left: auto;
+    text-align: right;
+    border-left: 1px solid var(--hairline);
+    padding-left: 20px;
+  }
+  .issue .label {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 10.5px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--sumi);
+    display: block;
+    line-height: 1;
+  }
+  .issue .sub {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--ink-fade);
+    display: block;
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+
+  /* ── cover / hero (V4 structure, live colors) ────────────────────── */
+  .cover {
+    padding: clamp(36px, 5.2vw, 76px) 0 0;
+    position: relative;
+  }
+  .cover-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(280px, .72fr);
+    gap: clamp(28px, 4.6vw, 72px);
+    align-items: start;
+    padding-right: clamp(0px, 6vw, 88px);
+  }
+
+  .etym {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 26px;
+    margin: 22px 0 0;
+    padding-top: 16px;
+    border-top: 1px solid var(--hairline);
+  }
+  .etym .pair {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .etym .kanji {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 26px;
+    line-height: 1;
+    letter-spacing: .04em;
+    color: var(--sumi);
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2.9rem, 6vw, 6rem);
+    line-height: 1.02;
+    letter-spacing: -.035em;
+    margin: 0 0 clamp(18px, 2.2vw, 28px);
+    max-width: 13ch;
+    text-wrap: balance;
+  }
+
+  .lede {
+    max-width: 58ch;
+    margin: 0 0 22px;
+    font-size: 16.5px;
+    line-height: 1.78;
+  }
+  .lede b { font-weight: 700; }
+
+  .cover-meta {
+    list-style: none;
+    margin: 0;
+    padding: 14px 0 0;
+    border-top: 1px solid var(--hairline);
+    display: grid;
+    gap: 6px;
+    max-width: 44ch;
+  }
+  .cover-meta li {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+  }
+  .cover-meta .v {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--sumi);
+  }
+
+  /* ── hero plate slot ─────────────────────────────────────────────── */
+  /* HERO PLACEMENT — transparent crane, portrait 3:4, style-swappable */
+  .plate {
+    aspect-ratio: 3 / 4;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin: 0;
+    border: none;
+    position: relative;
+    background: transparent;
+    display: grid;
+    place-items: center;
+  }
+  .plate::after { content: none; }
+  .plate img,
+  .plate object,
+  .plate .crane-svg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    position: relative;
+    z-index: 1;
+    display: block;
+    mix-blend-mode: multiply;
+  }
+  .plate-cap {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 8px 0 0;
+    flex-wrap: wrap;
+  }
+
+  /* hanko seal — stamps onto the cover */
+  .seal {
+    position: absolute;
+    right: clamp(0px, 2vw, 26px);
+    top: clamp(12px, 2vw, 30px);
+    width: clamp(62px, 6vw, 84px);
+    aspect-ratio: 1;
+    background: var(--vermilion);
+    color: #f8f4ea;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(28px, 3vw, 40px);
+    line-height: 1;
+    letter-spacing: 0;
+    z-index: 4;
+    animation: seal-stamp 900ms cubic-bezier(.22, 1.2, .36, 1) 240ms both;
+  }
+  @keyframes seal-stamp {
+    0%   { transform: scale(1.42) rotate(-9deg); opacity: .35; }
+    55%  { transform: scale(.97) rotate(1.5deg); opacity: 1; }
+    100% { transform: none; opacity: 1; }
+  }
+
+  /* ── obi band ────────────────────────────────────────────────────── */
+  .obi {
+    margin: clamp(30px, 4.2vw, 54px) 0 0;
+    background: var(--vermilion);
+    color: #f8f4ea;
+    padding: clamp(20px, 2.6vw, 30px) clamp(20px, 3vw, 40px);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 18px 32px;
+    box-shadow: 0 12px 26px rgba(26, 21, 19, .18);
+    animation: obi-wrap 950ms cubic-bezier(.16, 1, .3, 1) both;
+  }
+  @keyframes obi-wrap {
+    0%   { transform: translateY(22px) scaleY(1.07); box-shadow: 0 22px 40px rgba(26,21,19,.32); }
+    100% { transform: none; box-shadow: 0 12px 26px rgba(26, 21, 19, .18); }
+  }
+  .obi .say {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.15rem, 2vw, 1.5rem);
+    line-height: 1.35;
+    letter-spacing: -.012em;
+    margin: 0;
+    max-width: 34ch;
+  }
+  .obi .fine {
+    margin: 4px 0 0;
+    color: #f0d9c6;
+  }
+  .obi .cta-slot { margin-left: auto; }
+
+  .cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--fold);
+    color: var(--sumi);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: .015em;
+    text-decoration: none;
+    padding: 14px 28px 13px;
+    border: 1px solid rgba(26, 21, 19, .2);
+    transition: background-color 160ms ease, transform 160ms ease;
+    white-space: nowrap;
+  }
+  .cta:hover { background: #fff; }
+  .cta:active { transform: translateY(1px); }
+  .cta svg { width: 11px; height: 13px; flex: none; }
+
+  /* ── beat section (V3 copy, live colors) ─────────────────────────── */
+  .beat {
+    margin-top: clamp(72px, 9.6vw, 128px);
+  }
+  .beat-grid {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(28px, 3.5vw, 48px);
+    align-items: stretch;
+  }
+  .beat-grid > div:first-child { max-width: 58ch; }
+  .beat h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(1.95rem, 3.5vw, 3rem);
+    line-height: 1.12;
+    letter-spacing: -.03em;
+    margin: 0 0 18px;
+    max-width: 14ch;
+    text-wrap: balance;
+  }
+  .beat p { max-width: 54ch; margin: 0 0 16px; }
+
+  /* diagram slot — full-bleed beat flow, assets fill the plate */
+  .diagram-plate {
+    aspect-ratio: auto;
+    min-height: 0;
+    border: none;
+    background: transparent;
+    position: relative;
+    overflow: visible;
+    width: 100%;
+    margin: 0;
+  }
+  .diagram-plate img,
+  .diagram-plate object,
+  .diagram-plate svg.diagram-svg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: left center;
+    position: relative;
+    z-index: 2;
+    display: block;
+  }
+  .diagram-plate::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(90deg, transparent 0 2px, rgba(26,21,19,.01) 2px 3px),
+      repeating-linear-gradient(0deg, transparent 0 2px, rgba(26,21,19,.01) 2px 3px);
+  }
+
+  /* beat flow (three-step horizontal) — assets fill the plate */
+  .beat-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(8px, 1.6vw, 22px);
+    height: 100%;
+    padding: 8px 0;
+    position: relative;
+    z-index: 1;
+  }
+  .beat-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex: 1 1 0;
+    max-width: none;
+    min-width: 0;
+  }
+  .beat-step img {
+    width: 100%;
+    max-height: clamp(180px, 26vw, 340px);
+    object-fit: contain;
+    display: block;
+  }
+  .beat-step.is-pull {
+    flex: 1.35 1 0;
+  }
+  .beat-step.is-pull img {
+    width: 118%;
+    max-width: 118%;
+    max-height: clamp(200px, 30vw, 380px);
+  }
+  .beat-step .mono {
+    font-size: 9.5px;
+    letter-spacing: .14em;
+    color: var(--ink-fade);
+    text-align: center;
+  }
+  .beat-arrow {
+    color: var(--hairline-deep);
+    width: clamp(32px, 4vw, 52px);
+    height: auto;
+    flex: none;
+  }
+  .beat-speech {
+    width: min(100%, clamp(140px, 16vw, 240px));
+    max-height: clamp(160px, 20vw, 260px);
+    height: auto;
+    display: block;
+  }
+
+  /* Simple inline diagram showing sheet → folds → speech */
+  .diagram-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(16px, 3vw, 36px);
+    height: 100%;
+    padding: 20px;
+    position: relative;
+    z-index: 1;
+  }
+  .diagram-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .diagram-step svg { width: clamp(48px, 6vw, 80px); height: auto; }
+  .diagram-step .mono {
+    font-size: 9px;
+    letter-spacing: .14em;
+    color: var(--ink-fade);
+    text-align: center;
+  }
+  .diagram-arrow {
+    color: var(--hairline-deep);
+    width: clamp(20px, 3vw, 32px);
+    height: auto;
+  }
+
+  .diagram-labels {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 10px;
+    text-align: center;
+  }
+  .diagram-labels .mono { font-size: 9.5px; }
+
+  /* ── flaps / book section (V4 structure, live colors) ────────────── */
+  .flaps {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-top: clamp(72px, 9.6vw, 128px);
+    position: relative;
+  }
+  .flaps::before {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0; left: 50%;
+    width: 1px;
+    background: var(--hairline);
+    transform: translateX(-.5px);
+    pointer-events: none;
+  }
+  .flaps::after {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0; left: 50%;
+    width: 34px;
+    transform: translateX(-50%);
+    background: linear-gradient(90deg,
+      rgba(26,21,19,0) 0%, rgba(26,21,19,.07) 46%,
+      rgba(246,238,226,.1) 54%, rgba(26,21,19,0) 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .flap {
+    padding: 0 clamp(20px, 3vw, 46px);
+    min-width: 0;
+    position: relative;
+    z-index: 1;
+  }
+  .flap-left { padding-left: 0; padding-right: clamp(28px, 4vw, 62px); }
+  .flap-right { padding-right: 0; padding-left: clamp(28px, 4vw, 62px); }
+
+  .flap h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2rem, 3.6vw, 3.15rem);
+    line-height: 1.1;
+    letter-spacing: -.03em;
+    margin: 0 0 18px;
+    max-width: 16ch;
+    text-wrap: balance;
+    padding-top: 26px;
+  }
+  .flap p { margin: 0 0 16px; max-width: 46ch; }
+
+  .colophon {
+    margin: 26px 0 0;
+    border-top: 1px solid var(--hairline);
+  }
+  .colophon .r {
+    display: grid;
+    grid-template-columns: minmax(84px, 120px) minmax(0, 1fr);
+    gap: 16px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--hairline);
+    align-items: baseline;
+  }
+  .colophon .r:last-child { border-bottom: 0; }
+  .colophon .r span:last-child { font-size: 14px; line-height: 1.55; }
+
+  /* ── reader mock (styled like the live app) ──────────────────────── */
+  .reader-mock {
+    background: var(--fold);
+    border: 1px solid var(--hairline);
+    margin-top: 18px;
+    overflow: hidden;
+  }
+  .reader-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--hairline);
+    background: var(--fold);
+  }
+  .reader-header .label-ui {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink-fade);
+  }
+  .reader-body {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr);
+    min-height: 280px;
+  }
+
+  /* fold rail */
+  .fold-rail {
+    border-right: 1px solid var(--hairline);
+    padding: 12px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: rgba(246,238,226,.35);
+  }
+  .fold-rail-header {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink-fade);
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .fold-dots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px 0;
+  }
+  .fold-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--ink-mute);
+  }
+  .fold-dot.done { border-color: var(--vermilion-soft); background: var(--vermilion-soft); }
+  .fold-dot.active { border-color: var(--gold); background: var(--gold); }
+
+  .fold-card {
+    border: 1px solid var(--hairline);
+    background: var(--fold);
+    padding: 8px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .fold-card-art {
+    width: 36px;
+    height: 36px;
+    flex: none;
+    border: 1px solid var(--hairline-deep);
+    background:
+      linear-gradient(115deg, transparent 42%, rgba(248,244,234,.75) 42.4%, transparent 43.2%),
+      linear-gradient(65deg, transparent 58%, rgba(248,244,234,.55) 58.3%, transparent 59.1%),
+      linear-gradient(180deg, transparent 70%, rgba(248,244,234,.4) 70.3%, transparent 71%),
+      linear-gradient(135deg, var(--vermilion), #6a2218);
+  }
+  .fold-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+  .fold-card-num {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 1;
+    color: var(--vermilion-soft);
+  }
+  .fold-card-title {
+    font-family: var(--font-display);
+    font-size: 11px;
+    line-height: 1.3;
+    color: var(--sumi);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .fold-card-time {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--ink-fade);
+    letter-spacing: .06em;
+  }
+
+  .fold-list-card {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 4px;
+    border-bottom: 1px solid var(--hairline);
+    font-size: 10px;
+  }
+  .fold-list-card:last-child { border-bottom: 0; }
+  .fold-list-art {
+    width: 22px;
+    height: 22px;
+    flex: none;
+    border: 1px solid var(--hairline-deep);
+    background: var(--washi-deep);
+  }
+  .fold-list-art.active-art {
+    background:
+      linear-gradient(135deg, var(--vermilion), #6a2218);
+  }
+  .fold-list-num {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--ink-fade);
+    width: 16px;
+    flex: none;
+  }
+  .fold-list-num.active-num { color: var(--gold); font-weight: 700; }
+  .fold-list-title {
+    font-family: var(--font-display);
+    font-size: 10px;
+    color: var(--sumi-soft);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+  }
+  .fold-list-dur {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--ink-fade);
+    flex: none;
+  }
+
+  /* center sheet */
+  .reader-sheet {
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .sheet-sentences {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .sline {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--hairline);
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+  .sline:last-child { border-bottom: 0; }
+  .sline .s-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex: none;
+    margin-top: 0.45em;
+  }
+  .sline.done .s-dot { background: transparent; }
+  .sline.done .s-text { color: var(--ink-mute); }
+  .sline.active .s-dot { background: var(--gold); width: 7px; height: 7px; }
+  .sline.active .s-text {
+    color: var(--sumi);
+    font-weight: 600;
+    border-bottom: 3px solid var(--vermilion-soft);
+    padding-bottom: 1px;
+  }
+  .sline.pending .s-dot { background: transparent; }
+  .sline.pending .s-text { color: var(--sumi-soft); }
+  .s-text { max-width: 52ch; }
+
+  /* playback chrome */
+  .playback-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0 0;
+    margin-top: auto;
+    border-top: 1px solid var(--hairline);
+    gap: 10px;
+  }
+  .playback-voice {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: .08em;
+    color: var(--ink-fade);
+    text-transform: uppercase;
+  }
+  .playback-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .play-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--gold);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+    flex: none;
+  }
+  .play-btn svg { width: 10px; height: 12px; margin-left: 2px; }
+  .speed-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--sumi-soft);
+    letter-spacing: .06em;
+  }
+
+  /* waveform strip */
+  .waveform-strip {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 20px;
+    flex: 1;
+    min-width: 0;
+  }
+  .wf-bar {
+    width: 3px;
+    border-radius: 1px;
+    background: var(--hairline-deep);
+  }
+  .wf-bar.played { background: var(--vermilion-soft); }
+  .wf-bar.active-bar { background: var(--gold); }
+
+  /* ── closing obi (V4, live vermilion) ────────────────────────────── */
+  .close {
+    margin-top: clamp(72px, 9.6vw, 128px);
+  }
+  .close .obi {
+    margin: 0;
+    padding: clamp(28px, 3.8vw, 48px) clamp(22px, 3vw, 44px);
+  }
+  .close h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(1.85rem, 3.6vw, 3.15rem);
+    line-height: 1.14;
+    letter-spacing: -.03em;
+    margin: 0;
+    max-width: 17ch;
+    text-wrap: balance;
+    color: #f8f4ea;
+  }
+  .close .cta { background: var(--fold); }
+  .close .fine { color: #f0d9c6; }
+  /* Closing CTA: button + fine print share one flex column, same width */
+  .close .obi .cta-slot {
+    margin-left: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    width: max-content;
+    min-width: min(100%, 260px);
+  }
+  .close .obi .cta-slot .cta {
+    width: 100%;
+    justify-content: center;
+  }
+  .close .obi .cta-slot .fine {
+    margin: 0;
+    width: 100%;
+    text-align: center;
+    padding: 12px 18px 11px;
+  }
+
+  /* ── footer ──────────────────────────────────────────────────────── */
+  footer {
+    margin-top: clamp(38px, 5vw, 68px);
+    padding: 18px 0 46px;
+    border-top: 1px solid var(--hairline);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 30px;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  footer .mark { width: 18px; height: 18px; color: var(--ink-fade); }
+
+  /* ── responsive ──────────────────────────────────────────────────── */
+  @media (max-width: 1040px) {
+    .cover-grid { grid-template-columns: 1fr; padding-right: 0; }
+    .plate-wrap { max-width: 460px; }
+    .seal { right: 8px; top: 8px; }
+    .beat-grid { grid-template-columns: 1fr; }
+    .diagram-plate { max-width: none; min-height: 0; }
+    .beat-step img { max-height: clamp(160px, 28vw, 240px); }
+  }
+  @media (max-width: 720px) {
+    .beat-flow { flex-direction: column; gap: 16px; }
+    .beat-arrow { transform: rotate(90deg); width: 40px; }
+    .beat-step { max-width: min(100%, 360px); }
+    .beat-step img { max-height: 180px; }
+    .beat-speech { max-height: 140px; width: min(100%, 160px); }
+    .flaps { grid-template-columns: 1fr; }
+    .flaps::before, .flaps::after {
+      left: 0; right: 0; top: auto; bottom: auto;
+      width: auto; height: 1px; transform: none;
+    }
+    .flaps::before { top: calc(50% - 0.5px); }
+    .flaps::after {
+      top: calc(50% - 17px);
+      height: 34px;
+      background: linear-gradient(180deg,
+        rgba(26,21,19,0) 0%, rgba(26,21,19,.07) 46%,
+        rgba(246,238,226,.1) 54%, rgba(26,21,19,0) 100%);
+    }
+    .flap { padding: 0; }
+    .flap-left { padding-bottom: 40px; }
+    .flap-right { padding-top: 20px; }
+    .reader-body { grid-template-columns: 1fr; }
+    .fold-rail { border-right: 0; border-bottom: 1px solid var(--hairline); flex-direction: row; flex-wrap: wrap; gap: 10px; padding: 10px 12px; }
+    .fold-rail-header { border-bottom: 0; padding-bottom: 0; }
+    .fold-dots { padding: 0; }
+    .fold-list-card { display: none; }
+    .fold-card { display: none; }
+  }
+  @media (max-width: 520px) {
+    .folio, .reg { display: none; }
+    .masthead { flex-wrap: wrap; }
+    .issue { margin-left: 0; border-left: 0; padding-left: 0; text-align: left; width: 100%; }
+    .masthead::after { display: none; }
+    .masthead { border-bottom: 2px solid var(--sumi); }
+    .obi .cta-slot { margin-left: 0; width: 100%; }
+    .cta { width: 100%; justify-content: center; }
+    .close .obi .cta-slot { min-width: 0; width: 100%; }
+    .diagram-step svg { width: 40px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .01ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <!-- registration crosses + folio marginalia (V5) -->
+  <svg class="reg reg-tl" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0v12M0 6h12" stroke="currentColor" stroke-width=".8"/></svg>
+  <svg class="reg reg-tr" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0v12M0 6h12" stroke="currentColor" stroke-width=".8"/></svg>
+  <svg class="reg reg-bl" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0v12M0 6h12" stroke="currentColor" stroke-width=".8"/></svg>
+  <svg class="reg reg-br" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 0v12M0 6h12" stroke="currentColor" stroke-width=".8"/></svg>
+  <span class="folio folio-l" aria-hidden="true">VOL. 01 · SHEET 01/01</span>
+  <span class="folio folio-r" aria-hidden="true">SENTENCE-SYNC READ-ALONG</span>
+
+  <!-- ── 1. Masthead (V5 style, live colors) ────────────────────────── -->
+  <header class="masthead">
+    <!-- crane mark SVG -->
+    <svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><path d="M2 30 L20 17 L32 5 L44 17 L62 30 L44 31 L32 45 L20 31 Z M27 31 L32 60 L37 31 Z" fill="currentColor"/></svg>
+    <span class="wordmark">oriyomi</span>
+    <div class="issue">
+      <span class="label">Vol. 01 · Free issue</span>
+      <span class="sub">Sentence-sync read-along · edition of one</span>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- ── 2. Hero (V4 cover, live colors) ───────────────────────────── -->
+    <section class="cover" aria-labelledby="title-h">
+      <div class="seal" aria-hidden="true">折</div>
+
+      <div class="cover-grid">
+        <div>
+          <h1 id="title-h">Fold a chapter into speech.</h1>
+
+          <p class="lede">Upload a textbook chapter, notes or a PDF. It comes back as natural neural speech with <b>the exact sentence being spoken lit on the page</b> — so your eyes and your ears stay on the same line, from the first fold to the last.</p>
+
+          <p class="etym">
+            <span class="pair"><span class="kanji">折り</span><span class="mono">ori — to fold</span></span>
+            <span class="pair"><span class="kanji">読み</span><span class="mono">yomi — to read</span></span>
+          </p>
+
+          <ul class="cover-meta">
+            <li><span class="mono">Input</span><span class="v">.pdf · .docx · .md · .txt · paste</span></li>
+            <li><span class="mono">Voices</span><span class="v">9 · edge neural · us english</span></li>
+            <li><span class="mono">Speed</span><span class="v">0.5× – 2.0× · applied live</span></li>
+            <li><span class="mono">Account</span><span class="v">none</span></li>
+          </ul>
+        </div>
+
+        <div class="plate-wrap">
+          <!-- HERO PLATE — transparent red crane, fixed image for official page -->
+          <figure class="plate" id="hero-plate" role="img" aria-label="Red origami crane plate, transparent ground.">
+            <img id="hero-crane" src="../assets/crane.png" alt="Red origami crane with near-white ground, blended via multiply into the washi page background." style="width:100%;height:100%;object-fit:contain;position:relative;z-index:1;display:block;">
+          </figure>
+          <figcaption class="plate-cap">
+            <span class="mono">fig. · red crane · transparent plate</span>
+            <span class="mono">img-crane · origami · 1:1</span>
+          </figcaption>
+        </div>
+      </div>
+
+      <!-- ── 3. Obi red bar ─────────────────────────────────────────── -->
+      <div class="obi">
+        <div>
+          <p class="say">Bring the chapter you keep postponing. Press play, and read along.</p>
+          <p class="fine mono mono-on-verm">free · no account · no api key</p>
+        </div>
+        <div class="cta-slot">
+          <a class="cta" href="/app" data-cta="primary">
+            <svg viewBox="0 0 12 14" aria-hidden="true"><path d="M0 0 L12 7 L0 14 Z" fill="currentColor"/></svg>
+            Try it out
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 4. Beat section (V3 copy, live colors) ────────────────────── -->
+    <section class="beat" aria-labelledby="beat-h">
+      <div class="beat-grid">
+        <div>
+          <h2 id="beat-h">One sheet. One pull. Out loud.</h2>
+          <p>A dense chapter arrives as one flat, overwhelming page. Oriyomi creases it into folds — the sections it already has — and each fold becomes clean speech you can follow. The fold you are on is the fold being spoken.</p>
+        </div>
+
+        <div>
+          <!-- BEAT FLOW — one sheet → one pull → out loud; all arrows point right -->
+          <figure class="diagram-plate" id="beat-diagram" role="img" aria-label="Three-step flow: flat sheet folds into an accordion, then opens into speech.">
+            <div class="beat-flow">
+              <div class="beat-step">
+                <img src="../assets/paper-stack.png" alt="A flat stack of paper sheets." style="mix-blend-mode:multiply;">
+                <span class="mono">one sheet</span>
+              </div>
+              <svg class="beat-arrow" viewBox="0 0 40 20" aria-hidden="true"><path d="M0 10 H28 M22 4 l8 6 -8 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <div class="beat-step is-pull">
+                <img src="../assets/paper-fold2.png" alt="Paper folded into an accordion of folds." style="mix-blend-mode:multiply;">
+                <span class="mono">one pull</span>
+              </div>
+              <svg class="beat-arrow" viewBox="0 0 40 20" aria-hidden="true"><path d="M0 10 H28 M22 4 l8 6 -8 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <div class="beat-step">
+                <svg class="beat-speech" viewBox="0 0 80 80" aria-label="Speech waves opening right.">
+                  <path d="M8 28 C8 18 18 10 28 10 H50 C60 10 70 18 70 28 V40 C70 50 60 58 50 58 H38 L24 70 V58 C14 58 8 48 8 38 Z" fill="none" stroke="#c34838" stroke-width="2"/>
+                  <path d="M30 26 H50" stroke="#c34838" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M30 34 H44" stroke="#c34838" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M30 42 H48" stroke="#c34838" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M72 24 c3 -3 6 -3 8 0 M76 16 c4 -5 9 -5 12 0 M74 32 c2 -2 5 -2 6 0" stroke="#c34838" stroke-width="1.5" stroke-linecap="round" fill="none" opacity=".55"/>
+                </svg>
+                <span class="mono">out loud</span>
+              </div>
+            </div>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 5. Book section (V4 flaps — full section) ─────────────────── -->
+    <section class="flaps" aria-label="What oriyomi is, and how it reads">
+      <div class="flap flap-left">
+        <h2>Yomi means to read.</h2>
+        <p>A dense chapter is a flat, overwhelming sheet. The hard part is not reading it — it is starting, staying oriented inside it, and knowing afterwards whether any of it stuck.</p>
+        <p>Oriyomi creases the sheet. Structure detection finds the chapters and sections and turns them into folds; each fold is spoken by a neural voice you can follow by ear and by eye. First fold plays while the rest are still generating.</p>
+
+        <div class="colophon">
+          <div class="r"><span class="mono">折り ori</span><span>to fold — sections become folds you can take one at a time</span></div>
+          <div class="r"><span class="mono">読み yomi</span><span>to read — every spoken sentence stays lit on the page</span></div>
+          <div class="r"><span class="mono">Sync</span><span>sentence-level timestamps, applied at any speed</span></div>
+          <div class="r"><span class="mono">Cost</span><span>free — no account, no subscription, no API key</span></div>
+        </div>
+      </div>
+
+      <div class="flap flap-right">
+        <h2>The lit sentence is the spoken sentence.</h2>
+        <p>Not paragraph scrolling. Not a moving highlight you have to chase. The line being read to you is the line wearing the mark.</p>
+
+        <!-- Reader mock — styled like the live frontend -->
+        <div class="reader-mock">
+          <div class="reader-header">
+            <span class="label-ui">BIO-101 · ch.02 · glycolysis</span>
+            <span class="label-ui">fold 02 of 04</span>
+          </div>
+          <div class="reader-body">
+            <!-- Left: fold rail -->
+            <div class="fold-rail">
+              <div class="fold-rail-header">Fold 02 of 04</div>
+              <div class="fold-dots">
+                <span class="fold-dot done"></span>
+                <span class="fold-dot active"></span>
+                <span class="fold-dot"></span>
+                <span class="fold-dot"></span>
+              </div>
+              <!-- Active fold card -->
+              <div class="fold-card">
+                <div class="fold-card-art"></div>
+                <div class="fold-card-info">
+                  <span class="fold-card-num">02</span>
+                  <span class="fold-card-title">Glycolysis</span>
+                  <span class="fold-card-time">~27s</span>
+                </div>
+              </div>
+              <!-- Fold list -->
+              <div style="display:flex;flex-direction:column;margin-top:6px;">
+                <div class="fold-list-card">
+                  <div class="fold-list-art"></div>
+                  <span class="fold-list-num">01</span>
+                  <span class="fold-list-title">Introduction</span>
+                  <span class="fold-list-dur">~13s</span>
+                </div>
+                <div class="fold-list-card">
+                  <div class="fold-list-art active-art"></div>
+                  <span class="fold-list-num active-num">02</span>
+                  <span class="fold-list-title" style="font-weight:600;">Glycolysis</span>
+                  <span class="fold-list-dur">~27s</span>
+                </div>
+                <div class="fold-list-card">
+                  <div class="fold-list-art"></div>
+                  <span class="fold-list-num">03</span>
+                  <span class="fold-list-title">Krebs cycle</span>
+                  <span class="fold-list-dur">~22s</span>
+                </div>
+                <div class="fold-list-card">
+                  <div class="fold-list-art"></div>
+                  <span class="fold-list-num">04</span>
+                  <span class="fold-list-title">Electron transport</span>
+                  <span class="fold-list-dur">~19s</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Center: sheet with sentences -->
+            <div class="reader-sheet">
+              <div class="sheet-sentences">
+                <div class="sline done">
+                  <span class="s-dot"></span>
+                  <span class="s-text">Glycolysis is the first step in cellular respiration, breaking down glucose into pyruvate and releasing energy in the form of ATP and NADH.</span>
+                </div>
+                <div class="sline done">
+                  <span class="s-dot"></span>
+                  <span class="s-text">This process does not require oxygen and occurs in the cytoplasm of all living cells.</span>
+                </div>
+                <div class="sline active">
+                  <span class="s-dot"></span>
+                  <span class="s-text">Glycolysis takes place in the cytoplasm.</span>
+                </div>
+                <div class="sline pending">
+                  <span class="s-dot"></span>
+                  <span class="s-text">Glycolysis consists of two phases: the energy-investment phase and the energy-payoff phase.</span>
+                </div>
+                <div class="sline pending">
+                  <span class="s-dot"></span>
+                  <span class="s-text">During the energy-investment phase, two ATP molecules are used to activate glucose.</span>
+                </div>
+              </div>
+
+              <!-- Playback chrome -->
+              <div class="playback-bar">
+                <span class="playback-voice">emma · 1.0×</span>
+                <div class="playback-controls">
+                  <div class="waveform-strip" aria-hidden="true">
+                    <span class="wf-bar played" style="height:6px"></span>
+                    <span class="wf-bar played" style="height:10px"></span>
+                    <span class="wf-bar played" style="height:8px"></span>
+                    <span class="wf-bar played" style="height:14px"></span>
+                    <span class="wf-bar played" style="height:10px"></span>
+                    <span class="wf-bar played" style="height:16px"></span>
+                    <span class="wf-bar played" style="height:12px"></span>
+                    <span class="wf-bar played" style="height:8px"></span>
+                    <span class="wf-bar played" style="height:14px"></span>
+                    <span class="wf-bar played" style="height:6px"></span>
+                    <span class="wf-bar active-bar" style="height:10px"></span>
+                    <span class="wf-bar" style="height:12px"></span>
+                    <span class="wf-bar" style="height:8px"></span>
+                    <span class="wf-bar" style="height:14px"></span>
+                    <span class="wf-bar" style="height:6px"></span>
+                    <span class="wf-bar" style="height:10px"></span>
+                    <span class="wf-bar" style="height:16px"></span>
+                    <span class="wf-bar" style="height:8px"></span>
+                    <span class="wf-bar" style="height:12px"></span>
+                    <span class="wf-bar" style="height:6px"></span>
+                    <span class="wf-bar" style="height:14px"></span>
+                    <span class="wf-bar" style="height:10px"></span>
+                    <span class="wf-bar" style="height:8px"></span>
+                    <span class="wf-bar" style="height:12px"></span>
+                    <span class="wf-bar" style="height:6px"></span>
+                  </div>
+                  <span class="speed-label">1.0×</span>
+                  <button class="play-btn" type="button" aria-label="Play" tabindex="-1">
+                    <svg viewBox="0 0 12 14" fill="none"><path d="M0 0 L12 7 L0 14 Z" fill="#1a1513"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 6. Closing CTA ────────────────────────────────────────────── -->
+    <section class="close" aria-label="Start reading">
+      <div class="obi">
+        <h2>Bring one chapter. Read it tonight.</h2>
+        <div class="cta-slot">
+          <a class="cta" href="/app" data-cta="final">
+            <svg viewBox="0 0 12 14" aria-hidden="true"><path d="M0 0 L12 7 L0 14 Z" fill="currentColor"/></svg>
+            Try it out
+          </a>
+          <p class="fine mono mono-on-verm">free · no account · no api key</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span class="mono">oriyomi · 折り to fold · 読み to read</span>
+    <span class="mono">sentence-sync read-along · 9 edge neural voices</span>
+    <span class="mono">vol. 01 · edition of one</span>
+    <svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><path d="M2 30 L20 17 L32 5 L44 17 L62 30 L44 31 L32 45 L20 31 Z M27 31 L32 60 L37 31 Z" fill="currentColor"/></svg>
+  </footer>
+</div>
+
+</body>
+</html>

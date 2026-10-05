@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 864 1152" width="864" height="1152" fill="none" role="img" aria-label="Linocut-style red paper crane, transparent ground">
+  <!-- bold hanga silhouette: solid vermilion facets, carved white cuts -->
+  <g fill="#c34838">
+    <!-- raised wings -->
+    <polygon points="430,200 520,520 380,560"/>
+    <polygon points="430,200 700,480 520,560"/>
+    <polygon points="700,480 760,700 560,620"/>
+    <!-- body -->
+    <polygon points="380,560 560,620 600,820 400,860 300,700"/>
+    <!-- neck -->
+    <polygon points="300,700 220,560 180,620 280,760"/>
+    <!-- head + beak -->
+    <polygon points="220,560 140,540 160,620 250,600"/>
+    <polygon points="140,540 60,580 150,610"/>
+    <!-- tail -->
+    <polygon points="600,820 780,760 640,900"/>
+    <!-- feet -->
+    <polygon points="400,860 380,960 430,880"/>
+    <polygon points="520,840 560,950 500,870"/>
+  </g>
+  <!-- darker underplanes -->
+  <g fill="#9e3226">
+    <polygon points="520,560 700,480 640,640"/>
+    <polygon points="400,860 600,820 520,900"/>
+    <polygon points="250,600 300,700 220,720"/>
+  </g>
+  <!-- carved cut lines (white gouges) -->
+  <g stroke="#f6eee2" stroke-width="7" stroke-linecap="square" opacity=".95">
+    <line x1="470" y1="260" x2="430" y2="540"/>
+    <line x1="560" y1="320" x2="500" y2="560"/>
+    <line x1="640" y1="520" x2="580" y2="680"/>
+    <line x1="360" y1="640" x2="520" y2="720"/>
+    <line x1="250" y1="620" x2="320" y2="740"/>
+    <line x1="420" y1="880" x2="500" y2="860"/>
+  </g>
+  <!-- fine grain cuts -->
+  <g stroke="#f6eee2" stroke-width="2" opacity=".35">
+    <line x1="450" y1="300" x2="470" y2="500"/>
+    <line x1="600" y1="400" x2="560" y2="560"/>
+    <line x1="340" y1="680" x2="480" y2="760"/>
+  </g>
+</svg>

@@ -17,10 +17,10 @@
   --color-hairline: #d6ccbc;
   --color-hairline-deep: #c9beb0;
 
-  --font-display: var(--font-unna), "Times New Roman", serif;
-  --font-body: var(--font-body-serif), "Times New Roman", serif;
-  --font-ui: var(--font-ui-sans), system-ui, sans-serif;
-  --font-data: var(--font-data-sans), system-ui, sans-serif;
+  --font-display: var(--font-shippori), "Times New Roman", serif;
+  --font-body: var(--font-shippori), "Times New Roman", serif;
+  --font-ui: var(--font-shippori), system-ui, sans-serif;
+  --font-data: var(--font-sometype), ui-monospace, monospace;
 }
 
 :root {
@@ -34,7 +34,6 @@ body {
   margin: 0;
   padding: 0;
   height: 100%;
-  overflow: hidden;
 }
 
 body {
@@ -99,7 +98,7 @@ button {
 }
 
 .label-ui {
-  font-family: var(--font-ui);
+  font-family: var(--font-data);
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;

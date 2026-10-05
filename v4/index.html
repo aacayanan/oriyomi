@@ -1,0 +1,1000 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>oriyomi — fold a chapter into speech</title>
+<meta name="description" content="ori—to fold, yomi—to read. Oriyomi folds a document into neural speech and lights the exact sentence being spoken. Free, no account, no API key.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;700&family=Sometype+Mono:wght@400..700&display=swap" rel="stylesheet">
+<style>
+  /* ── V4 JACKET & OBI · book jacket spread ───────────────────────── */
+  :root {
+    --kraft: #c0a16c;          /* jacket stock */
+    --kraft-deep: #b2945f;     /* seam shading */
+    --cream: #f2e9d8;          /* paper panels */
+    --cream-lit: #f8f2e5;
+    --sumi: #221b14;           /* ink */
+    --sumi-2: #3e342a;         /* meta ink on kraft (4.9:1) */
+    --meta: #5a4b3c;           /* meta ink on cream (7:1) */
+    --hairline: #9c8358;       /* fold crease on kraft */
+    --hairline-cream: #d8c9a8; /* fold crease on cream */
+    --vermilion: #b23a2e;      /* the one warm accent — fills & large marks */
+    --vermilion-fill: #a6352a; /* fill under cream text (5.6:1) */
+    --on-vermilion: #f2e9d8;
+
+    --font-display: "Shippori Mincho", "Hiragino Mincho ProN", serif;
+    --font-mono: "Sometype Mono", ui-monospace, monospace;
+
+    --spine-w: clamp(44px, 4.2vw, 64px);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--kraft);
+    color: var(--sumi);
+    font-family: var(--font-display);
+    font-size: 15.5px;
+    line-height: 1.72;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    background-image:
+      repeating-linear-gradient(92deg, transparent 0 23px, rgba(34,27,20,.022) 23px 24px),
+      repeating-linear-gradient(2deg, transparent 0 31px, rgba(242,233,216,.05) 31px 32px);
+    padding-left: var(--spine-w);
+  }
+
+  ::selection { background: var(--vermilion-fill); color: var(--on-vermilion); }
+  ::placeholder { color: var(--meta); opacity: 1; }
+  :focus { outline: none; }
+  :focus-visible { outline: 2px solid var(--vermilion-fill); outline-offset: 3px; }
+  a { color: inherit; }
+
+  * { scrollbar-width: thin; scrollbar-color: var(--hairline) transparent; }
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb { background: var(--hairline); border: 3px solid transparent; background-clip: content-box; }
+
+  .mono {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--sumi-2);
+    line-height: 1.8;
+  }
+  .mono-cream { color: var(--meta); }
+  .mono-on-verm { color: var(--on-vermilion); }
+
+  /* ── spine: vertical-rl at the left edge ─────────────────────────── */
+  .spine {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: var(--spine-w);
+    border-right: 1px solid var(--hairline);
+    background: var(--kraft-deep);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 0;
+    z-index: 20;
+  }
+  .spine-type {
+    writing-mode: vertical-rl;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 13px;
+    letter-spacing: .34em;
+    text-transform: uppercase;
+    color: var(--sumi);
+  }
+  .spine-ticks {
+    width: 12px;
+    flex: 1;
+    margin: 18px 0;
+    background-image: repeating-linear-gradient(180deg,
+      var(--hairline) 0 1px, transparent 1px 14px);
+    background-size: 100% 14px;
+    background-position: right center;
+    background-repeat: repeat-y;
+    opacity: .85;
+  }
+  .spine-no {
+    writing-mode: vertical-rl;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: .22em;
+    color: var(--sumi-2);
+    text-transform: uppercase;
+  }
+
+  /* ── frame ───────────────────────────────────────────────────────── */
+  .spread {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 0 clamp(18px, 3.6vw, 52px);
+    position: relative;
+  }
+
+  /* ── masthead ────────────────────────────────────────────────────── */
+  .masthead {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    padding: 18px 0 14px;
+    border-bottom: 1px solid var(--hairline);
+    position: relative;
+  }
+  .mark { width: 26px; height: 26px; color: var(--vermilion-fill); flex: none; align-self: center; }
+  .wordmark {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: .015em;
+  }
+  .masthead .codes {
+    margin-left: auto;
+    display: flex;
+    gap: 22px;
+    align-items: baseline;
+    text-align: right;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .free-chip {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--on-vermilion);
+    background: var(--vermilion-fill);
+    padding: 4px 9px 3px;
+  }
+
+  /* ── cover panel (hero) ──────────────────────────────────────────── */
+  .cover {
+    padding: clamp(34px, 5vw, 74px) 0 0;
+    position: relative;
+  }
+  .cover-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(280px, .72fr);
+    gap: clamp(28px, 4.6vw, 72px);
+    align-items: start;
+    padding-right: clamp(0px, 6vw, 88px);
+  }
+
+  .etym {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 26px;
+    margin: 20px 0 0;
+    padding-top: 16px;
+    border-top: 1px solid var(--hairline);
+  }
+  .etym .pair {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .etym .kanji {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 26px;
+    line-height: 1;
+    letter-spacing: .04em;
+    color: var(--sumi);
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2.9rem, 6vw, 6rem);
+    line-height: 1.02;
+    letter-spacing: -.035em;
+    margin: 0 0 clamp(18px, 2.2vw, 28px);
+    max-width: 13ch;
+    text-wrap: balance;
+  }
+
+  .lede {
+    max-width: 58ch;
+    margin: 0 0 22px;
+    font-size: 16.5px;
+    line-height: 1.78;
+  }
+  .lede b { font-weight: 700; }
+
+  .cover-meta {
+    list-style: none;
+    margin: 0;
+    padding: 14px 0 0;
+    border-top: 1px solid var(--hairline);
+    display: grid;
+    gap: 6px;
+    max-width: 44ch;
+  }
+  .cover-meta li {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+  }
+  .cover-meta .v { font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--sumi); }
+
+  /* ── hero plate slot ─────────────────────────────────────────────── */
+  /* HERO PLACEMENT — V4 · JACKET & OBI
+       slot   : .plate — portrait 3/4 on the front-cover panel, right column
+                (desktop: ~360px wide; mobile: full width, still 3/4)
+       image  : <img class="plate-img" src="…" alt="…"> filling .plate with
+                object-fit: cover; object-position: center — or as a background:
+                background-size: cover; background-position: center
+       process: linocut / block-print — carved line grain, ink on kraft
+       subject: a folded sheet rising into a paper crane, cut as a single
+                block-print with the grain of the carved lines still visible
+       the fill below is the plate's ink-tone stand-in; swap it for the image
+       and the box does not move. */
+  .plate {
+    aspect-ratio: 3 / 4;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin: 0;
+    background: var(--vermilion-fill);
+    border: 1px solid var(--hairline);
+    position: relative;
+  }
+  .plate-cap {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 8px 0 0;
+    flex-wrap: wrap;
+  }
+
+  /* hanko seal — stamps into the cover */
+  .seal {
+    position: absolute;
+    right: clamp(0px, 2vw, 26px);
+    top: clamp(12px, 2vw, 30px);
+    width: clamp(62px, 6vw, 84px);
+    aspect-ratio: 1;
+    background: var(--vermilion-fill);
+    color: var(--on-vermilion);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(28px, 3vw, 40px);
+    line-height: 1;
+    letter-spacing: 0;
+    z-index: 4;
+  }
+
+  /* ── obi band ────────────────────────────────────────────────────── */
+  .obi {
+    margin: clamp(30px, 4.2vw, 54px) 0 0;
+    background: var(--vermilion-fill);
+    color: var(--on-vermilion);
+    padding: clamp(20px, 2.6vw, 30px) clamp(20px, 3vw, 40px);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 18px 32px;
+    box-shadow: 0 12px 26px rgba(34, 27, 20, .2);
+  }
+  .obi .say {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.15rem, 2vw, 1.5rem);
+    line-height: 1.35;
+    letter-spacing: -.012em;
+    margin: 0;
+    max-width: 34ch;
+  }
+  .obi .fine {
+    margin: 4px 0 0;
+    color: #f0d9c6;
+  }
+  .obi .cta-slot { margin-left: auto; }
+
+  .cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--cream-lit);
+    color: var(--sumi);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: .015em;
+    text-decoration: none;
+    padding: 14px 28px 13px;
+    border: 1px solid rgba(34, 27, 20, .25);
+    transition: background-color 160ms ease, transform 160ms ease;
+    white-space: nowrap;
+  }
+  .cta:hover { background: #fff; }
+  .cta:active { transform: translateY(1px); }
+  .cta svg { width: 11px; height: 13px; flex: none; }
+
+  /* ── flaps: pose across the gutter, answer across the gutter ─────── */
+  .flaps {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-top: clamp(56px, 7.4vw, 108px);
+    position: relative;
+  }
+  /* the gutter is a real seam */
+  .flaps::before {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0; left: 50%;
+    width: 1px;
+    background: var(--hairline);
+    transform: translateX(-.5px);
+    pointer-events: none;
+  }
+  .flaps::after {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0; left: 50%;
+    width: 34px;
+    transform: translateX(-50%);
+    background: linear-gradient(90deg,
+      rgba(34,27,20,0) 0%, rgba(34,27,20,.10) 46%,
+      rgba(242,233,216,.12) 54%, rgba(34,27,20,0) 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .flap {
+    padding: 0 clamp(20px, 3vw, 46px);
+    min-width: 0;
+    position: relative;
+    z-index: 1;
+  }
+  .flap-left { padding-left: 0; padding-right: clamp(28px, 4vw, 62px); }
+  .flap-right { padding-right: 0; padding-left: clamp(28px, 4vw, 62px); }
+
+  .flap h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2rem, 3.6vw, 3.15rem);
+    line-height: 1.1;
+    letter-spacing: -.03em;
+    margin: 0 0 18px;
+    max-width: 16ch;
+    text-wrap: balance;
+    padding-top: 26px;
+  }
+  .flap p { margin: 0 0 16px; max-width: 46ch; }
+  .flap-right h2 { max-width: 14ch; }
+
+  .colophon {
+    margin: 26px 0 0;
+    border-top: 1px solid var(--hairline);
+  }
+  .colophon .r {
+    display: grid;
+    grid-template-columns: minmax(84px, 120px) minmax(0, 1fr);
+    gap: 16px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--hairline);
+    align-items: baseline;
+  }
+  .colophon .r:last-child { border-bottom: 0; }
+  .colophon .r span:last-child { font-size: 14px; line-height: 1.55; }
+
+  /* book-page proof */
+  .page {
+    background: var(--cream);
+    border: 1px solid var(--hairline-cream);
+    padding: clamp(20px, 2.6vw, 32px) clamp(18px, 2.4vw, 30px);
+    margin-top: 6px;
+  }
+  .page-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--hairline-cream);
+    flex-wrap: wrap;
+  }
+  .sentence {
+    display: grid;
+    grid-template-columns: 62px minmax(0, 1fr);
+    gap: 14px;
+    padding: 11px 0;
+    align-items: baseline;
+  }
+  .sentence + .sentence { border-top: 1px solid var(--hairline-cream); }
+  .sentence .t {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: .06em;
+    color: var(--meta);
+  }
+  .sentence .s {
+    font-size: 15.5px;
+    line-height: 1.72;
+    color: var(--meta);
+    max-width: 42ch;
+  }
+  .sentence.lit { position: relative; }
+  .sentence.lit .s {
+    color: var(--sumi);
+    font-weight: 700;
+    background-image: linear-gradient(var(--vermilion), var(--vermilion));
+    background-repeat: no-repeat;
+    background-position: 0 calc(100% - 1px);
+    background-size: 100% 3px;
+    padding-bottom: 3px;
+  }
+  .sentence.lit .t { color: var(--vermilion-fill); font-weight: 700; }
+  /* the active element steps over the gutter seam */
+  .sentence.lit::before {
+    content: "";
+    position: absolute;
+    left: calc(-1 * clamp(28px, 4vw, 62px) - 12px);
+    top: 12px;
+    width: clamp(28px, 4vw, 62px);
+    height: 3px;
+    background: var(--vermilion);
+    z-index: 2;
+  }
+  .sentence.lit::after {
+    content: "";
+    position: absolute;
+    left: calc(-1 * clamp(28px, 4vw, 62px) - 22px);
+    top: 8px;
+    width: 11px;
+    height: 11px;
+    background: var(--vermilion-fill);
+  }
+  .page-foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--hairline-cream);
+    flex-wrap: wrap;
+  }
+
+  /* ── fold sequence ───────────────────────────────────────────────── */
+  .folds { margin-top: clamp(58px, 7.6vw, 112px); }
+  .rule-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 20px;
+    border-top: 2px solid var(--sumi);
+    padding-top: 18px;
+    margin-bottom: clamp(24px, 3vw, 38px);
+    flex-wrap: wrap;
+  }
+  .rule-head h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(1.95rem, 3.5vw, 3rem);
+    line-height: 1.12;
+    letter-spacing: -.03em;
+    margin: 0;
+    max-width: 18ch;
+    text-wrap: balance;
+  }
+  .stage {
+    display: grid;
+    grid-template-columns: minmax(96px, 150px) minmax(0, 1fr) minmax(140px, 220px);
+    gap: clamp(16px, 2.6vw, 40px);
+    align-items: baseline;
+    padding: clamp(18px, 2.2vw, 26px) 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .stage:first-of-type { border-top: 1px solid var(--hairline); }
+  .stage .n {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2.6rem, 4.6vw, 4.1rem);
+    line-height: .92;
+    letter-spacing: -.035em;
+  }
+  .stage h3 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(1.25rem, 1.9vw, 1.62rem);
+    line-height: 1.28;
+    letter-spacing: -.022em;
+    margin: 0 0 8px;
+  }
+  .stage p { margin: 0; max-width: 52ch; font-size: 14.5px; line-height: 1.68; }
+  .stage .side { display: grid; gap: 5px; }
+
+  /* ── facts ───────────────────────────────────────────────────────── */
+  .facts { margin-top: clamp(54px, 7vw, 100px); }
+  .fact-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border: 1px solid var(--hairline);
+    background: var(--cream);
+  }
+  .fact {
+    padding: clamp(18px, 2.2vw, 28px) clamp(16px, 1.8vw, 24px) clamp(22px, 2.6vw, 32px);
+    border-right: 1px solid var(--hairline-cream);
+    min-width: 0;
+  }
+  .fact:last-child { border-right: 0; }
+  .fact .v {
+    display: block;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2.15rem, 3.5vw, 3.15rem);
+    line-height: 1;
+    letter-spacing: -.035em;
+    margin: 12px 0 10px;
+  }
+  .fact p { margin: 0; font-size: 13.5px; line-height: 1.62; color: var(--sumi); max-width: 30ch; }
+  .voice-list {
+    margin: 10px 0 0;
+    padding: 10px 0 0;
+    border-top: 1px solid var(--hairline-cream);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--meta);
+    line-height: 1.9;
+  }
+
+  /* ── quiz ────────────────────────────────────────────────────────── */
+  .quiz { margin-top: clamp(58px, 7.6vw, 112px); }
+  .quiz-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(290px, 420px);
+    gap: clamp(26px, 4vw, 64px);
+    align-items: start;
+    margin-top: clamp(18px, 2.4vw, 30px);
+  }
+  .quiz-statement {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(1.85rem, 3.4vw, 2.95rem);
+    line-height: 1.14;
+    letter-spacing: -.03em;
+    margin: 0 0 18px;
+    max-width: 18ch;
+    text-wrap: balance;
+    padding-top: 24px;
+  }
+  .quiz-grid p { margin: 0 0 14px; max-width: 52ch; }
+
+  .card {
+    background: var(--cream);
+    border: 1px solid var(--hairline-cream);
+    padding: clamp(18px, 2.2vw, 26px);
+  }
+  .card .q {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.5;
+    margin: 12px 0 16px;
+  }
+  .opt {
+    display: flex;
+    gap: 13px;
+    align-items: baseline;
+    padding: 10px 0;
+    border-top: 1px solid var(--hairline-cream);
+    font-size: 14.5px;
+    line-height: 1.5;
+  }
+  .opt .k {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    color: var(--meta);
+    flex: none;
+    width: 18px;
+  }
+  .opt.right .k { color: var(--vermilion-fill); }
+  .opt.right { font-weight: 700; }
+  .opt.right .s { border-bottom: 3px solid var(--vermilion); padding-bottom: 2px; }
+  .card .exp {
+    margin: 14px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--hairline-cream);
+    font-size: 12.5px;
+    line-height: 1.62;
+    color: var(--meta);
+  }
+
+  /* ── closing obi ─────────────────────────────────────────────────── */
+  .close {
+    margin-top: clamp(60px, 8vw, 116px);
+  }
+  .close .obi {
+    margin: 0;
+    padding: clamp(28px, 3.8vw, 48px) clamp(22px, 3vw, 44px);
+  }
+  .close h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(1.85rem, 3.6vw, 3.15rem);
+    line-height: 1.14;
+    letter-spacing: -.03em;
+    margin: 0;
+    max-width: 17ch;
+    text-wrap: balance;
+    color: var(--on-vermilion);
+  }
+  .close .cta { background: var(--cream-lit); }
+
+  /* ── footer marginalia ───────────────────────────────────────────── */
+  footer {
+    margin-top: clamp(38px, 5vw, 68px);
+    padding: 18px 0 46px;
+    border-top: 1px solid var(--hairline);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 30px;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  /* ── one authored moment: the obi wraps, the seal stamps ─────────── */
+  .obi {
+    animation: obi-wrap 950ms cubic-bezier(.16, 1, .3, 1) both;
+  }
+  .seal {
+    animation: seal-stamp 900ms cubic-bezier(.22, 1.2, .36, 1) 240ms both;
+  }
+  @keyframes obi-wrap {
+    0%   { transform: translateY(22px) scaleY(1.07); box-shadow: 0 22px 40px rgba(34,27,20,.32); }
+    100% { transform: none; box-shadow: 0 12px 26px rgba(34,27,20,.2); }
+  }
+  @keyframes seal-stamp {
+    0%   { transform: scale(1.42) rotate(-9deg); opacity: .35; }
+    55%  { transform: scale(.97) rotate(1.5deg); opacity: 1; }
+    100% { transform: none; opacity: 1; }
+  }
+
+  /* ── responsive ──────────────────────────────────────────────────── */
+  @media (max-width: 980px) {
+    .cover-grid { grid-template-columns: 1fr; padding-right: 0; }
+    .plate-wrap { max-width: 460px; }
+    .seal { right: 8px; top: 8px; }
+    .quiz-grid { grid-template-columns: 1fr; }
+    .fact-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .fact:nth-child(2n) { border-right: 0; }
+    .fact:nth-child(-n+2) { border-bottom: 1px solid var(--hairline-cream); }
+  }
+  @media (max-width: 720px) {
+    .flaps { grid-template-columns: 1fr; }
+    .flaps::before, .flaps::after {
+      left: 0; right: 0; top: auto; bottom: auto;
+      width: auto; height: 1px; transform: none;
+    }
+    .flaps::before { top: calc(50% - 0.5px); }
+    .flaps::after {
+      top: calc(50% - 17px);
+      height: 34px;
+      background: linear-gradient(180deg,
+        rgba(34,27,20,0) 0%, rgba(34,27,20,.10) 46%,
+        rgba(242,233,216,.12) 54%, rgba(34,27,20,0) 100%);
+    }
+    .flap { padding: 0; }
+    .flap-left { padding-bottom: 40px; }
+    .flap-right { padding-top: 20px; }
+    .sentence.lit::before, .sentence.lit::after { display: none; }
+    .stage { grid-template-columns: minmax(76px, 100px) minmax(0, 1fr); }
+    .stage .side { grid-column: 2; grid-template-columns: repeat(2, minmax(0, auto)); gap: 4px 18px; }
+  }
+  @media (max-width: 520px) {
+    body { padding-left: 0; padding-top: 34px; }
+    .cover-grid, .plate-wrap { min-width: 0; max-width: 100%; }
+    .plate { width: 100%; max-width: 100%; min-width: 0; margin: 0; }
+    .spine {
+      top: 0; bottom: auto; right: 0;
+      width: auto; height: 34px;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 12px;
+      border-right: 0;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .spine-type, .spine-no { writing-mode: horizontal-tb; letter-spacing: .18em; font-size: 10px; }
+    .spine-ticks {
+      display: none;
+    }
+    .masthead .codes { display: none; }
+    .obi .cta-slot { margin-left: 0; width: 100%; }
+    .cta { width: 100%; justify-content: center; }
+    .fact-grid { grid-template-columns: 1fr; }
+    .fact { border-right: 0; border-bottom: 1px solid var(--hairline-cream); }
+    .fact:last-child { border-bottom: 0; }
+    .sentence { grid-template-columns: 1fr; gap: 2px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .01ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="spine" aria-hidden="true">
+  <span class="spine-type">oriyomi · sentence-sync read-along</span>
+  <span class="spine-ticks"></span>
+  <span class="spine-no">vol. 01 · sheet 04/05</span>
+</div>
+
+<div class="spread">
+  <header class="masthead">
+    <svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><path d="M2 30 L20 17 L32 5 L44 17 L62 30 L44 31 L32 45 L20 31 Z M27 31 L32 60 L37 31 Z" fill="currentColor"/></svg>
+    <span class="wordmark">oriyomi</span>
+    <div class="codes">
+      <span class="mono">no. 0x8F2A · rev 04</span>
+      <span class="mono">9 voices · 0.5×–2.0×</span>
+      <span class="free-chip">free</span>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- ── front cover ─────────────────────────────────────────────── -->
+    <section class="cover" aria-labelledby="title-h">
+      <div class="seal" aria-hidden="true">折</div>
+
+      <div class="cover-grid">
+        <div>
+          <h1 id="title-h">Fold a chapter into speech.</h1>
+
+          <p class="lede">Upload a textbook chapter, notes or a PDF. It comes back as natural neural speech with <b>the exact sentence being spoken lit on the page</b> — so your eyes and your ears stay on the same line, from the first fold to the last.</p>
+
+          <p class="etym">
+            <span class="pair"><span class="kanji">折り</span><span class="mono">ori — to fold</span></span>
+            <span class="pair"><span class="kanji">読み</span><span class="mono">yomi — to read</span></span>
+          </p>
+
+          <ul class="cover-meta">
+            <li><span class="mono">Input</span><span class="v">.pdf · .docx · .md · .txt · paste</span></li>
+            <li><span class="mono">Voices</span><span class="v">9 · edge neural · us english</span></li>
+            <li><span class="mono">Speed</span><span class="v">0.5× – 2.0× · applied live</span></li>
+            <li><span class="mono">Account</span><span class="v">none</span></li>
+          </ul>
+        </div>
+
+        <div class="plate-wrap">
+          <!-- hero plate slot (see placement note above .plate) -->
+          <figure class="plate" role="img" aria-label="Block-print of a folded sheet rising into a paper crane, carved in ink on kraft."></figure>
+          <figcaption class="plate-cap">
+            <span class="mono">fig. a · linocut plate · 3:4</span>
+            <span class="mono">img-0x8F2A · carved line</span>
+          </figcaption>
+        </div>
+      </div>
+
+      <!-- the obi wraps the spread -->
+      <div class="obi">
+        <div>
+          <p class="say">Bring the chapter you keep postponing. Press play, and read along.</p>
+          <p class="fine mono mono-on-verm">free · no account · no api key</p>
+        </div>
+        <div class="cta-slot">
+          <!-- CTA target: the app root, once deployed -->
+          <a class="cta" href="#" data-cta="primary">
+            <svg viewBox="0 0 12 14" aria-hidden="true"><path d="M0 0 L12 7 L0 14 Z" fill="currentColor"/></svg>
+            Try it out
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── flaps: the pose and the answer ──────────────────────────── -->
+    <section class="flaps" aria-label="What oriyomi is, and how it reads">
+      <div class="flap flap-left">
+        <h2>Yomi means to read.</h2>
+        <p>A dense chapter is a flat, overwhelming sheet. The hard part is not reading it — it is starting, staying oriented inside it, and knowing afterwards whether any of it stuck.</p>
+        <p>Oriyomi creases the sheet. Structure detection finds the chapters and sections and turns them into folds; each fold is spoken by a neural voice you can follow by ear and by eye. First fold plays while the rest are still generating.</p>
+
+        <div class="colophon">
+          <div class="r"><span class="mono">折り ori</span><span>to fold — sections become folds you can take one at a time</span></div>
+          <div class="r"><span class="mono">読み yomi</span><span>to read — every spoken sentence stays lit on the page</span></div>
+          <div class="r"><span class="mono">Sync</span><span>sentence-level timestamps, applied at any speed</span></div>
+          <div class="r"><span class="mono">Cost</span><span>free — no account, no subscription, no API key</span></div>
+        </div>
+      </div>
+
+      <div class="flap flap-right">
+        <h2>The lit sentence is the spoken sentence.</h2>
+        <p>Not paragraph scrolling. Not a moving highlight you have to chase. The line being read to you is the line wearing the mark.</p>
+
+        <div class="page">
+          <div class="page-head">
+            <span class="mono mono-cream">chapter 02 · fold 02 of 04</span>
+            <span class="mono mono-cream">voice: emma · 1.0×</span>
+          </div>
+
+          <div class="sentence">
+            <span class="t">00:31.240</span>
+            <span class="s">Glycolysis is the first step in cellular respiration, breaking down glucose into pyruvate and releasing energy in the form of ATP and NADH.</span>
+          </div>
+          <div class="sentence">
+            <span class="t">00:37.860</span>
+            <span class="s">This process does not require oxygen and occurs in the cytoplasm of all living cells.</span>
+          </div>
+          <div class="sentence lit">
+            <span class="t">00:42.180</span>
+            <span class="s">Glycolysis takes place in the cytoplasm.</span>
+          </div>
+          <div class="sentence">
+            <span class="t">00:45.900</span>
+            <span class="s">Glycolysis consists of two phases: the energy-investment phase and the energy-payoff phase.</span>
+          </div>
+          <div class="sentence">
+            <span class="t">00:52.470</span>
+            <span class="s">During the energy-investment phase, two ATP molecules are used to activate glucose.</span>
+          </div>
+
+          <div class="page-foot">
+            <span class="mono mono-cream">sample text · bio-101 · ch.02</span>
+            <span class="mono mono-cream">zoom holds the sync</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── fold sequence ───────────────────────────────────────────── -->
+    <section class="folds" aria-labelledby="folds-h">
+      <div class="rule-head">
+        <h2 id="folds-h">Four folds from file to finish</h2>
+        <span class="mono">pipeline · in your browser</span>
+      </div>
+
+      <div class="stage">
+        <span class="n">01</span>
+        <div>
+          <h3>Upload or paste</h3>
+          <p>PDF, DOCX, Markdown or plain text, extracted in your browser — or skip the file and paste the passage straight in.</p>
+        </div>
+        <div class="side">
+          <span class="mono">.pdf · .docx · .md</span>
+          <span class="mono">.txt · paste</span>
+        </div>
+      </div>
+
+      <div class="stage">
+        <span class="n">02</span>
+        <div>
+          <h3>Creased into folds</h3>
+          <p>Chapters and sections are detected and creased into folds. Each fold generates on its own, so the first one starts playing while the rest are still rendering.</p>
+        </div>
+        <div class="side">
+          <span class="mono">structure detection</span>
+          <span class="mono">parallel generation</span>
+        </div>
+      </div>
+
+      <div class="stage">
+        <span class="n">03</span>
+        <div>
+          <h3>Read along</h3>
+          <p>Nine curated Edge neural voices. Speed runs 0.5× to 2.0× and applies live. Sentence-level timestamps drive the highlighting, and text zoom keeps it aligned.</p>
+        </div>
+        <div class="side">
+          <span class="mono">9 voices</span>
+          <span class="mono">0.5× – 2.0×</span>
+        </div>
+      </div>
+
+      <div class="stage">
+        <span class="n">04</span>
+        <div>
+          <h3>Check what stuck</h3>
+          <p>An optional comprehension quiz closes the loop — one to eight questions generated from your own document, each answer explained.</p>
+        </div>
+        <div class="side">
+          <span class="mono">1–8 questions</span>
+          <span class="mono">optional</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── facts ───────────────────────────────────────────────────── -->
+    <section class="facts" aria-labelledby="facts-h">
+      <div class="rule-head">
+        <h2 id="facts-h">What is actually free</h2>
+        <span class="mono">service facts · rev 04</span>
+      </div>
+
+      <div class="fact-grid">
+        <div class="fact">
+          <span class="mono mono-cream">Voices</span>
+          <span class="v">9</span>
+          <p>Curated Microsoft Edge neural voices, US English, no key required.</p>
+          <p class="voice-list">Ava · Emma · Andrew · Brian · Aria · Jenny · Guy · Christopher · Michelle</p>
+        </div>
+        <div class="fact">
+          <span class="mono mono-cream">Speed</span>
+          <span class="v">0.5–2.0×</span>
+          <p>Rate changes apply live to the audio you are hearing — nothing re-renders.</p>
+        </div>
+        <div class="fact">
+          <span class="mono mono-cream">Input</span>
+          <span class="v">4 + paste</span>
+          <p>PDF, DOCX, Markdown and TXT, read client-side, plus a plain paste box.</p>
+        </div>
+        <div class="fact">
+          <span class="mono mono-cream">Accounts</span>
+          <span class="v">0</span>
+          <p>No sign-up, no subscription, no speech API key. Nothing stored.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── quiz ────────────────────────────────────────────────────── -->
+    <section class="quiz" aria-labelledby="quiz-h">
+      <div class="rule-head">
+        <h2 id="quiz-h">The back flap asks one question</h2>
+        <span class="mono">optional · gemini-powered</span>
+      </div>
+
+      <div class="quiz-grid">
+        <div>
+          <p class="quiz-statement">Hearing a chapter and understanding it are not the same thing.</p>
+          <p>When a fold finishes, oriyomi can ask what stuck: one to eight multiple-choice questions generated from the document you brought, with an explanation under every answer.</p>
+          <p>It is an enhancement, not a gate. The reader works fully without it — the quiz appears only when a Gemini key is present, and nothing else changes when it is not.</p>
+          <p class="mono">1–8 questions · multiple choice · explanations · optional</p>
+        </div>
+
+        <div class="card" aria-label="Sample comprehension question">
+          <span class="mono mono-cream">sample question · fold 02 of 04</span>
+          <p class="q">Where does glycolysis take place?</p>
+          <div class="opt"><span class="k">A</span><span class="s">In the mitochondria</span></div>
+          <div class="opt right"><span class="k">B</span><span class="s">In the cytoplasm</span></div>
+          <div class="opt"><span class="k">C</span><span class="s">In the nucleus</span></div>
+          <div class="opt"><span class="k">D</span><span class="s">In the ribosome</span></div>
+          <p class="exp">Glycolysis occurs in the cytoplasm of all living cells and does not require oxygen — the first step of cellular respiration.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── closing obi ─────────────────────────────────────────────── -->
+    <section class="close" aria-label="Start reading">
+      <div class="obi">
+        <h2>Bring one chapter. Read it tonight.</h2>
+        <div class="cta-slot">
+          <!-- CTA target: the app root, once deployed -->
+          <a class="cta" href="#" data-cta="final">
+            <svg viewBox="0 0 12 14" aria-hidden="true"><path d="M0 0 L12 7 L0 14 Z" fill="currentColor"/></svg>
+            Try it out
+          </a>
+          <p class="fine mono mono-on-verm">free · no account · no api key</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span class="mono">oriyomi · 折り to fold · 読み to read</span>
+    <span class="mono">sentence-sync read-along · 9 edge neural voices</span>
+    <span class="mono">vol. 01 · no. 0x8F2A · rev 04 · sheet 04/05</span>
+    <svg class="mark" viewBox="0 0 64 64" aria-hidden="true" style="width:20px;height:20px"><path d="M2 30 L20 17 L32 5 L44 17 L62 30 L44 31 L32 45 L20 31 Z M27 31 L32 60 L37 31 Z" fill="currentColor"/></svg>
+  </footer>
+</div>
+
+</body>
+</html>

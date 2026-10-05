@@ -1,0 +1,30 @@
+---
+version: 1
+slug: "v1-index-html"
+primary_target: "v1/index.html"
+related_targets: []
+---
+
+# Surface: Landing v1 — DEPARTURES
+
+Mode: Persuade. The visitor becomes curious and tries the app.
+
+Audience: learners holding dense course material. Job: understand what oriyomi does and believe it will get them through a chapter. Action: press "Try it out" (hero, repeated at the end). Proof/content: the fold board with real durations and real voice names; the read-along excerpt with real sentence timestamps. Constraints: free Edge TTS only, no accounts; no invented social proof; hero imagery arrives later — its slot is a flat CSS stand-in at final geometry with a placement note.
+
+Chosen direction: DEPARTURES — the page is one split-flap concourse board. Memorable moment: the fold rows cascade open character by character on load and fold 02 latches amber as the one speaking now.
+
+Unresolved: CTA href is a placeholder until the app URL is fixed.
+
+## Direction contract
+
+THESIS: A chapter is a timetable — every section is a departure with its own duration, and the one speaking now is lit on the board. Refuses the category default of a screenshot hero over three feature cards; the whole page is one live board.
+
+OWN-WORLD: Pale concourse concrete (#D9D5CE) ground; board panels in flap black (#232427); flap letters in bone (#EDE9E1); exactly one warm accent, amber lamp (#D08A2C), owning live rows, the active state and the CTA. Big Shoulders Display at flap-cell scale; Martian Mono for times, platforms and IDs; hairline steel rules and fixed cells everywhere; a state restyles a row, never breaks the grid. Marginalia: concourse coordinates, JOB IDs, platform numbers, ruler ticks, timestamps.
+
+STORY: The visitor sees their chapter waiting on a board, sees which fold is speaking now, believes the sentence claim, presses Try it out.
+
+FIRST VIEWPORT: The board frame fills the viewport; header strip with crane mark and lowercase oriyomi wordmark left, live meta right; monumental two-line flap headline; fold rows 01–04 with durations and status ruled beneath; the hero halftone plate as a wide band inside the board; the amber "Try it out" pill reads as the board's lit action; a margin strip carries timestamps.
+
+FORM: Split-flap concourse; candidate 6 of the grounded structural list, the dealt lead from seed 2b17851d. Raise named for donor signals-instruments-split-flap-concourse: changes cascade character by character and a delayed row restyles without breaking the grid. Raise named for donor clay-ceramics-fracture-glaze-river-shelf: monospaced batch numerals sit beside every sample.
+
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance

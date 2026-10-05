@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>oriyomi — plate styles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;700&family=Sometype+Mono:wght@400..700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --washi: #f6eee2;
+    --fold: #f8f4ea;
+    --vermilion: #c34838;
+    --vermilion-ink: #9e3226;
+    --sumi: #1a1513;
+    --ink-fade: #6e645c;
+    --hairline: #d6ccbc;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--washi);
+    color: var(--sumi);
+    font-family: "Shippori Mincho", serif;
+    line-height: 1.5;
+  }
+  .mono {
+    font-family: "Sometype Mono", ui-monospace, monospace;
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--ink-fade);
+  }
+  header {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 28px clamp(18px, 4vw, 40px) 18px;
+    border-bottom: 1px solid var(--hairline);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 28px;
+    align-items: baseline;
+  }
+  header h1 {
+    margin: 0;
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    font-weight: 700;
+    letter-spacing: -.02em;
+  }
+  header p { margin: 0; max-width: 52ch; color: var(--ink-fade); font-size: 15px; }
+  .grid {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px clamp(18px, 4vw, 40px) 64px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22px;
+  }
+  @media (max-width: 960px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    border: 1px solid var(--hairline);
+    background: var(--fold);
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .card h2 {
+    margin: 0;
+    padding: 14px 16px 8px;
+    font-size: 1.25rem;
+    letter-spacing: -.02em;
+  }
+  .card .tag { padding: 0 16px 12px; }
+  .crane-stage {
+    margin: 0 16px;
+    aspect-ratio: 3/4;
+    display: grid;
+    place-items: center;
+    background:
+      linear-gradient(90deg, rgba(26,21,19,.04) 1px, transparent 1px) 0 0 / 24px 24px,
+      linear-gradient(rgba(26,21,19,.04) 1px, transparent 1px) 0 0 / 24px 24px,
+      var(--washi);
+    border: 1px solid var(--hairline);
+    overflow: hidden;
+  }
+  .crane-stage img,
+  .crane-stage object,
+  .crane-stage svg.crane {
+    width: 82%;
+    height: 82%;
+    max-height: 420px;
+    object-fit: contain;
+    display: block;
+  }
+  .diag-stage {
+    margin: 16px;
+    border: none;
+    background: transparent;
+    display: grid;
+    place-items: center;
+  }
+  .diag-stage img,
+  .diag-stage object,
+  .diag-stage svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .notes { padding: 0 16px 16px; display: grid; gap: 6px; }
+  .notes p { margin: 0; font-size: 13.5px; color: var(--ink-fade); }
+  .use {
+    margin: auto 16px 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--vermilion);
+    color: var(--fold);
+    text-decoration: none;
+    font-weight: 700;
+    padding: 12px 18px;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 15px;
+  }
+  .use:hover { background: var(--vermilion-ink); }
+  .use[aria-pressed="true"] { outline: 2px solid var(--sumi); outline-offset: 2px; }
+  footer {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 clamp(18px, 4vw, 40px) 48px;
+    color: var(--ink-fade);
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Plate styles</h1>
+  <p>Three directions for the hero crane (transparent ground, angled on a 3D plane) and the fold-to-speech diagram (no frame, every arrow pointing right). Pick one to preview on the landing page.</p>
+  <span class="mono" style="margin-left:auto">landing · styles · 0x03</span>
+</header>
+
+<div class="grid">
+  <!-- A -->
+  <article class="card" data-style="a">
+    <h2>A · Axonometric patent</h2>
+    <div class="tag mono">transparent PNG · XYZ construction</div>
+    <div class="crane-stage">
+      <img src="styles/a-axon/crane.png" alt="Axonometric paper crane on transparent ground, red wing accent, construction axes">
+    </div>
+    <div class="diag-stage">
+      <img src="styles/a-axon/diagram.png" alt="Patent diagram, arrows right">
+    </div>
+    <div class="notes">
+      <p>Crane generated + background removed. Dashed XYZ axes, sumi contour, one vermilion wing. Diagram is patent linework: flat plane → accordion folds (active fold vermilion) → speech arcs, all chevrons →.</p>
+    </div>
+    <button class="use" type="button" data-pick="a" aria-pressed="false">Use style A</button>
+  </article>
+
+  <!-- B -->
+  <article class="card" data-style="b">
+    <h2>B · Linocut hanga</h2>
+    <div class="tag mono">transparent PNG · bold carved ink</div>
+    <div class="crane-stage">
+      <img src="styles/b-linocut/crane.png" alt="Linocut red crane on transparent ground">
+    </div>
+    <div class="diag-stage">
+      <img src="styles/b-linocut/diagram.png" alt="Linocut diagram, arrows right">
+    </div>
+    <div class="notes">
+      <p>Authored hanga: solid vermilion facets, white gouge cuts, no photographic ground. Diagram is heavy carved forms with thick right arrows and vermilion speech blades.</p>
+    </div>
+    <button class="use" type="button" data-pick="b" aria-pressed="false">Use style B</button>
+  </article>
+
+  <!-- C -->
+  <article class="card" data-style="c">
+    <h2>C · Paper-cut isometric</h2>
+    <div class="tag mono">transparent PNG · 45° XY plane</div>
+    <div class="crane-stage">
+      <img src="styles/c-papercut/crane.png" alt="Paper-cut crane on transparent ground with XYZ axes at 45 degrees">
+    </div>
+    <div class="diag-stage">
+      <img src="styles/c-papercut/diagram.png" alt="Paper-cut diagram, arrows right">
+    </div>
+    <div class="notes">
+      <p>Authored paper-cut collage: flat polygons in vermilion/cream, explicit X/Y axes at 45°, Z up, contact shadow only. Diagram uses stacked paper facets and double chevrons, all →.</p>
+    </div>
+    <button class="use" type="button" data-pick="c" aria-pressed="false">Use style C</button>
+  </article>
+</div>
+
+<footer>
+  <p class="mono" style="margin-bottom:8px">notes</p>
+  <p>Higgsfield free credits are exhausted (0). Styles B and C are authored raster/SVG so both plates stay transparent and the diagram arrows can be exact. Style A crane is the generated plate with background removed. Diagrams ship without a border box.</p>
+  <p style="margin-top:12px">Current landing default: <strong id="current">A</strong>. <a href="../compare.html">← switcher</a> · <a href="../landing/index.html">landing</a></p>
+</footer>
+
+<script>
+  var params = new URLSearchParams(location.search);
+  var initial = params.get("style") || localStorage.getItem("oriyomi-plate-style") || "a";
+  var current = document.getElementById("current");
+  function paint(sel) {
+    document.querySelectorAll(".use").forEach(function (b) {
+      b.setAttribute("aria-pressed", b.dataset.pick === sel ? "true" : "false");
+    });
+    if (current) current.textContent = sel.toUpperCase();
+  }
+  paint(initial);
+  document.querySelectorAll(".use").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var sel = btn.dataset.pick;
+      localStorage.setItem("oriyomi-plate-style", sel);
+      paint(sel);
+      // open landing with chosen style as query for the inline apply script
+      window.open("../landing/index.html?style=" + sel, "_blank");
+    });
+  });
+</script>
+</body>
+</html>

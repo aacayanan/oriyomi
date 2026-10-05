@@ -1,0 +1,944 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>oriyomi — your chapter, out loud, one lit sentence at a time</title>
+<meta name="description" content="ori—to fold, yomi—to read. Oriyomi folds a document into neural speech and lights up the exact sentence being spoken. Free, no account, no API key.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unna:wght@400;700&family=Merriweather+Sans:wght@400;500;600&family=Libertinus+Serif+Display&family=Cutive+Mono&display=swap" rel="stylesheet">
+<style>
+  /* ── V5 THE STUDY BROADSHEET · incumbent oriyomi scheme at press scale ── */
+  :root {
+    --washi: #f3ead8;
+    --fold: #f8f4ea;
+    --sumi: #1a1513;
+    --sumi-soft: #332c28;
+    --ink-meta: #6b645c;     /* small marginalia text — clears 4.5:1 on washi */
+    --ink-fade: #80756e;     /* rules and large furniture only */
+    --hairline: #d6ccbc;
+    --hairline-deep: #c9beb0;
+    --vermilion: #c34838;    /* the single warm accent: rules, proof ticks, display */
+    --vermilion-deep: #9e3226; /* accent at text size and as CTA fill */
+    --cream-on-red: #f8f4ea;
+
+    --font-display: "Unna", "Times New Roman", serif;
+    --font-ui: "Merriweather Sans", system-ui, sans-serif;
+    --font-body: "Libertinus Serif Display", "Times New Roman", serif;
+    --font-data: "Cutive Mono", ui-monospace, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--washi);
+    color: var(--sumi);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.58;
+    font-variant-numeric: tabular-nums;
+    caret-color: var(--vermilion-deep);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    background-image:
+      repeating-linear-gradient(0deg, transparent 0 3px, rgba(26,21,19,.012) 3px 4px),
+      repeating-linear-gradient(90deg, transparent 0 3px, rgba(26,21,19,.010) 3px 4px);
+  }
+
+  ::selection { background: rgba(195, 72, 56, .28); color: var(--sumi); }
+  :focus { outline: none; }
+  :focus-visible { outline: 2px solid var(--vermilion-deep); outline-offset: 3px; }
+  a { color: inherit; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+
+  * { scrollbar-width: thin; scrollbar-color: var(--hairline-deep) transparent; }
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb { background: var(--hairline-deep); border: 3px solid transparent; background-clip: content-box; }
+  *::-webkit-scrollbar-thumb:hover { background: var(--ink-fade); background-clip: content-box; }
+
+  .mono {
+    font-family: var(--font-data);
+    font-size: 10.5px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--ink-meta);
+    line-height: 1.75;
+  }
+  .label {
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--sumi);
+  }
+  .red { color: var(--vermilion-deep); }
+
+  /* ── page frame, registration crosses, folio ─────────────────────── */
+  .page {
+    max-width: 1360px;
+    margin: 0 auto;
+    padding: 0 clamp(18px, 3.2vw, 46px);
+    position: relative;
+  }
+  .reg {
+    position: absolute;
+    width: 15px; height: 15px;
+    color: var(--ink-fade);
+    pointer-events: none;
+  }
+  .reg-tl { top: 14px; left: 8px; }
+  .reg-tr { top: 14px; right: 8px; }
+  .reg-bl { bottom: 14px; left: 8px; }
+  .reg-br { bottom: 14px; right: 8px; }
+  .folio {
+    position: absolute;
+    top: 120px;
+    font-family: var(--font-data);
+    font-size: 10px;
+    letter-spacing: .14em;
+    color: var(--ink-fade);
+    writing-mode: vertical-rl;
+  }
+  .folio-l { left: 2px; }
+  .folio-r { right: 2px; transform: rotate(180deg); }
+
+  /* ── masthead ────────────────────────────────────────────────────── */
+  .masthead {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 22px 0 16px;
+    border-bottom: 1px solid var(--hairline-deep);
+  }
+  .masthead::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -7px;
+    height: 4px;
+    border-top: 2px solid var(--sumi);
+    border-bottom: 1px solid var(--hairline-deep);
+  }
+  .mark { width: 32px; height: 32px; color: var(--vermilion-deep); flex: none; }
+  .wordmark {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 30px;
+    line-height: 1;
+    letter-spacing: .012em;
+  }
+  .issue {
+    margin-left: auto;
+    text-align: right;
+    border-left: 1px solid var(--hairline);
+    padding-left: 20px;
+  }
+  .issue .label { display: block; }
+
+  /* ── hero ────────────────────────────────────────────────────────── */
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.12fr) minmax(300px, 468px);
+    gap: clamp(28px, 4vw, 60px);
+    padding: clamp(30px, 4.2vw, 54px) 0 0;
+    align-items: start;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2.9rem, 6vw, 5.6rem);
+    line-height: .98;
+    letter-spacing: -.025em;
+    margin: 0;
+    max-width: 15ch;
+    text-wrap: balance;
+  }
+  .headline-rule {
+    height: 5px;
+    background: var(--vermilion);
+    margin: 26px 0 22px;
+    max-width: 240px;
+    transform-origin: left center;
+  }
+  .deck {
+    max-width: 62ch;
+    margin: 0 0 12px;
+    font-size: 17.5px;
+    line-height: 1.55;
+  }
+  .deck b { font-weight: inherit; border-bottom: 2px solid var(--vermilion); padding-bottom: 1px; }
+  .etym {
+    margin: 0 0 26px;
+    max-width: 62ch;
+  }
+
+  .cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 13px;
+    background: var(--vermilion-deep);
+    color: var(--cream-on-red);
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: .17em;
+    text-transform: uppercase;
+    text-decoration: none;
+    border-radius: 999px;
+    padding: 16px 30px 15px;
+    border: 1px solid var(--vermilion-deep);
+    transition: background-color 160ms ease, transform 160ms ease;
+  }
+  .cta:hover { background: var(--sumi); border-color: var(--sumi); }
+  .cta:active { transform: translateY(1px); }
+  .cta svg { width: 11px; height: 13px; flex: none; }
+  .cta-note { margin: 13px 0 0; }
+
+  /* ── hero plate slot ─────────────────────────────────────────────── */
+  /* HERO PLACEMENT — V5 · THE STUDY BROADSHEET
+       slot   : .plate — right column of the hero grid, aspect-ratio 1/1
+       image  : <img class="plate-img" src="…" alt="…"> filling .plate with
+                object-fit: cover; object-position: center — or as a background:
+                background-size: cover; background-position: center
+       process: linework — patent-style engraved contour, single ink on paper
+       subject: a study sheet mid-fold, creased into folds that rise off the
+                page toward a folded crane, drawn as pure contour
+       the fill below is the plate's paper stand-in; swap it for the image
+       and the box does not move. */
+  .plate {
+    aspect-ratio: 1 / 1;
+    background: #e9dcc0;
+    border: 1px solid var(--hairline-deep);
+    position: relative;
+  }
+  .plate-tag {
+    position: absolute;
+    left: 12px; bottom: 12px;
+    background: var(--fold);
+    border: 1px solid var(--hairline-deep);
+    padding: 6px 10px;
+  }
+  figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 6px 18px;
+    border-top: 1px solid var(--hairline);
+    margin-top: 10px;
+    padding-top: 8px;
+  }
+
+  /* ── timestamp strip: rules the bottom edge of the first viewport ── */
+  .timestrip {
+    margin-top: clamp(26px, 3.4vw, 44px);
+    border-top: 2px solid var(--sumi);
+    border-bottom: 1px solid var(--hairline-deep);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px 34px;
+    padding: 11px 0 10px;
+    background-image: repeating-linear-gradient(90deg,
+      var(--hairline-deep) 0 1px, transparent 1px 12px);
+    background-size: 100% 7px;
+    background-repeat: no-repeat;
+    background-position: 0 0;
+  }
+  .timestrip .tick { color: var(--vermilion-deep); }
+
+  /* ── section furniture ───────────────────────────────────────────── */
+  section { padding: clamp(58px, 7.4vw, 104px) 0 0; }
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px 32px;
+    border-top: 1px solid var(--sumi);
+    padding-top: 16px;
+    margin-bottom: 22px;
+  }
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(1.85rem, 3.2vw, 2.75rem);
+    line-height: 1.04;
+    letter-spacing: -.018em;
+    margin: 0;
+    max-width: 24ch;
+    text-wrap: balance;
+  }
+  .sec-head .mono { text-align: right; flex: none; }
+  .lede {
+    max-width: 68ch;
+    margin: 0 0 30px;
+    font-size: 17px;
+    line-height: 1.58;
+  }
+
+  /* ── fold diagram ────────────────────────────────────────────────── */
+  .diagram-wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+    gap: clamp(24px, 3.6vw, 52px);
+    align-items: start;
+  }
+  .diagram {
+    background: var(--fold);
+    border: 1px solid var(--hairline-deep);
+    padding: clamp(14px, 2vw, 26px);
+  }
+  .diagram svg { display: block; width: 100%; height: auto; }
+  .crease {
+    stroke: var(--sumi);
+    fill: none;
+    stroke-width: 2;
+  }
+  .crease-valley { stroke-dasharray: none; }
+  .crease-mountain { stroke-dasharray: 10 7; }
+  .crease-hem { stroke: var(--ink-fade); stroke-width: 1; stroke-dasharray: 3 5; }
+  .anno {
+    font-family: var(--font-data);
+    font-size: 11px;
+    letter-spacing: .08em;
+    fill: var(--ink-meta);
+    text-transform: uppercase;
+  }
+  .anno-red { fill: var(--vermilion-deep); }
+  .num-tag {
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: .12em;
+    fill: var(--cream-on-red);
+  }
+  .num-plate { fill: var(--sumi); }
+  .num-plate.red { fill: var(--vermilion-deep); }
+
+  .legend {
+    border-top: 1px solid var(--hairline);
+    padding-top: 12px;
+    display: grid;
+    gap: 9px;
+  }
+  .legend .row { display: flex; gap: 12px; align-items: baseline; }
+  .legend .sample {
+    width: 34px;
+    height: 2px;
+    background: var(--sumi);
+    flex: none;
+    transform: translateY(-3px);
+  }
+  .legend .sample.m { background: repeating-linear-gradient(90deg, var(--sumi) 0 7px, transparent 7px 13px); }
+  .legend .sample.h { background: repeating-linear-gradient(90deg, var(--ink-fade) 0 3px, transparent 3px 7px); height: 1px; }
+  .legend .sample.r { background: var(--vermilion); height: 3px; }
+
+  .diagram-notes { display: grid; gap: 18px; }
+  .note {
+    border-top: 1px solid var(--hairline);
+    padding-top: 11px;
+  }
+  .note p { margin: 7px 0 0; font-size: 14.5px; line-height: 1.55; max-width: 38ch; }
+
+  /* ── proof / read-along ──────────────────────────────────────────── */
+  .sheet {
+    background: var(--fold);
+    border: 1px solid var(--hairline-deep);
+    border-top: 3px solid var(--sumi);
+    padding: clamp(18px, 2.6vw, 32px);
+    max-width: 74ch;
+  }
+  .sline {
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr) 88px;
+    gap: 16px;
+    align-items: baseline;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .sline:last-child { border-bottom: 0; }
+  .sline .tick { display: flex; justify-content: center; }
+  .sline .tick svg { width: 13px; height: 13px; color: var(--vermilion); }
+  .sline .s { font-size: 17px; line-height: 1.5; max-width: 62ch; }
+  .sline .t {
+    font-family: var(--font-data);
+    font-size: 10.5px;
+    letter-spacing: .08em;
+    color: var(--ink-meta);
+    text-align: right;
+    white-space: nowrap;
+  }
+  .sline.read .s { color: var(--sumi-soft); }
+  .sline.read .tick svg { opacity: 1; }
+  .sline.pending .tick svg { opacity: 0; }
+  .sline.pending .s { color: var(--sumi-soft); }
+  .sline.now .s { font-weight: 600; }
+  .sline.now .uline {
+    border-bottom: 3px solid var(--vermilion);
+    padding-bottom: 2px;
+  }
+  .sline.now .t { color: var(--vermilion-deep); }
+  .sline.now .tick svg { color: var(--vermilion-deep); width: 15px; height: 15px; }
+  .sheet-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 6px 18px;
+    border-top: 1px solid var(--hairline-deep);
+    margin-top: 12px;
+    padding-top: 10px;
+  }
+  .proof-grid {
+    display: grid;
+    grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+    gap: clamp(24px, 3.6vw, 52px);
+    align-items: start;
+  }
+  .proof-side p { margin: 0 0 14px; max-width: 40ch; }
+
+  /* ── fold sequence ───────────────────────────────────────────────── */
+  .stages {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border-top: 1px solid var(--sumi);
+  }
+  .stage {
+    padding: 22px 22px 26px;
+    border-right: 1px solid var(--hairline-deep);
+    min-width: 0;
+  }
+  .stage:last-child { border-right: 0; }
+  .stage .n {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2.6rem, 4.4vw, 3.9rem);
+    line-height: .84;
+    letter-spacing: -.03em;
+    display: block;
+  }
+  .stage h3 {
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    margin: 16px 0 8px;
+  }
+  .stage p { margin: 0; font-size: 14.5px; line-height: 1.55; max-width: 34ch; }
+  .stage .batch { display: block; margin-top: 14px; }
+
+  /* ── facts ───────────────────────────────────────────────────────── */
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-top: 1px solid var(--sumi);
+  }
+  .fact {
+    padding: 22px 26px 26px 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .fact:nth-child(odd) { border-right: 1px solid var(--hairline-deep); padding-right: 32px; }
+  .fact:nth-child(even) { padding-left: 32px; }
+  .fact .v {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2.3rem, 3.8vw, 3.3rem);
+    line-height: .92;
+    letter-spacing: -.025em;
+    display: block;
+  }
+  .fact h3 {
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 11.5px;
+    letter-spacing: .17em;
+    text-transform: uppercase;
+    margin: 13px 0 7px;
+  }
+  .fact p { margin: 0; max-width: 48ch; font-size: 15px; line-height: 1.55; }
+
+  /* ── quiz ────────────────────────────────────────────────────────── */
+  .quiz-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+    gap: clamp(26px, 4vw, 56px);
+    align-items: start;
+  }
+  .quiz-grid p { max-width: 56ch; margin: 0 0 13px; }
+  .question {
+    background: var(--fold);
+    border: 1px solid var(--hairline-deep);
+    border-top: 3px solid var(--vermilion);
+    padding: 22px;
+  }
+  .question .q {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 21px;
+    line-height: 1.25;
+    margin: 12px 0 16px;
+  }
+  .opt {
+    display: flex;
+    gap: 13px;
+    align-items: baseline;
+    padding: 10px 0;
+    border-top: 1px solid var(--hairline);
+    font-size: 15px;
+  }
+  .opt .k {
+    font-family: var(--font-data);
+    font-size: 11px;
+    letter-spacing: .1em;
+    color: var(--ink-meta);
+    width: 18px;
+    flex: none;
+  }
+  .opt.right .k { color: var(--vermilion-deep); font-weight: 400; }
+  .opt.right { font-weight: 600; }
+  .opt .tick-mini { width: 12px; height: 12px; color: var(--vermilion); margin-left: auto; align-self: center; flex: none; }
+  .question .exp {
+    margin: 14px 0 0;
+    border-top: 1px solid var(--hairline-deep);
+    padding-top: 12px;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--sumi-soft);
+  }
+
+  /* ── closing edition ─────────────────────────────────────────────── */
+  .close {
+    margin-top: clamp(60px, 8vw, 110px);
+    border-top: 3px solid var(--sumi);
+    border-bottom: 1px solid var(--sumi);
+    padding: clamp(38px, 5.4vw, 68px) 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 30px;
+    position: relative;
+  }
+  .close::before {
+    content: "";
+    position: absolute;
+    top: 7px; left: 0; right: 0;
+    border-top: 1px solid var(--vermilion);
+  }
+  .close h2 { max-width: 17ch; }
+  .close-side { display: grid; gap: 4px; justify-items: start; }
+
+  /* ── colophon ────────────────────────────────────────────────────── */
+  footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 30px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 26px 0 46px;
+  }
+  footer .mark { width: 22px; height: 22px; color: var(--ink-fade); }
+
+  /* ── one authored moment: the crease sequence draws, the rule sweeps ── */
+  .headline-rule, .crease, .num-plate, .num-tag, .anno { transform-box: fill-box; }
+  .anim .headline-rule { animation: sweep 620ms cubic-bezier(.16, 1, .3, 1) both; }
+  @keyframes sweep {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
+  /* solid creases draw as one stroke; dashed notation snaps in at the end */
+  .anim .crease-valley {
+    stroke-dasharray: 3000;
+    animation: draw 900ms cubic-bezier(.16, 1, .3, 1) both;
+  }
+  @keyframes draw {
+    from { stroke-dashoffset: 3000; }
+    to   { stroke-dashoffset: 0; }
+  }
+  .anim .crease-mountain { animation: draw-m 900ms cubic-bezier(.16, 1, .3, 1) both; }
+  .anim .crease-hem { animation: draw-h 900ms cubic-bezier(.16, 1, .3, 1) both; }
+  @keyframes draw-m {
+    0%     { stroke-dashoffset: 3000; stroke-dasharray: 3000 0; }
+    92%    { stroke-dashoffset: 0; stroke-dasharray: 3000 0; }
+    92.01% { stroke-dashoffset: 0; stroke-dasharray: 10 7; }
+    100%   { stroke-dashoffset: 0; stroke-dasharray: 10 7; }
+  }
+  @keyframes draw-h {
+    0%     { stroke-dashoffset: 3000; stroke-dasharray: 3000 0; }
+    92%    { stroke-dashoffset: 0; stroke-dasharray: 3000 0; }
+    92.01% { stroke-dashoffset: 0; stroke-dasharray: 3 5; }
+    100%   { stroke-dashoffset: 0; stroke-dasharray: 3 5; }
+  }
+  .anim .num-plate, .anim .num-tag, .anim .anno {
+    animation: rise 520ms cubic-bezier(.16, 1, .3, 1) both;
+    animation-delay: 640ms;
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* ── responsive ──────────────────────────────────────────────────── */
+  @media (max-width: 1040px) {
+    .hero { grid-template-columns: 1fr; }
+    .plate { max-width: 560px; }
+    .diagram-wrap, .proof-grid, .quiz-grid { grid-template-columns: 1fr; }
+    .stages { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .stage:nth-child(2n) { border-right: 0; }
+    .stage:nth-child(-n+2) { border-bottom: 1px solid var(--hairline-deep); }
+  }
+  @media (max-width: 620px) {
+    .folio, .reg { display: none; }
+    .masthead { flex-wrap: wrap; }
+    .issue { margin-left: 0; border-left: 0; padding-left: 0; text-align: left; width: 100%; }
+    .masthead::after { display: none; }
+    .masthead { border-bottom: 2px solid var(--sumi); }
+    .stages, .facts { grid-template-columns: 1fr; }
+    .stage { border-right: 0; border-bottom: 1px solid var(--hairline-deep); }
+    .fact:nth-child(odd) { border-right: 0; padding-right: 0; }
+    .fact:nth-child(even) { padding-left: 0; }
+    .fact { padding: 20px 0 22px; }
+    .sline { grid-template-columns: 22px minmax(0, 1fr); }
+    .sline .t { grid-column: 2; text-align: left; }
+    .sec-head { flex-wrap: wrap; }
+    .sec-head .mono { text-align: left; }
+    .cta { width: 100%; justify-content: center; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .01ms !important;
+    }
+    .anim .crease-valley, .anim .crease-mountain, .anim .crease-hem {
+      stroke-dasharray: none;
+      stroke-dashoffset: 0;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <svg class="reg reg-tl" viewBox="0 0 15 15" aria-hidden="true"><path d="M7.5 0v15M0 7.5h15" stroke="currentColor" stroke-width="1"/></svg>
+  <svg class="reg reg-tr" viewBox="0 0 15 15" aria-hidden="true"><path d="M7.5 0v15M0 7.5h15" stroke="currentColor" stroke-width="1"/></svg>
+  <svg class="reg reg-bl" viewBox="0 0 15 15" aria-hidden="true"><path d="M7.5 0v15M0 7.5h15" stroke="currentColor" stroke-width="1"/></svg>
+  <svg class="reg reg-br" viewBox="0 0 15 15" aria-hidden="true"><path d="M7.5 0v15M0 7.5h15" stroke="currentColor" stroke-width="1"/></svg>
+  <span class="folio folio-l" aria-hidden="true">VOL. 01 · SHEET 05/05 · REV 04</span>
+  <span class="folio folio-r" aria-hidden="true">N35.6812 · E139.7671 · 06:42</span>
+
+  <!-- ── masthead ──────────────────────────────────────────────────── -->
+  <header class="masthead">
+    <svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><path d="M2 30 L20 17 L32 5 L44 17 L62 30 L44 31 L32 45 L20 31 Z M27 31 L32 60 L37 31 Z" fill="currentColor"/></svg>
+    <span class="wordmark">oriyomi</span>
+    <div class="issue">
+      <span class="label">Vol. 01 · N°001 · Free</span>
+      <span class="mono">Sentence-sync read-along · edition of one</span>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- ── hero ───────────────────────────────────────────────────── -->
+    <section class="hero" aria-labelledby="hero-h">
+      <div>
+        <h1 id="hero-h">Your chapter, out loud — one lit sentence at a time.</h1>
+        <div class="headline-rule" aria-hidden="true"></div>
+        <p class="deck">Upload a textbook chapter, notes or a PDF. Oriyomi folds it into natural neural speech and <b>lights up the exact sentence being spoken</b>, so your eyes and your ears stay on the same line. Then an optional quiz checks what actually stuck.</p>
+        <p class="etym mono">ori — to fold · yomi — to read · free · no account · no API key</p>
+        <!-- CTA target: the app root (/) once deployed — placeholder href until then -->
+        <a class="cta" href="#" data-cta="primary">
+          <svg viewBox="0 0 12 14" aria-hidden="true"><path d="M0 0 L12 7 L0 14 Z" fill="currentColor"/></svg>
+          Try it out
+        </a>
+        <p class="cta-note mono">Nine free neural voices · 0.5×–2.0× speed · PDF, DOCX, MD, TXT</p>
+      </div>
+
+      <figure style="margin:0">
+        <!-- HERO PLACEMENT — V5 · THE STUDY BROADSHEET
+             slot   : .plate — right column of the hero grid, aspect-ratio 1/1
+             image  : <img class="plate-img" src="…" alt="…"> filling .plate with
+                      object-fit: cover; object-position: center — or as a background:
+                      background-size: cover; background-position: center
+             process: linework — patent-style engraved contour, single ink on paper
+             subject: a study sheet mid-fold, creased into folds that rise off the
+                      page toward a folded crane, drawn as pure contour
+             the fill below is the plate's paper stand-in; swap it for the image
+             and the box does not move. -->
+        <div class="plate" role="img" aria-label="Linework plate: a study sheet mid-fold, its creases rising toward a folded crane, drawn as single-ink contour.">
+          <span class="plate-tag mono">Fig. A · linework plate · 1:1 · 1600 × 1600</span>
+        </div>
+        <figcaption>
+          <span class="mono">img-0x8F2A · process: engraved contour · 1 ink</span>
+          <span class="mono">sheet mid-fold, creased to crane</span>
+        </figcaption>
+      </figure>
+    </section>
+
+    <!-- ── timestamp strip ────────────────────────────────────────── -->
+    <div class="timestrip" aria-label="Sample document timeline">
+      <span class="mono">doc BIO-101 · ch.02 · 20:04 total</span>
+      <span class="mono">00:00.000 fold 01</span>
+      <span class="mono tick">00:42.180 spoken now</span>
+      <span class="mono">06:38.000 fold 02</span>
+      <span class="mono">20:04.000 end</span>
+    </div>
+
+    <!-- ── fold diagram ───────────────────────────────────────────── -->
+    <section aria-labelledby="mech-h">
+      <div class="sec-head">
+        <h2 id="mech-h">One flat sheet, creased into folds — then read</h2>
+        <span class="mono">Fig. 01 · crease sequence · 6 folds</span>
+      </div>
+      <p class="lede">ori means to fold. A chapter arrives as one flat wall of text; the structure detector creases it into sections, and each fold becomes its own piece of speech. The creases are where the sentences line up.</p>
+
+      <div class="diagram-wrap">
+        <figure class="diagram" style="margin:0">
+          <svg viewBox="0 0 960 420" role="img" aria-label="Crease diagram: a study sheet divided into four numbered folds by crease lines, fold two speaking, with speech marks rising from its crease.">
+            <!-- sheet -->
+            <rect x="30" y="46" width="900" height="286" class="crease crease-valley"/>
+            <!-- fold creases -->
+            <line x1="255" y1="46" x2="255" y2="332" class="crease crease-mountain"/>
+            <line x1="480" y1="46" x2="480" y2="332" class="crease crease-valley"/>
+            <line x1="705" y1="46" x2="705" y2="332" class="crease crease-mountain"/>
+            <line x1="30" y1="189" x2="930" y2="189" class="crease crease-hem"/>
+            <!-- panel titles -->
+            <text class="anno" x="52" y="80">01 · Introduction</text>
+            <text class="anno" x="52" y="102">03:12 · read</text>
+            <text class="anno anno-red" x="277" y="80">02 · Glycolysis</text>
+            <text class="anno anno-red" x="277" y="102">06:38 · speaking</text>
+            <text class="anno" x="502" y="80">03 · Krebs cycle</text>
+            <text class="anno" x="502" y="102">05:21 · queued</text>
+            <text class="anno" x="727" y="80">04 · Transport</text>
+            <text class="anno" x="727" y="102">04:47 · queued</text>
+            <!-- sentence ticks inside the active panel -->
+            <g class="anno anno-red">
+              <text x="277" y="230">00:31.240</text>
+              <text x="277" y="252">00:37.860</text>
+              <text x="277" y="274">00:42.180 · spoken</text>
+              <text x="277" y="296">00:45.900</text>
+            </g>
+            <!-- speech marks rising from the crease -->
+            <g fill="none" stroke="#c34838" stroke-width="2.5" stroke-linecap="round">
+              <path d="M392 30 a 26 26 0 0 1 0 32"/>
+              <path d="M412 22 a 42 42 0 0 1 0 48"/>
+              <path d="M432 14 a 58 58 0 0 1 0 64"/>
+            </g>
+            <text class="anno anno-red" x="452" y="36">speech · sentence sync</text>
+            <!-- numbered crease plates -->
+            <g>
+              <rect class="num-plate" x="238" y="30" width="34" height="21" rx="2"/>
+              <text class="num-tag" x="246" y="45">01</text>
+              <rect class="num-plate red" x="463" y="30" width="34" height="21" rx="2"/>
+              <text class="num-tag" x="471" y="45">02</text>
+              <rect class="num-plate" x="688" y="30" width="34" height="21" rx="2"/>
+              <text class="num-tag" x="696" y="45">03</text>
+              <rect class="num-plate" x="128" y="178" width="34" height="21" rx="2"/>
+              <text class="num-tag" x="136" y="193">04</text>
+            </g>
+            <!-- margin annotations -->
+            <text class="anno" x="30" y="368">valley crease · fold read aloud</text>
+            <text class="anno" x="330" y="368">mountain crease · fold queued</text>
+            <text class="anno" x="640" y="368">hem · document edge</text>
+            <text class="anno" x="30" y="398">fig. 01 · sheet 900 × 286 pt · scale 1:2 · rev 04</text>
+          </svg>
+          <figcaption>
+            <span class="mono">sample doc · BIO-101 ch.02 · 4 folds · 20:04</span>
+            <span class="mono">numbers mark the creases</span>
+          </figcaption>
+        </figure>
+
+        <div class="diagram-notes">
+          <div class="note">
+            <span class="label">Flat in, volume out</span>
+            <p>The sheet stays a sheet. What changes is structure: creases become folds, folds become sections, sections become speech you can follow line by line.</p>
+          </div>
+          <div class="note">
+            <span class="label">The creases hold the sync</span>
+            <p>Every fold is generated with sentence-level timestamps, so the highlight on screen lands on the word being spoken — not the paragraph around it.</p>
+          </div>
+          <div class="legend" aria-label="Diagram legend">
+            <div class="row"><span class="sample" aria-hidden="true"></span><span class="mono">valley · read aloud</span></div>
+            <div class="row"><span class="sample m" aria-hidden="true"></span><span class="mono">mountain · queued</span></div>
+            <div class="row"><span class="sample h" aria-hidden="true"></span><span class="mono">hem · document edge</span></div>
+            <div class="row"><span class="sample r" aria-hidden="true"></span><span class="mono">spoken sentence</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── read-along proof ───────────────────────────────────────── -->
+    <section aria-labelledby="proof-h">
+      <div class="sec-head">
+        <h2 id="proof-h">Proof: the sentence lit is the sentence spoken</h2>
+        <span class="mono">Fig. 02 · fold 02 · sentences 12–16</span>
+      </div>
+
+      <div class="proof-grid">
+        <div class="proof-side">
+          <p class="lede" style="margin-bottom:16px">Hearing a chapter and understanding it are not the same thing. Reading along while you hear keeps both channels on one sentence — and the proof ticks show how far the voice has read.</p>
+          <p class="mono">sync tolerance ±0.02 s · zoom holds the lock</p>
+        </div>
+
+        <div class="sheet" aria-label="Read-along excerpt with proof ticks">
+          <div class="sline read">
+            <span class="tick" aria-hidden="true"><svg viewBox="0 0 13 13"><path d="M1 6.5 L5 10.5 L12 2" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
+            <span class="s">Glycolysis is the first step in cellular respiration, breaking down glucose into pyruvate and releasing energy in the form of ATP and NADH.</span>
+            <span class="t">00:31.240</span>
+          </div>
+          <div class="sline read">
+            <span class="tick" aria-hidden="true"><svg viewBox="0 0 13 13"><path d="M1 6.5 L5 10.5 L12 2" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
+            <span class="s">This process does not require oxygen and occurs in the cytoplasm of all living cells.</span>
+            <span class="t">00:37.860</span>
+          </div>
+          <div class="sline now">
+            <span class="tick" aria-hidden="true"><svg viewBox="0 0 15 15"><path d="M1 7.5 L5.5 12 L14 2" fill="none" stroke="currentColor" stroke-width="2.4"/></svg></span>
+            <span class="s"><span class="uline">Glycolysis takes place in the cytoplasm.</span></span>
+            <span class="t">00:42.180</span>
+          </div>
+          <div class="sline pending">
+            <span class="tick" aria-hidden="true"><svg viewBox="0 0 13 13"><path d="M1 6.5 L5 10.5 L12 2" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
+            <span class="s">Glycolysis consists of two phases: the energy-investment phase and the energy-payoff phase.</span>
+            <span class="t">00:45.900</span>
+          </div>
+          <div class="sline pending">
+            <span class="tick" aria-hidden="true"><svg viewBox="0 0 13 13"><path d="M1 6.5 L5 10.5 L12 2" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
+            <span class="s">During the energy-investment phase, two ATP molecules are used to activate glucose.</span>
+            <span class="t">00:52.470</span>
+          </div>
+          <div class="sheet-meta">
+            <span class="mono">batch 0x8F2A-02 · voice emma · 1.0×</span>
+            <span class="mono red">underline = spoken now</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── fold sequence ──────────────────────────────────────────── -->
+    <section aria-labelledby="seq-h">
+      <div class="sec-head">
+        <h2 id="seq-h">What happens when a file lands</h2>
+        <span class="mono">Fig. 03 · pipeline · 4 stages</span>
+      </div>
+
+      <div class="stages">
+        <div class="stage">
+          <span class="n">01</span>
+          <h3>Upload or paste</h3>
+          <p>PDF, DOCX, MD and TXT are read in your browser — or paste raw text straight in. Nothing to install, nothing to configure.</p>
+          <span class="batch mono">batch 0x8F2A-01 · input</span>
+        </div>
+        <div class="stage">
+          <span class="n">02</span>
+          <h3>Structure detected</h3>
+          <p>Chapters and sections are found and creased into folds. Long texts are chunked and merged so nothing is cut mid-sentence.</p>
+          <span class="batch mono">batch 0x8F2A-02 · crease</span>
+        </div>
+        <div class="stage">
+          <span class="n">03</span>
+          <h3>Speech per fold</h3>
+          <p>Nine curated Edge neural voices at 0.5×–2.0×. The first fold plays while the rest are still generating.</p>
+          <span class="batch mono">batch 0x8F2A-03 · voice</span>
+        </div>
+        <div class="stage">
+          <span class="n">04</span>
+          <h3>Check what stuck</h3>
+          <p>One to eight comprehension questions with explanations, generated from your document. Optional — the reader never needs it.</p>
+          <span class="batch mono">batch 0x8F2A-04 · quiz</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── service facts ──────────────────────────────────────────── -->
+    <section aria-labelledby="facts-h">
+      <div class="sec-head">
+        <h2 id="facts-h">The service, stated plainly</h2>
+        <span class="mono">Fig. 04 · service table · rev 04</span>
+      </div>
+
+      <div class="facts">
+        <div class="fact">
+          <span class="v">9 voices</span>
+          <h3>Curated, free, neural</h3>
+          <p>Microsoft Edge neural voices, US English: Ava, Emma, Andrew, Brian, Aria, Jenny, Guy, Christopher, Michelle. No key, no billing.</p>
+        </div>
+        <div class="fact">
+          <span class="v">0.5×–2.0×</span>
+          <h3>Speed, applied live</h3>
+          <p>Change tempo while a fold plays. Nothing regenerates, nothing re-queues, the sync holds at every rate.</p>
+        </div>
+        <div class="fact">
+          <span class="v">4 formats</span>
+          <h3>Plus a paste box</h3>
+          <p>PDF, DOCX, MD and TXT are extracted client-side. When the text is already on your clipboard, skip the file entirely.</p>
+        </div>
+        <div class="fact">
+          <span class="v">0 accounts</span>
+          <h3>Nothing to sign up for</h3>
+          <p>No subscription, no stored documents, no listening history. Open it, load a chapter, listen.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── quiz ───────────────────────────────────────────────────── -->
+    <section aria-labelledby="quiz-h">
+      <div class="sec-head">
+        <h2 id="quiz-h">Hearing a chapter and understanding it are not the same thing</h2>
+        <span class="mono">Fig. 05 · sample question · Q3 of 5</span>
+      </div>
+
+      <div class="quiz-grid">
+        <div>
+          <p class="lede">So the loop closes with a check, not a guess. When a fold finishes, an optional comprehension quiz asks what stuck — multiple choice, with an explanation under every answer, generated from your own document.</p>
+          <p class="mono">1–8 questions · explanations · runs on Gemini when a key is present · the reader itself never needs one</p>
+        </div>
+
+        <div class="question" aria-label="Sample comprehension question">
+          <span class="mono">sample · fold 02 · Q3 of 5</span>
+          <p class="q">Where does glycolysis take place?</p>
+          <div class="opt"><span class="k">A</span><span>The mitochondria</span></div>
+          <div class="opt right"><span class="k">B</span><span>The cytoplasm</span><svg class="tick-mini" viewBox="0 0 12 12" role="img" aria-label="correct answer"><path d="M1 6 L4.5 9.5 L11 2" fill="none" stroke="currentColor" stroke-width="2"/></svg></div>
+          <div class="opt"><span class="k">C</span><span>The nucleus</span></div>
+          <div class="opt"><span class="k">D</span><span>The ribosome</span></div>
+          <p class="exp">Glycolysis occurs in the cytoplasm of all living cells and does not require oxygen — the first step of cellular respiration.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── closing edition ────────────────────────────────────────── -->
+    <div class="close">
+      <h2>Bring one chapter.<br>Leave knowing it.</h2>
+      <div class="close-side">
+        <!-- CTA target: the app root (/) once deployed — placeholder href until then -->
+        <a class="cta" href="#" data-cta="final">
+          <svg viewBox="0 0 12 14" aria-hidden="true"><path d="M0 0 L12 7 L0 14 Z" fill="currentColor"/></svg>
+          Try it out
+        </a>
+        <span class="mono">free · no account · no API key · oriyomi</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- ── colophon ─────────────────────────────────────────────────── -->
+  <footer>
+    <svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><path d="M2 30 L20 17 L32 5 L44 17 L62 30 L44 31 L32 45 L20 31 Z M27 31 L32 60 L37 31 Z" fill="currentColor"/></svg>
+    <span class="mono">oriyomi · ori — to fold · yomi — to read</span>
+    <span class="mono">speech: 9 curated microsoft edge neural voices · free</span>
+    <span class="mono">vol. 01 · n°001 · sheet 05/05 · rev 04 · n35.6812 e139.7671</span>
+  </footer>
+</div>
+
+<script>
+  /* One authored moment: the crease sequence redraws itself and the headline
+     rule sweeps, once, on load. Everything is visible without JS or motion. */
+  (function () {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    requestAnimationFrame(function () { document.body.classList.add("anim"); });
+  })();
+</script>
+</body>
+</html>

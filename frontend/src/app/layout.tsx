@@ -1,33 +1,18 @@
 import type { Metadata } from "next";
-import { Unna, Merriweather_Sans, Libertinus_Serif_Display, Libertinus_Sans } from "next/font/google";
+import { Shippori_Mincho, Sometype_Mono } from "next/font/google";
 import "./globals.css";
 
-const unna = Unna({
+const shipporiMincho = Shippori_Mincho({
   subsets: ["latin"],
-  weight: ["400", "700"],
-  variable: "--font-unna",
+  weight: ["400", "500", "700"],
+  variable: "--font-shippori",
   display: "swap",
 });
 
-const merriweatherSans = Merriweather_Sans({
+const sometypeMono = Sometype_Mono({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-ui-sans",
-  display: "swap",
-});
-
-const libertiusSerifDisplay = Libertinus_Serif_Display({
-  subsets: ["latin"],
-  weight: "400",
-  style: "normal",
-  variable: "--font-body-serif",
-  display: "swap",
-});
-
-const libertiusSans = Libertinus_Sans({
-  subsets: ["latin"],
-  weight: "400",
-  variable: "--font-data-sans",
+  weight: "variable",
+  variable: "--font-sometype",
   display: "swap",
 });
 
@@ -44,9 +29,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${unna.variable} ${merriweatherSans.variable} ${libertiusSerifDisplay.variable} ${libertiusSans.variable} h-full antialiased`}
+      className={`${shipporiMincho.variable} ${sometypeMono.variable} h-full antialiased`}
     >
-      <body className="h-full overflow-hidden">{children}</body>
+      <body className="h-full">{children}</body>
     </html>
   );
 }

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>oriyomi — landing official preview</title>
+<style>
+  :root {
+    --bg: #161616;
+    --panel: #202020;
+    --line: #323232;
+    --text: #e8e8e7;
+    --meta: #989896;
+    --accent: #d08a2c;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 13px/1.5 ui-sans-serif, system-ui, sans-serif; }
+  header {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    padding: 10px 14px; background: var(--panel); border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .brand { font-weight: 700; letter-spacing: .04em; margin-right: 10px; }
+  .brand small { display: block; font-weight: 400; color: var(--meta); letter-spacing: .08em; font-size: 9px; text-transform: uppercase; }
+  button {
+    appearance: none; border: 1px solid var(--line); background: transparent; color: var(--text);
+    font: inherit; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+    padding: 8px 12px; cursor: pointer; border-radius: 2px;
+  }
+  button:hover { border-color: var(--meta); }
+  button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #161616; }
+  .spacer { flex: 1; }
+  a.ext { color: var(--meta); text-decoration: none; border-bottom: 1px solid var(--line); padding-bottom: 1px; }
+  a.ext:hover { color: var(--text); }
+  .hint { color: var(--meta); font-size: 11px; }
+  iframe { width: 100%; height: calc(100vh - 54px); border: 0; background: #fff; display: block; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">oriyomi<small>landing · official composite</small></div>
+  <button type="button" data-v="landing" aria-pressed="true">0 · Official</button>
+  <button type="button" data-v="styles" aria-pressed="false">0b · Styles (archive)</button>
+  <button type="button" data-v="v1" aria-pressed="false">1 · Departures</button>
+  <button type="button" data-v="v2" aria-pressed="false">2 · Job log</button>
+  <button type="button" data-v="v3" aria-pressed="false">3 · Night desk</button>
+  <button type="button" data-v="v4" aria-pressed="false">4 · Jacket &amp; obi</button>
+  <button type="button" data-v="v5" aria-pressed="false">5 · Broadsheet</button>
+  <span class="spacer"></span>
+  <span class="hint">keys 1–5 · official is 0</span>
+  <a class="ext" id="open" href="v1/index.html" target="_blank" rel="noopener">open standalone ↗</a>
+</header>
+<iframe id="frame" src="landing/index.html" title="oriyomi landing version"></iframe>
+<script>
+  var names = { landing: "0 · Official", styles: "0b · Styles (archive)", v1: "1 · Departures", v2: "2 · Job log", v3: "3 · Night desk", v4: "4 · Jacket & obi", v5: "5 · Broadsheet" };
+  var frame = document.getElementById("frame");
+  var open = document.getElementById("open");
+  var buttons = Array.prototype.slice.call(document.querySelectorAll("button[data-v]"));
+  function show(v) {
+    var path = v === "landing" ? "landing/index.html"
+      : v === "styles" ? "landing/styles.html"
+      : v + "/index.html";
+    frame.src = path;
+    open.setAttribute("href", path);
+    buttons.forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.v === v ? "true" : "false"); });
+    history.replaceState(null, "", "#" + v);
+  }
+  buttons.forEach(function (b) { b.addEventListener("click", function () { show(b.dataset.v); }); });
+  document.addEventListener("keydown", function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var n = parseInt(e.key, 10);
+    if (n >= 1 && n <= 5) show("v" + n);
+  });
+  var initial = (location.hash || "").replace("#", "");
+  if (names[initial]) show(initial);
+  else show("landing");
+</script>
+</body>
+</html>

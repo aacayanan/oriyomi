@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 320" width="900" height="320" fill="none" role="img" aria-label="Linocut diagram: sheet, folds, speech; every arrow points right">
+  <!-- hanga-style: heavy black forms, white gouges, vermilion active fold -->
+  <g>
+    <!-- flat sheet: thick carved rectangle in slight perspective, reading left to right -->
+    <polygon points="50,120 200,70 300,100 150,160" fill="#1a1513"/>
+    <g stroke="#f6eee2" stroke-width="3" opacity=".5">
+      <line x1="90" y1="115" x2="220" y2="130"/>
+      <line x1="110" y1="100" x2="240" y2="115"/>
+    </g>
+    <!-- arrow -->
+    <g stroke="#1a1513" stroke-width="8" stroke-linecap="square">
+      <line x1="320" y1="115" x2="390" y2="115"/>
+      <polyline points="370,90 400,115 370,140" fill="none" stroke-width="8"/>
+    </g>
+    <!-- folds: carved accordion, active panel vermilion -->
+    <g>
+      <polygon points="420,150 460,55 500,150" fill="#1a1513"/>
+      <polygon points="480,150 520,40 560,150" fill="#1a1513"/>
+      <polygon points="540,150 580,30 620,150" fill="#c34838"/>
+      <polygon points="600,150 640,50 680,150" fill="#1a1513"/>
+      <g stroke="#f6eee2" stroke-width="4" opacity=".55">
+        <line x1="460" y1="80" x2="470" y2="140"/>
+        <line x1="580" y1="60" x2="590" y2="140"/>
+      </g>
+    </g>
+    <!-- arrow -->
+    <g stroke="#1a1513" stroke-width="8" stroke-linecap="square">
+      <line x1="710" y1="115" x2="770" y2="115"/>
+      <polyline points="750,90 780,115 750,140" fill="none" stroke-width="8"/>
+    </g>
+    <!-- speech: bold arcs opening right -->
+    <g stroke="#c34838" fill="none" stroke-linecap="round">
+      <path d="M820,35 A28,28 0 0 1 820,95" stroke-width="10"/>
+      <path d="M850,15 A48,48 0 0 1 850,115" stroke-width="8" opacity=".7"/>
+      <path d="M880,0 A68,68 0 0 1 880,130" stroke-width="6" opacity=".4"/>
+    </g>
+  </g>
+</svg>
