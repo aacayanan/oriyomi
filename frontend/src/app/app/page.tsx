@@ -1,9 +1,12 @@
+import { Suspense } from "react";
 import TextReader from "@/components/TextReader";
 
 export default function AppPage() {
   return (
     <div className="h-full overflow-hidden">
-      <TextReader />
+      <Suspense fallback={null}>
+        <TextReader />
+      </Suspense>
     </div>
   );
 }

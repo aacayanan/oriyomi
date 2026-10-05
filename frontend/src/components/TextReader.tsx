@@ -27,6 +27,8 @@ import SaveOrigamiButton from "./SaveOrigamiButton";
 import { useAuth, useAuthActions } from "@/hooks/useAuth";
 import LoginModal from "./LoginModal";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import type { Origami } from "@/types/origami";
 
 interface Voice {
   id: string;
@@ -87,6 +89,10 @@ export default function TextReader() {
   const { user } = useAuth();
   const { signOut } = useAuthActions();
   const [loginOpen, setLoginOpen] = useState(false);
+  const searchParams = useSearchParams();
+  const origamiParam = searchParams.get("origami");
+  /** Guard so the origami effect runs once per param value. */
+  const loadedOrigamiRef = useRef<string | null>(null);
 
   const sentencesRef = useRef<Sentence[]>([]);
   const playingFoldRef = useRef<number | null>(null);
@@ -206,12 +212,78 @@ export default function TextReader() {
         .catch(() => {});
     };
     fetchStats();
-    const id = setInterval(fetchStats, 15_000);
+    // Poll every 60s — frequent enough to feel live, light on API calls.
+    const id = setInterval(fetchStats, 60_000);
     return () => {
       cancelled = true;
       clearInterval(id);
     };
   }, []);
+
+  /* ── load a saved origami from ?origami= ── */
+
+  useEffect(() => {
+    if (!origamiParam || loadedOrigamiRef.current === origamiParam) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch(apiUrl(`/api/origamis/${origamiParam}`));
+        if (!res.ok) return;
+        const o: Origami = await res.json();
+        if (cancelled) return;
+
+        loadedOrigamiRef.current = origamiParam;
+
+        const secs = (o.sections || []) as Section[];
+        setText(o.text);
+        setSections(secs);
+        sectionsRef.current = secs;
+        setHasStructure(secs.length > 0);
+        setDocType(secs.length > 0 ? "chapters" : "flat");
+        if (o.voice) setVoice(o.voice);
+        if (o.speed) setSpeed(o.speed);
+        setSelectedSection(null);
+        setSourceOpen(false);
+        setCompanionOpen(false);
+        hadCompanionTextRef.current = true;
+        setError(null);
+
+        // Saved audio — hydrate directly, skip TTS.
+        if (o.fold_audio && o.fold_audio.length > 0) {
+          setAutoPlayFold(0);
+          docTTS.hydrate(o.fold_audio);
+          return;
+        }
+
+        // No saved audio — generate TTS from the saved sections.
+        if (secs.length > 0 && o.text.trim()) {
+          setAutoPlayFold(0);
+          setIsLoading(true);
+          try {
+            await docTTS.start({
+              text: o.text,
+              voice: o.voice || voice,
+              speed: o.speed || speed,
+              sections: secs,
+            });
+          } finally {
+            if (!cancelled) setIsLoading(false);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load origami:", err);
+        if (!cancelled) {
+          setError("Could not load the saved origami. It may have expired.");
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [origamiParam]);
 
   const analyzeText = useCallback(
     async (textToAnalyze: string, opts?: { autoplayFold?: number }) => {
