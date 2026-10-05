@@ -187,6 +187,8 @@ export default function OrigamiLibrary() {
                   <span>{formatDate(o.created_at)}</span>
                   <span aria-hidden="true">·</span>
                   <span>{formatChars(o.text.length)} chars</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{o.speed}×</span>
                 </div>
                 <div className="lib-folio-expiry">
                   <span

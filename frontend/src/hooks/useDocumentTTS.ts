@@ -36,8 +36,12 @@ interface UseDocumentTTSReturn {
   readyTick: number;
   isSubmitting: boolean;
   start: (opts: StartOpts) => Promise<string | null>;
+  /** Load saved fold audio directly — skips TTS generation entirely. */
+  hydrate: (audio: FoldAudio[]) => void;
   cancel: () => void;
   getFold: (index: number) => FoldAudio | undefined;
+  /** All currently loaded folds, for persisting a session. */
+  getAllFolds: () => FoldAudio[];
   hasFold: (index: number) => boolean;
 }
 
@@ -78,6 +82,27 @@ export default function useDocumentTTS(): UseDocumentTTSReturn {
     foldAudioRef.current.clear();
     setIsSubmitting(false);
   }, []);
+
+  const hydrate = useCallback(
+    (audio: FoldAudio[]) => {
+      cancel();
+      if (audio.length === 0) return;
+
+      const status: Record<number, FoldStatus> = {};
+      for (const f of audio) {
+        foldAudioRef.current.set(f.fold_index, f);
+        status[f.fold_index] = "complete";
+      }
+      const docId =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `doc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      setDocumentId(docId);
+      setFoldStatus(status);
+      setReadyTick((t) => t + 1);
+    },
+    [cancel],
+  );
 
   const start = useCallback(
     async (opts: StartOpts): Promise<string | null> => {
@@ -204,6 +229,13 @@ export default function useDocumentTTS(): UseDocumentTTSReturn {
     [],
   );
 
+  const getAllFolds = useCallback(
+    () => Array.from(foldAudioRef.current.values()),
+    // readyTick included so callers see folds that just landed
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [readyTick],
+  );
+
   const hasFold = useCallback(
     (index: number) => foldAudioRef.current.has(index),
     // readyTick intentionally included so callers re-check after audio lands
@@ -217,8 +249,10 @@ export default function useDocumentTTS(): UseDocumentTTSReturn {
     readyTick,
     isSubmitting,
     start,
+    hydrate,
     cancel,
     getFold,
+    getAllFolds,
     hasFold,
   };
 }

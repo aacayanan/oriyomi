@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import type { OrigamiFoldAudio } from "@/types/origami";
 
 interface SaveOrigamiButtonProps {
   text: string;
   sections: unknown[];
   voice: string | null;
+  speed: number;
   title?: string;
+  foldAudio?: OrigamiFoldAudio[];
 }
 
 function deriveTitle(
@@ -27,7 +30,9 @@ export default function SaveOrigamiButton({
   text,
   sections,
   voice,
+  speed,
   title,
+  foldAudio,
 }: SaveOrigamiButtonProps) {
   const { user, loading } = useAuth();
   const [saving, setSaving] = useState(false);
@@ -51,6 +56,8 @@ export default function SaveOrigamiButton({
           text,
           sections,
           voice,
+          speed,
+          fold_audio: foldAudio ?? [],
         }),
       });
       if (!res.ok) {

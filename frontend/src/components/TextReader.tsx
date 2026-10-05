@@ -248,18 +248,43 @@ export default function TextReader() {
         setWaitingFold(null);
         setAutoPlayFold(null);
 
-        // Paste the text and run the normal analyze → TTS flow.
+        const secs = (o.sections || []) as Section[];
+        // Text + sections feed the viewer/canvas directly — the textbox
+        // stays hidden; this is a loaded session, not a fresh paste.
         setText(o.text);
+        setSections(secs);
+        sectionsRef.current = secs;
+        setHasStructure(secs.length > 0);
+        setDocType(secs.length > 0 ? "chapters" : "flat");
         setSelectedSection(null);
         setSourceOpen(false);
         setCompanionOpen(false);
         hadCompanionTextRef.current = true;
         setError(null);
         if (o.voice) setVoice(o.voice);
+        if (o.speed) setSpeed(o.speed);
 
-        // Analyze the saved text — sections are regenerated fresh.
-        if (o.text.trim().length >= 50) {
-          void analyzeText(o.text);
+        // Saved audio — hydrate the reader directly, no reprocessing.
+        if (o.fold_audio && o.fold_audio.length > 0) {
+          setAutoPlayFold(0);
+          docTTS.hydrate(o.fold_audio);
+          return;
+        }
+
+        // No saved audio (older origami) — regenerate via the normal flow.
+        if (secs.length > 0 && o.text.trim()) {
+          setAutoPlayFold(0);
+          setIsLoading(true);
+          try {
+            await docTTS.start({
+              text: o.text,
+              voice: o.voice || voice,
+              speed: o.speed || speed,
+              sections: secs,
+            });
+          } finally {
+            if (!cancelled) setIsLoading(false);
+          }
         }
       } catch (err) {
         console.error("Failed to load origami:", err);
@@ -943,6 +968,8 @@ export default function TextReader() {
               text={text}
               sections={sections}
               voice={voice}
+              speed={speed}
+              foldAudio={docTTS.getAllFolds()}
             />
           <div className="flex items-center gap-2">
             {showHeaderTransport ? (
