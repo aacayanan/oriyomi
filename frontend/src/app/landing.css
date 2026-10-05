@@ -393,6 +393,7 @@
   width: 100%;
   max-width: 100%;
   max-height: clamp(200px, 30vw, 380px);
+  align-self: center;
 }
 .diagram-step .landing-mono {
   font-size: 9px;
