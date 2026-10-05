@@ -931,15 +931,8 @@
   .diagram-step img { max-height: clamp(160px, 28vw, 240px); }
 }
 
-@media (max-width: 720px) {
-  /* diagram stacks; arrows rotate into the vertical flow */
-  .diagram-inner { flex-direction: column; gap: 14px; padding: 8px 0; }
-  .diagram-arrow { transform: rotate(90deg); width: 40px; }
-  .diagram-step { max-width: min(100%, 360px); }
-  .diagram-step img { max-height: 180px; width: auto; max-width: 100%; }
-  .diagram-step .diagram-speech { max-height: 140px; width: min(100%, 160px); }
-
-  /* flaps stack: one in-flow crease between them, not a midline guess */
+/* flaps stack early: the reader mock needs room to stay legible */
+@media (max-width: 880px) {
   .flaps { grid-template-columns: 1fr; }
   .flaps::before, .flaps::after { display: none; }
   .flap { padding: 0; }
@@ -949,6 +942,15 @@
     border-top: 1px solid var(--color-hairline);
   }
   .flap-right h2 { padding-top: 0; }
+}
+
+@media (max-width: 720px) {
+  /* diagram stacks; arrows rotate into the vertical flow */
+  .diagram-inner { flex-direction: column; gap: 14px; padding: 8px 0; }
+  .diagram-arrow { transform: rotate(90deg); width: 40px; }
+  .diagram-step { max-width: min(100%, 360px); }
+  .diagram-step img { max-height: 180px; width: auto; max-width: 100%; }
+  .diagram-step .diagram-speech { max-height: 140px; width: min(100%, 160px); }
 
   /* obi stacks say over CTA */
   .obi {
