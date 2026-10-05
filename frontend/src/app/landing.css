@@ -593,6 +593,11 @@
   letter-spacing: 0.06em;
 }
 
+.fold-rail-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: 6px;
+}
 .fold-list-card {
   display: flex;
   align-items: center;
@@ -633,6 +638,10 @@
   text-overflow: ellipsis;
   flex: 1;
 }
+.fold-list-title-active {
+  color: var(--color-sumi);
+  font-weight: 600;
+}
 .fold-list-dur {
   font-family: var(--font-data);
   font-size: 9px;
@@ -652,6 +661,12 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  position: relative;
+  min-height: 0;
+  max-height: 236px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  padding-right: 3px;
 }
 .sline {
   display: flex;
@@ -670,7 +685,26 @@
   flex: none;
   margin-top: 0.45em;
 }
-.sline-done .s-dot { background: transparent; }
+/* Sentence text is a real control — click seeks, like the live viewer. */
+.sline .s-text {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  max-width: 52ch;
+  cursor: pointer;
+  transition: color 200ms ease;
+}
+.sline-done .s-dot {
+  /* Folded mark — a short crease bar, not a check badge */
+  width: 0.95em;
+  height: 2px;
+  border-radius: 0;
+  margin-top: 0.78em;
+  background: color-mix(in srgb, var(--color-ink-mute) 80%, transparent);
+}
 .sline-done .s-text { color: var(--color-ink-mute); }
 .sline-active .s-dot { background: var(--color-gold); width: 7px; height: 7px; }
 .sline-active .s-text {
@@ -681,7 +715,7 @@
 }
 .sline-pending .s-dot { background: transparent; }
 .sline-pending .s-text { color: var(--color-sumi-soft); }
-.s-text { max-width: 52ch; }
+.sline-pending .s-text:hover { color: var(--color-vermilion-ink); }
 
 /* playback chrome */
 .playback-bar {
@@ -714,10 +748,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: default;
+  cursor: pointer;
   flex: none;
+  transition: background-color 150ms ease;
 }
+.play-btn:hover { background: var(--color-gold-lit); }
 .play-btn svg { width: 10px; height: 12px; margin-left: 2px; }
+.play-btn svg rect { margin: 0; }
 .speed-label {
   font-family: var(--font-data);
   font-size: 10px;
@@ -726,22 +763,75 @@
   letter-spacing: 0.06em;
 }
 
-/* waveform strip */
+/* waveform strip — played fill, gold sentence region, sumi playhead */
+.wave-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.wave-times {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-data);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: var(--color-ink-fade);
+}
 .waveform-strip {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 2px;
   height: 20px;
   flex: 1;
   min-width: 0;
+  cursor: pointer;
 }
 .wf-bar {
+  position: relative;
   width: 3px;
   border-radius: 1px;
   background: var(--color-hairline-deep);
 }
 .wf-bar-played { background: var(--color-vermilion-soft); }
-.wf-bar-active { background: var(--color-gold); }
+.wf-region {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  background: var(--color-gold);
+  pointer-events: none;
+  transition: opacity 150ms ease;
+}
+.wf-head {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 1.5px;
+  background: var(--color-sumi);
+  pointer-events: none;
+}
+.wf-preview {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 1px;
+  background: color-mix(in srgb, var(--color-sumi) 55%, transparent);
+  pointer-events: none;
+}
+.wf-preview::before {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-sumi);
+}
 
 /* ── closing obi ──────────────────────────────────────── */
 .close {
