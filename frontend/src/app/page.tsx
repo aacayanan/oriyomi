@@ -179,7 +179,7 @@ export default function LandingPage() {
                     <span className="landing-mono">one sheet</span>
                   </div>
 
-                  {/* SVG arrow pointing RIGHT */}
+                  {/* SVG arrow pointing RIGHT — identical on both gaps */}
                   <svg
                     className="diagram-arrow"
                     viewBox="0 0 40 24"
@@ -187,13 +187,13 @@ export default function LandingPage() {
                     aria-hidden="true"
                   >
                     <path
-                      d="M2 12h32"
+                      d="M2 12h30"
                       stroke="currentColor"
                       strokeWidth="1.5"
                       strokeLinecap="round"
                     />
                     <path
-                      d="M28 6l8 6-8 6"
+                      d="M26 6l8 6-8 6"
                       stroke="currentColor"
                       strokeWidth="1.5"
                       strokeLinecap="round"
@@ -210,7 +210,7 @@ export default function LandingPage() {
                     <span className="landing-mono">one pull</span>
                   </div>
 
-                  {/* SVG arrow pointing RIGHT */}
+                  {/* SVG arrow pointing RIGHT — identical on both gaps */}
                   <svg
                     className="diagram-arrow"
                     viewBox="0 0 40 24"
@@ -218,13 +218,13 @@ export default function LandingPage() {
                     aria-hidden="true"
                   >
                     <path
-                      d="M2 12h32"
+                      d="M2 12h30"
                       stroke="currentColor"
                       strokeWidth="1.5"
                       strokeLinecap="round"
                     />
                     <path
-                      d="M28 6l8 6-8 6"
+                      d="M26 6l8 6-8 6"
                       stroke="currentColor"
                       strokeWidth="1.5"
                       strokeLinecap="round"
@@ -233,7 +233,7 @@ export default function LandingPage() {
                   </svg>
 
                   <div className="diagram-step">
-                    {/* Speech icon: sound waves in vermilion */}
+                    {/* Speech icon: bubble + triangle joined, waves opening right */}
                     <svg
                       className="diagram-speech"
                       viewBox="0 0 48 48"
@@ -247,7 +247,8 @@ export default function LandingPage() {
                         rx="2"
                         fill="#c34838"
                       />
-                      <polygon points="24,20 24,28 31,24" fill="#c34838" />
+                      {/* triangle overlaps the bubble — no gap */}
+                      <polygon points="20,20 20,28 28,24" fill="#c34838" />
                       <path
                         d="M34 18c3 3.5 3 8.5 0 12"
                         stroke="#c34838"

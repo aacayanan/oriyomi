@@ -11,6 +11,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * timestamp-driven advancement, gold waveform region over the active
  * sentence, vermilion played fill, crease-bar done marks, smooth
  * center-scroll of the sheet, and click-to-seek on any sentence.
+ * The demo clock runs at DEMO_SPEED so the handoff is obvious on a
+ * landing glance; the mechanics are the viewer's own.
  */
 
 const SENTENCES = [
@@ -31,6 +33,8 @@ const STARTS: number[] = [];
   }
 }
 const TOTAL = STARTS[STARTS.length - 1] + DURS[DURS.length - 1];
+/** Demo clock multiplier — real 1.0× pacing is too slow to read at a glance. */
+const DEMO_SPEED = 2.5;
 /** Beat held on the last line before the fold replays. */
 const HOLD_MS = 1600;
 
@@ -70,6 +74,8 @@ export default function ReaderMock() {
   const lineRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const endHoldRef = useRef<number | null>(null);
   const resumeRef = useRef(false);
+  const playingRef = useRef(false);
+  playingRef.current = playing;
 
   /** Open on the fold's first line and play, unless motion is reduced. */
   useEffect(() => {
@@ -87,7 +93,7 @@ export default function ReaderMock() {
       const dt = now - last;
       last = now;
       setT((prev) => {
-        let next = prev + dt;
+        let next = prev + dt * DEMO_SPEED;
         if (next >= TOTAL) {
           if (endHoldRef.current === null) endHoldRef.current = now + HOLD_MS;
           if (now >= endHoldRef.current) {
@@ -106,7 +112,9 @@ export default function ReaderMock() {
 
   /**
    * Pause the loop when offscreen or the tab is hidden;
-   * resume on return if it had been running.
+   * resume on return if it had been running. One observer for the
+   * component lifetime — recreating it on playback flips races the
+   * initial callback against the scroll that should resume it.
    */
   useEffect(() => {
     const el = rootRef.current;
@@ -114,7 +122,7 @@ export default function ReaderMock() {
 
     const onVisibility = () => {
       if (document.hidden) {
-        resumeRef.current = playing;
+        resumeRef.current = playingRef.current;
         setPlaying(false);
       } else if (resumeRef.current) {
         resumeRef.current = false;
@@ -125,8 +133,11 @@ export default function ReaderMock() {
     const io = new IntersectionObserver(
       ([entry]) => {
         if (!entry.isIntersecting) {
-          resumeRef.current = playing;
-          setPlaying(false);
+          // Only record resume intent when leaving actually pauses playback.
+          if (playingRef.current) {
+            resumeRef.current = true;
+            setPlaying(false);
+          }
         } else if (resumeRef.current && !document.hidden) {
           resumeRef.current = false;
           setPlaying(true);
@@ -140,7 +151,7 @@ export default function ReaderMock() {
       io.disconnect();
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [playing]);
+  }, []);
 
   const active = activeIndexAt(t);
 
@@ -248,7 +259,7 @@ export default function ReaderMock() {
                     onClick={() => seekTo(STARTS[i] + 1)}
                     aria-label={`Play from: ${text}`}
                   >
-                    {text}
+                    <span className="s-crease">{text}</span>
                   </button>
                 </div>
               );

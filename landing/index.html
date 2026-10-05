@@ -358,18 +358,25 @@
     gap: clamp(28px, 3.5vw, 48px);
     align-items: stretch;
   }
-  .beat-grid > div:first-child { max-width: 58ch; }
+  .beat-grid > div:first-child {
+    max-width: 58ch;
+    margin-inline: auto;
+    text-align: center;
+  }
   .beat h2 {
     font-family: var(--font-display);
     font-weight: 700;
     font-size: clamp(1.95rem, 3.5vw, 3rem);
     line-height: 1.12;
     letter-spacing: -.03em;
-    margin: 0 0 18px;
-    max-width: 14ch;
+    margin: 0 auto 18px;
+    max-width: 16ch;
     text-wrap: balance;
   }
-  .beat p { max-width: 54ch; margin: 0 0 16px; }
+  .beat p {
+    max-width: 54ch;
+    margin: 0 auto 16px;
+  }
 
   /* diagram slot — full-bleed beat flow, assets fill the plate */
   .diagram-plate {
@@ -407,7 +414,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: clamp(8px, 1.6vw, 22px);
+    gap: clamp(14px, 2.2vw, 28px);
     height: 100%;
     padding: 8px 0;
     position: relative;
@@ -445,7 +452,7 @@
   }
   .beat-arrow {
     color: var(--hairline-deep);
-    width: clamp(32px, 4vw, 52px);
+    width: clamp(36px, 4.2vw, 52px);
     height: auto;
     flex: none;
   }
@@ -1022,19 +1029,18 @@
                 <img src="../assets/paper-stack.png" alt="A flat stack of paper sheets." style="mix-blend-mode:multiply;">
                 <span class="mono">one sheet</span>
               </div>
-              <svg class="beat-arrow" viewBox="0 0 40 20" aria-hidden="true"><path d="M0 10 H28 M22 4 l8 6 -8 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <svg class="beat-arrow" viewBox="0 0 40 24" aria-hidden="true"><path d="M2 12h30" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M26 6l8 6-8 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
               <div class="beat-step is-pull">
                 <img src="../assets/paper-fold2.png" alt="Paper folded into an accordion of folds." style="mix-blend-mode:multiply;">
                 <span class="mono">one pull</span>
               </div>
-              <svg class="beat-arrow" viewBox="0 0 40 20" aria-hidden="true"><path d="M0 10 H28 M22 4 l8 6 -8 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <svg class="beat-arrow" viewBox="0 0 40 24" aria-hidden="true"><path d="M2 12h30" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M26 6l8 6-8 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
               <div class="beat-step">
-                <svg class="beat-speech" viewBox="0 0 80 80" aria-label="Speech waves opening right.">
-                  <path d="M8 28 C8 18 18 10 28 10 H50 C60 10 70 18 70 28 V40 C70 50 60 58 50 58 H38 L24 70 V58 C14 58 8 48 8 38 Z" fill="none" stroke="#c34838" stroke-width="2"/>
-                  <path d="M30 26 H50" stroke="#c34838" stroke-width="2" stroke-linecap="round"/>
-                  <path d="M30 34 H44" stroke="#c34838" stroke-width="2" stroke-linecap="round"/>
-                  <path d="M30 42 H48" stroke="#c34838" stroke-width="2" stroke-linecap="round"/>
-                  <path d="M72 24 c3 -3 6 -3 8 0 M76 16 c4 -5 9 -5 12 0 M74 32 c2 -2 5 -2 6 0" stroke="#c34838" stroke-width="1.5" stroke-linecap="round" fill="none" opacity=".55"/>
+                <svg class="beat-speech" viewBox="0 0 48 48" aria-label="Speech bubble and waves opening right.">
+                  <rect x="4" y="16" width="20" height="16" rx="2" fill="#c34838"/>
+                  <polygon points="20,20 20,28 28,24" fill="#c34838"/>
+                  <path d="M34 18c3 3.5 3 8.5 0 12" stroke="#c34838" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                  <path d="M39 13c5.5 6 5.5 16 0 22" stroke="#c34838" stroke-width="2.5" stroke-linecap="round" fill="none"/>
                 </svg>
                 <span class="mono">out loud</span>
               </div>

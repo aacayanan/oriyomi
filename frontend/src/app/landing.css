@@ -316,20 +316,24 @@
   gap: clamp(28px, 3.5vw, 48px);
   align-items: stretch;
 }
-.beat-grid > div:first-child { max-width: 58ch; }
+.beat-grid > div:first-child {
+  max-width: 58ch;
+  margin-inline: auto;
+  text-align: center;
+}
 .beat h2 {
   font-family: var(--font-display);
   font-weight: 700;
   font-size: clamp(1.95rem, 3.5vw, 3rem);
   line-height: 1.12;
   letter-spacing: -0.03em;
-  margin: 0 0 18px;
-  max-width: 14ch;
+  margin: 0 auto 18px;
+  max-width: 16ch;
   text-wrap: balance;
 }
 .beat p {
   max-width: 54ch;
-  margin: 0 0 16px;
+  margin: 0 auto 16px;
 }
 
 /* diagram — full-bleed beat flow, assets fill the plate */
@@ -356,7 +360,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: clamp(8px, 1.6vw, 22px);
+  gap: clamp(14px, 2.2vw, 28px);
   height: 100%;
   padding: 8px 0;
   position: relative;
@@ -401,7 +405,7 @@
 }
 .diagram-arrow {
   color: var(--color-hairline-deep);
-  width: clamp(32px, 4vw, 52px);
+  width: clamp(36px, 4.2vw, 52px);
   height: auto;
   flex: none;
 }
@@ -710,12 +714,16 @@
 .sline-active .s-text {
   color: var(--color-sumi);
   font-weight: 600;
+}
+/* Inline crease — draws under each wrapped line, like the viewer's <u>. */
+.sline-active .s-crease {
   border-bottom: 3px solid var(--color-vermilion-soft);
-  padding-bottom: 1px;
+  padding-bottom: 0.08em;
 }
 .sline-pending .s-dot { background: transparent; }
 .sline-pending .s-text { color: var(--color-sumi-soft); }
 .sline-pending .s-text:hover { color: var(--color-vermilion-ink); }
+.s-crease { display: inline; }
 
 /* playback chrome */
 .playback-bar {
