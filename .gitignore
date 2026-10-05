@@ -4,3 +4,11 @@ __pycache__/
 .venv/
 node_modules/
 .next/
+
+# Playwright regenerable artifacts
+test-results/
+playwright-report/
+
+# Root-level npm files — the real app manifest lives in frontend/
+/package.json
+/package-lock.json
