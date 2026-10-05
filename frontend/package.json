@@ -9,12 +9,14 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.117.2",
+    "mammoth": "^1",
     "next": "16.3.7",
+    "pdfjs-dist": "^4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "wavesurfer.js": "^7",
-    "pdfjs-dist": "^4",
-    "mammoth": "^1"
+    "wavesurfer.js": "^7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

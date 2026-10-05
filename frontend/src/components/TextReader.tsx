@@ -23,6 +23,9 @@ import {
   ChevronIcon,
 } from "./Icons";
 import { apiUrl } from "@/lib/api";
+import SaveOrigamiButton from "./SaveOrigamiButton";
+import { useAuth } from "@/hooks/useAuth";
+import Link from "next/link";
 
 interface Voice {
   id: string;
@@ -80,6 +83,7 @@ export default function TextReader() {
 
   const audioPlayer = useAudioPlayer();
   const docTTS = useDocumentTTS();
+  const { user } = useAuth();
 
   const sentencesRef = useRef<Sentence[]>([]);
   const playingFoldRef = useRef<number | null>(null);
@@ -693,7 +697,23 @@ export default function TextReader() {
             oriyomi
           </span>
         </div>
-        <p className="label-ui ml-auto text-right label-sm leading-relaxed text-ink-fade">
+        {user && (
+          <div className="ml-auto flex items-center gap-2">
+            <SaveOrigamiButton
+              text={text}
+              sections={sections}
+              voice={voice}
+              speed={speed}
+            />
+            <Link
+              href="/library"
+              className="outline-btn label-sm h-8 rounded-none px-3 no-underline"
+            >
+              Library
+            </Link>
+          </div>
+        )}
+        <p className={`label-ui text-right label-sm leading-relaxed text-ink-fade ${user ? "" : "ml-auto"}`}>
           <span className="text-sumi-soft">ori</span>—to fold,{" "}
           <span className="text-sumi-soft">yomi</span>—to read
         </p>

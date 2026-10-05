@@ -1,12 +1,13 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import ReaderMock from "@/components/LandingReaderMock";
+import LandingNav from "@/components/LandingNav";
 import "./landing.css";
 
 export const metadata: Metadata = {
   title: "oriyomi — fold a chapter into speech",
   description:
-    "ori—to fold, yomi—to read. Oriyomi folds a document into neural speech and lights the exact sentence being spoken. Free, no account, no API key.",
+    "ori—to fold, yomi—to read. Oriyomi folds a document into neural speech and lights the exact sentence being spoken. Free, no API key.",
 };
 
 export default function LandingPage() {
@@ -34,22 +35,7 @@ export default function LandingPage() {
 
       {/* Masthead */}
       <header className="landing-masthead">
-        <svg className="landing-mark" viewBox="0 0 64 64" aria-hidden="true">
-          <path
-            d="M2 30 L20 17 L32 5 L44 17 L62 30 L44 31 L32 45 L20 31 Z M27 31 L32 60 L37 31 Z"
-            fill="currentColor"
-          />
-        </svg>
-        <span className="wordmark">oriyomi</span>
-        <div className="landing-issue">
-          <span className="landing-issue-label">Vol. 01 · Free Forever</span>
-          <span className="landing-issue-sub">
-            Sentence-sync read-along
-          </span>
-        </div>
-        <Link className="landing-nav-cta" href="/app">
-          Open the reader
-        </Link>
+        <LandingNav />
       </header>
 
       <main>
@@ -99,7 +85,7 @@ export default function LandingPage() {
                 </li>
                 <li>
                   <span className="landing-mono">Account</span>
-                  <span className="cover-meta-v">No account needed</span>
+                  <span className="cover-meta-v">Free — save your folds</span>
                 </li>
               </ul>
             </div>
@@ -127,7 +113,7 @@ export default function LandingPage() {
                 along.
               </p>
               <p className="fine landing-mono landing-mono-on-verm">
-                free · no account · no api key
+                free · no api key · save your folds
               </p>
             </div>
             <div className="cta-slot">
@@ -294,7 +280,7 @@ export default function LandingPage() {
               </div>
               <div className="colophon-row">
                 <span className="landing-mono">Cost</span>
-                <span>free — no account, no subscription, no API key</span>
+                <span>free — save your folds, no API key</span>
               </div>
             </div>
           </div>
@@ -323,7 +309,7 @@ export default function LandingPage() {
                 Try it out
               </Link>
               <p className="fine landing-mono landing-mono-on-verm">
-                free · no account · no api key
+                free · no api key · save your folds
               </p>
             </div>
           </div>

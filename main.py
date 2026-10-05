@@ -42,16 +42,39 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s: %(message)s")
 
 # ---------------------------------------------------------------------------
+# Supabase client (optional — falls back to in-memory counter when absent)
+# ---------------------------------------------------------------------------
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+_supabase = None
+if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
+    from supabase import create_client
+    _supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+# ---------------------------------------------------------------------------
 # Global stats counter
 # ---------------------------------------------------------------------------
-# In-process words-folded counter — resets on server restart.  Incremented by
-# the word count of every successful TTS fold (/api/tts/fold, /api/tts).
+# Words-folded counter backed by Supabase when configured, otherwise in-memory
+# (resets on server restart in the in-memory case).  Incremented by the word
+# count of every successful TTS fold (/api/tts/fold, /api/tts).
 _words_folded: int = 0
 
 
 def _count_words(text: str) -> int:
     """Whitespace-delimited word count — the unit of the words-folded stat."""
     return len(text.split())
+
+
+def _increment_words_folded(n: int) -> None:
+    """Persist word count to Supabase. Falls back to in-memory on failure."""
+    global _words_folded
+    if _supabase is not None:
+        try:
+            _supabase.rpc("increment_words_folded", {"n": n}).execute()
+        except Exception:
+            _words_folded += n
+    else:
+        _words_folded += n
 
 def _cors_origins() -> list[str]:
     """Browser origins allowed to call the API directly.
@@ -291,8 +314,7 @@ async def text_to_speech(request: TTSRequest):
     except RuntimeError as e:
         raise HTTPException(status_code=500, detail=f"TTS generation failed: {e}")
 
-    global _words_folded
-    _words_folded += _count_words(request.text)
+    _increment_words_folded(_count_words(request.text))
 
     return TTSResponse(
         audio_base64=base64.b64encode(result.audio_bytes).decode("utf-8"),
@@ -330,8 +352,7 @@ async def tts_fold(request: FoldTTSRequest):
 
     duration_val = result.sentences[-1].end_ms if result.sentences else 0
 
-    global _words_folded
-    _words_folded += _count_words(request.text)
+    _increment_words_folded(_count_words(request.text))
 
     return DocumentFoldResult(
         fold_index=request.fold_index,
@@ -447,7 +468,14 @@ async def health():
 
 @app.get("/api/stats", response_model=StatsResponse)
 async def stats():
-    """Return global usage stats (in-memory, resets on restart)."""
+    """Return global usage stats (Supabase-backed, in-memory fallback)."""
+    if _supabase is not None:
+        try:
+            result = _supabase.table("stats").select("words_folded").limit(1).execute()
+            if result.data:
+                return StatsResponse(words_folded=int(result.data[0]["words_folded"]))
+        except Exception:
+            pass
     return StatsResponse(words_folded=_words_folded)
 
 

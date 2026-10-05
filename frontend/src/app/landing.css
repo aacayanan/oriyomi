@@ -123,6 +123,190 @@
   color: var(--color-sumi);
 }
 
+/* ── masthead nav auth ────────────────────────────────── */
+.landing-nav-auth {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  margin-right: 12px;
+}
+.landing-nav-email {
+  font-family: var(--font-data);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--color-ink-fade);
+  text-transform: uppercase;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.landing-nav-ghost {
+  display: inline-flex;
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--color-hairline-deep);
+  color: var(--color-sumi);
+  font-family: var(--font-data);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 6px 14px 5px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease;
+  flex: none;
+}
+.landing-nav-ghost:hover {
+  background: color-mix(in srgb, var(--color-fold) 80%, var(--color-hairline));
+  border-color: var(--color-ink-mute);
+}
+
+/* ── login modal ──────────────────────────────────────── */
+.login-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(26, 21, 19, 0.45);
+  backdrop-filter: blur(4px);
+  padding: 24px;
+}
+.login-modal {
+  position: relative;
+  background: var(--color-washi);
+  border: 1px solid var(--color-hairline-deep);
+  padding: 36px 32px 28px;
+  max-width: 360px;
+  width: 100%;
+}
+.login-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  background: none;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--color-ink-fade);
+  cursor: pointer;
+  padding: 4px;
+}
+.login-modal-close:hover {
+  color: var(--color-sumi);
+}
+.login-modal-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  margin: 0 0 20px;
+  color: var(--color-sumi);
+}
+.login-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.login-modal-label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-family: var(--font-data);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ink-fade);
+}
+.login-modal-input {
+  padding: 8px 10px;
+  border: 1px solid var(--color-hairline-deep);
+  background: var(--color-fold);
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-sumi);
+  outline: none;
+  transition: border-color 150ms ease;
+}
+.login-modal-input:focus {
+  border-color: var(--color-vermilion);
+}
+.login-modal-error {
+  margin: 0;
+  font-family: var(--font-data);
+  font-size: 10px;
+  color: var(--color-vermilion);
+  letter-spacing: 0.04em;
+}
+.login-modal-sent {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-sumi-soft);
+  line-height: 1.6;
+}
+.login-modal-submit {
+  background: var(--color-vermilion);
+  color: #f8f4ea;
+  font-family: var(--font-data);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 10px 16px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 160ms ease;
+  margin-top: 4px;
+}
+.login-modal-submit:hover {
+  background: var(--color-vermilion-ink);
+}
+.login-modal-otp {
+  background: none;
+  border: none;
+  font-family: var(--font-data);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--color-ink-fade);
+  cursor: pointer;
+  text-align: center;
+  padding: 4px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.login-modal-otp:hover {
+  color: var(--color-vermilion-ink);
+}
+.login-modal-toggle {
+  margin: 16px 0 0;
+  font-family: var(--font-data);
+  font-size: 10px;
+  color: var(--color-ink-fade);
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+.login-modal-toggle-btn {
+  background: none;
+  border: none;
+  font-family: var(--font-data);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-vermilion);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  letter-spacing: 0.06em;
+}
+.login-modal-toggle-btn:hover {
+  color: var(--color-vermilion-ink);
+}
+
 /* ── mono label ───────────────────────────────────────── */
 .landing-mono {
   font-family: var(--font-data);
@@ -1002,6 +1186,8 @@
   /* masthead data block is desktop marginalia — hide it on phones */
   .landing-issue { display: none; }
   /* with the issue block gone, the CTA pushes itself to the right edge */
+  .landing-nav-auth { margin-right: 8px; }
+  .landing-nav-email { display: none; }
   .landing-nav-cta { margin-left: auto; }
   .landing-masthead::after { display: none; }
   .landing-masthead { border-bottom: 2px solid var(--color-sumi); }
