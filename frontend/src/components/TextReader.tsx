@@ -248,41 +248,18 @@ export default function TextReader() {
         setWaitingFold(null);
         setAutoPlayFold(null);
 
-        const secs = (o.sections || []) as Section[];
+        // Paste the text and run the normal analyze → TTS flow.
         setText(o.text);
-        setSections(secs);
-        sectionsRef.current = secs;
-        setHasStructure(secs.length > 0);
-        setDocType(secs.length > 0 ? "chapters" : "flat");
-        if (o.voice) setVoice(o.voice);
-        if (o.speed) setSpeed(o.speed);
         setSelectedSection(null);
         setSourceOpen(false);
         setCompanionOpen(false);
         hadCompanionTextRef.current = true;
         setError(null);
+        if (o.voice) setVoice(o.voice);
 
-        // Saved audio — hydrate directly, skip TTS.
-        if (o.fold_audio && o.fold_audio.length > 0) {
-          setAutoPlayFold(0);
-          docTTS.hydrate(o.fold_audio);
-          return;
-        }
-
-        // No saved audio — generate TTS from the saved sections.
-        if (secs.length > 0 && o.text.trim()) {
-          setAutoPlayFold(0);
-          setIsLoading(true);
-          try {
-            await docTTS.start({
-              text: o.text,
-              voice: o.voice || voice,
-              speed: o.speed || speed,
-              sections: secs,
-            });
-          } finally {
-            if (!cancelled) setIsLoading(false);
-          }
+        // Analyze the saved text — sections are regenerated fresh.
+        if (o.text.trim().length >= 50) {
+          void analyzeText(o.text);
         }
       } catch (err) {
         console.error("Failed to load origami:", err);
@@ -966,8 +943,6 @@ export default function TextReader() {
               text={text}
               sections={sections}
               voice={voice}
-              speed={speed}
-              foldAudio={docTTS.getAllFolds()}
             />
           <div className="flex items-center gap-2">
             {showHeaderTransport ? (

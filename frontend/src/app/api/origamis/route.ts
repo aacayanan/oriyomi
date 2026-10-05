@@ -33,8 +33,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from("origamis")
-    // Exclude fold_audio from the list — it's heavy; fetch on selection.
-    .select("id,user_id,title,text,sections,voice,speed,created_at,updated_at")
+    .select("id,user_id,title,text,sections,voice,created_at,updated_at")
     .eq("user_id", user.id)
     .gte("created_at", cutoffIso())
     .order("created_at", { ascending: false });
@@ -76,8 +75,6 @@ export async function POST(request: Request) {
     text: body.text,
     sections: body.sections ?? [],
     voice: body.voice ?? null,
-    speed: body.speed ?? 1.0,
-    fold_audio: body.fold_audio ?? [],
   };
 
   const { data, error } = await supabase

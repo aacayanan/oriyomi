@@ -136,12 +136,6 @@ export default function MobileReader() {
   useEffect(() => {
     if (!origami || sections.length === 0) return;
 
-    // Saved audio present — hydrate directly, skip TTS generation.
-    if (origami.fold_audio && origami.fold_audio.length > 0) {
-      tts.hydrate(origami.fold_audio);
-      return;
-    }
-
     let cancelled = false;
 
     // Compute character offsets for each section (for sentence index tracking).
@@ -297,16 +291,7 @@ export default function MobileReader() {
     async (o: Origami) => {
       // Update URL without full navigation
       router.replace(`/app?origami=${o.id}`, { scroll: false });
-      // Fetch the full record — list responses omit fold_audio.
-      let full = o;
-      try {
-        const res = await fetch(`/api/origamis/${o.id}`);
-        if (res.ok) full = (await res.json()) as Origami;
-      } catch {
-        // Fall back to the list record; TTS will regenerate if no audio.
-      }
-      setOrigami(full);
-      setSpeed(full.speed || 1.0);
+      setOrigami(o);
       setActiveFoldIndex(0);
       setActiveSentenceIndex(0);
       setError(null);
