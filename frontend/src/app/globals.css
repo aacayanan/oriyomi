@@ -216,3 +216,65 @@ button {
     scroll-behavior: auto !important;
   }
 }
+
+/* ── mobile gate: the reader is a desktop desk ─────────── */
+.app-mobile-gate {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .app-desktop-only {
+    display: none !important;
+  }
+  .app-mobile-gate {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 36px 28px max(36px, env(safe-area-inset-bottom));
+    text-align: center;
+  }
+  .gate-mark {
+    width: 44px;
+    height: 44px;
+    color: var(--color-vermilion-ink);
+  }
+  .gate-wordmark {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 30px;
+    line-height: 1;
+    letter-spacing: 0.012em;
+    color: var(--color-sumi);
+  }
+  .gate-rule {
+    width: 48px;
+    height: 1px;
+    background: var(--color-hairline-deep);
+    margin: 6px 0 2px;
+  }
+  .gate-copy {
+    margin: 0;
+    max-width: 22ch;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 20px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    color: var(--color-sumi-soft);
+    text-wrap: balance;
+  }
+  .gate-fine {
+    margin: 10px 0 0;
+    font-family: var(--font-data);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-ink-fade);
+    line-height: 1.8;
+  }
+}

@@ -932,27 +932,33 @@
 }
 
 @media (max-width: 720px) {
+  /* diagram stacks; arrows rotate into the vertical flow */
   .diagram-inner { flex-direction: column; gap: 14px; padding: 8px 0; }
   .diagram-arrow { transform: rotate(90deg); width: 40px; }
   .diagram-step { max-width: min(100%, 360px); }
   .diagram-step img { max-height: 180px; width: auto; max-width: 100%; }
   .diagram-step .diagram-speech { max-height: 140px; width: min(100%, 160px); }
+
+  /* flaps stack: one in-flow crease between them, not a midline guess */
   .flaps { grid-template-columns: 1fr; }
-  .flaps::before, .flaps::after {
-    left: 0; right: 0; top: auto; bottom: auto;
-    width: auto; height: 1px; transform: none;
-  }
-  .flaps::before { top: calc(50% - 0.5px); }
-  .flaps::after {
-    top: calc(50% - 17px);
-    height: 34px;
-    background: linear-gradient(180deg,
-      rgba(26,21,19,0) 0%, rgba(26,21,19,0.07) 46%,
-      rgba(246,238,226,0.1) 54%, rgba(26,21,19,0) 100%);
-  }
+  .flaps::before, .flaps::after { display: none; }
   .flap { padding: 0; }
-  .flap-left { padding-bottom: 40px; }
-  .flap-right { padding-top: 20px; }
+  .flap-left { padding-bottom: 28px; }
+  .flap-right {
+    padding-top: 28px;
+    border-top: 1px solid var(--color-hairline);
+  }
+  .flap-right h2 { padding-top: 0; }
+
+  /* obi stacks say over CTA */
+  .obi {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .obi .cta-slot { margin-left: 0; }
+  .obi .landing-cta { justify-content: center; }
+
+  /* reader mock: full-bleed sheet, touch-sized controls */
   .reader-body { grid-template-columns: 1fr; }
   .fold-rail {
     border-right: 0;
@@ -966,6 +972,11 @@
   .fold-dots { padding: 0; }
   .fold-list-card { display: none; }
   .fold-card { display: none; }
+  .reader-sheet { padding: 12px 14px; }
+  .sheet-sentences { max-height: 210px; }
+  .sline { padding: 10px 0; }
+  .play-btn { width: 40px; height: 40px; }
+  .play-btn svg { width: 12px; height: 14px; }
 }
 
 @media (max-width: 520px) {
@@ -980,7 +991,31 @@
   }
   .landing-masthead::after { display: none; }
   .landing-masthead { border-bottom: 2px solid var(--color-sumi); }
+
+  .landing-title { font-size: clamp(2.35rem, 10.5vw, 2.9rem); }
+  .lede { font-size: 16px; }
+  .etym { gap: 8px 18px; }
+  .cover-meta li { gap: 12px; }
+
+  .obi .say { font-size: 1.1rem; }
   .obi .cta-slot { margin-left: 0; width: 100%; }
-  .landing-cta { width: 100%; justify-content: center; }
+  .landing-cta {
+    width: 100%;
+    justify-content: center;
+    font-size: 16px;
+    padding: 14px 22px 13px;
+  }
   .close .obi .cta-slot { min-width: 0; width: 100%; }
+
+  .reader-header { padding: 9px 12px; }
+  .reader-header .label-ui { font-size: 9px; }
+  .reader-header .label-ui:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .sheet-sentences { max-height: 196px; }
+  .sline { font-size: 13px; gap: 8px; }
+  .wave-times { font-size: 8.5px; }
+  .playback-voice { font-size: 9px; }
 }
