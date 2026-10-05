@@ -53,13 +53,13 @@ export default function ChapterSelector({
   return (
     <div className="border-t border-hairline pt-3">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="label-ui text-[11px] text-sumi-soft">
+        <h2 className="label-ui label-lg text-sumi-soft">
           Folds · {sections.length}
         </h2>
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="outline-btn h-7 px-2 text-[10px]"
+          className="outline-btn h-7 px-2 label-lg"
           disabled={disabled}
           aria-expanded={isExpanded}
         >
@@ -84,7 +84,7 @@ export default function ChapterSelector({
           >
             <div className="flex items-center justify-between gap-2">
               <span className="font-ui text-xs">Whole document</span>
-              <span className="font-data text-[10px] text-ink-fade">
+              <span className="font-data label-lg text-ink-fade">
                 {docType === "flat" ? "flat" : docType}
               </span>
             </div>
@@ -118,12 +118,12 @@ export default function ChapterSelector({
                           : ""
                     }`}
                   >
-                    <span className="mr-1.5 font-data text-[10px] tabular-nums text-ink-fade">
+                    <span className="mr-1.5 font-data label-lg tabular-nums text-ink-fade">
                       {String(i + 1).padStart(2, "0")}
                     </span>
                     {section.title}
                   </span>
-                  <span className="shrink-0 font-data text-[10px] tabular-nums text-ink-fade">
+                  <span className="shrink-0 font-data label-lg tabular-nums text-ink-fade">
                     {estimateDuration(chars)}
                   </span>
                 </div>

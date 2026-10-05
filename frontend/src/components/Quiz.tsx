@@ -153,9 +153,9 @@ export default function Quiz({ text, fullyRead, disabled = false }: QuizProps) {
           <LockIcon
             className={`h-3.5 w-3.5 shrink-0 ${isLocked ? "text-ink-mute" : "text-ink-fade"}`}
           />
-          <span className="label-ui text-[11px] text-sumi-soft">Quiz</span>
+          <span className="label-ui label-lg text-sumi-soft">Quiz</span>
           {isLocked && (
-            <span className="font-data text-[10px] text-ink-mute">Coming soon</span>
+            <span className="font-data label-sm text-ink-mute">Coming soon</span>
           )}
           {!isLocked && showScore && (
             <span className="font-data text-xs tabular-nums text-ink-fade">
@@ -166,7 +166,7 @@ export default function Quiz({ text, fullyRead, disabled = false }: QuizProps) {
 
         <div className="flex items-center gap-2">
           {quiz && !isLocked && (
-            <span className="label-ui text-[10px] text-ink-fade">
+            <span className="label-ui label-sm text-ink-fade">
               {open ? "Hide" : "Show"}
             </span>
           )}
@@ -180,7 +180,7 @@ export default function Quiz({ text, fullyRead, disabled = false }: QuizProps) {
 
       {/* ── Locked hint ── */}
       {isLocked && (
-        <p className="px-4 py-2 font-ui text-[11px] leading-relaxed text-ink-mute">
+        <p className="px-4 py-2 font-ui label-lg leading-relaxed text-ink-mute">
           Finish listening to the full text to unlock
         </p>
       )}
@@ -190,15 +190,15 @@ export default function Quiz({ text, fullyRead, disabled = false }: QuizProps) {
         <div className="px-4 py-3">
           {/* Badge row */}
           <div className="mb-3 flex items-center gap-2.5">
-            <span className="label-ui text-[10px] text-sumi-soft">To be tested</span>
-            <span className="inline-flex items-center rounded-full border border-hairline-deep bg-washi px-2 py-0.5 font-data text-[9px] uppercase tracking-wider text-ink-fade">
+            <span className="label-ui label-sm text-sumi-soft">To be tested</span>
+            <span className="inline-flex items-center rounded-full border border-hairline-deep bg-washi px-2 py-0.5 font-data label-sm uppercase tracking-wider text-ink-fade">
               Coming soon
             </span>
             <button
               type="button"
               onClick={generateQuiz}
               disabled={isLoading}
-              className="gold-dot-btn ml-auto h-7 px-3 text-[10px]"
+              className="gold-dot-btn ml-auto h-7 px-3 label-sm"
             >
               <span className="h-1.5 w-1.5 rounded-full bg-gold-lit" aria-hidden="true" />
               {quiz ? "Regenerate" : "Generate"}
@@ -226,25 +226,19 @@ export default function Quiz({ text, fullyRead, disabled = false }: QuizProps) {
                 return (
                   <div key={qi} className="flex flex-col gap-2">
                     <p className="font-body text-sm leading-relaxed text-sumi">
-                      <span className="mr-2 font-data text-[11px] tabular-nums text-ink-fade">
+                      <span className="mr-2 font-data label-lg tabular-nums text-ink-fade">
                         {String(qi + 1).padStart(2, "0")}
                       </span>
                       {q.question}
                     </p>
                     <div className="flex flex-col gap-1.5">
                       {q.options.map((option, oi) => {
-                        let optionClass =
-                          "w-full border border-hairline bg-transparent px-3 py-2 text-left font-ui text-xs text-sumi transition-colors hover:bg-washi";
+                        let optionClass = "option-btn";
                         if (answered) {
                           if (oi === q.correct_index) {
-                            optionClass =
-                              "w-full border border-vermilion bg-fold px-3 py-2 text-left font-ui text-xs font-semibold text-vermilion-ink";
+                            optionClass = "option-btn option-btn--correct";
                           } else if (oi === selected) {
-                            optionClass =
-                              "w-full border border-hairline-deep bg-washi-deep px-3 py-2 text-left font-ui text-xs text-ink-fade line-through";
-                          } else {
-                            optionClass =
-                              "w-full border border-hairline bg-transparent px-3 py-2 text-left font-ui text-xs text-ink-mute";
+                            optionClass = "option-btn option-btn--wrong";
                           }
                         }
                         return (

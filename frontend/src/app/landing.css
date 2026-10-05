@@ -72,11 +72,12 @@
   line-height: 1;
   letter-spacing: 0.012em;
 }
+/* Right-side marginalia: sits flush against the nav CTA, separator between */
 .landing-issue {
   margin-left: auto;
   text-align: right;
-  border-left: 1px solid var(--color-hairline);
-  padding-left: 20px;
+  border-right: 1px solid var(--color-hairline);
+  padding-right: 20px;
 }
 .landing-issue .landing-issue-label {
   font-family: var(--font-data);
@@ -103,7 +104,6 @@
 .landing-nav-cta {
   display: inline-flex;
   align-items: center;
-  margin-left: auto;
   background: var(--color-vermilion);
   color: #f8f4ea;
   font-family: var(--font-data);
@@ -1001,6 +1001,8 @@
   .folio, .reg { display: none; }
   /* masthead data block is desktop marginalia — hide it on phones */
   .landing-issue { display: none; }
+  /* with the issue block gone, the CTA pushes itself to the right edge */
+  .landing-nav-cta { margin-left: auto; }
   .landing-masthead::after { display: none; }
   .landing-masthead { border-bottom: 2px solid var(--color-sumi); }
 

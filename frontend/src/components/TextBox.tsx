@@ -17,21 +17,21 @@ export default function TextBox({ text, onChange, onClear, disabled }: TextBoxPr
     <div className="flex flex-col gap-2">
       <textarea
         className="min-h-[9rem] w-full resize-y border border-hairline bg-fold p-3 font-body text-sm leading-relaxed text-sumi placeholder:text-ink-mute focus-visible:border-vermilion"
-        placeholder="Paste your text here…"
+        placeholder="Paste a chapter…"
         value={text}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
         spellCheck={false}
       />
       <div className="flex items-center justify-between gap-2">
-        <span className="font-data text-[11px] tabular-nums text-ink-fade">
+        <span className="font-data label-lg tabular-nums text-ink-fade">
           {wordCount.toLocaleString()} {wordCount === 1 ? "word" : "words"}
         </span>
         {text.length > 0 && (
           <button
             type="button"
             onClick={onClear}
-            className="label-ui text-[10px] text-ink-fade transition-colors hover:text-vermilion"
+            className="label-ui label-lg text-ink-fade transition-colors hover:text-vermilion"
           >
             Clear
           </button>

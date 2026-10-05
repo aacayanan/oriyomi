@@ -553,7 +553,7 @@ export default function TextReader() {
           activeSection.text_preview.length > 140 ? "…" : ""
         }`
       : text.trim()
-        ? "Press play to fold this document into speech. The sheet advances as sentences finish."
+        ? "Press play. Read along. The sheet advances as sentences finish."
         : "Load a document to begin. Each section is a fold; the crane stands when the last one closes.";
 
   const prevFold =
@@ -655,7 +655,7 @@ export default function TextReader() {
   const playLabel = audioPlayer.isPlaying
     ? "Pause"
     : isPreparingFolds
-      ? "Preparing…"
+      ? "Preparing"
       : audioBase64 && !isLoading
         ? "Resume"
         : "Play";
@@ -688,7 +688,7 @@ export default function TextReader() {
             oriyomi
           </span>
         </div>
-        <p className="label-ui ml-auto text-right text-[9px] leading-relaxed text-ink-fade sm:text-[10px]">
+        <p className="label-ui ml-auto text-right label-sm leading-relaxed text-ink-fade">
           <span className="text-sumi-soft">ori</span>—to fold,{" "}
           <span className="text-sumi-soft">yomi</span>—to read
         </p>
@@ -698,7 +698,7 @@ export default function TextReader() {
       <main className="mx-auto grid w-full max-w-[1600px] min-h-0 flex-1 grid-cols-1 gap-[var(--zone-gap)] overflow-y-auto px-4 py-4 sm:px-6 lg:grid-cols-[var(--rail-w)_minmax(0,1fr)_minmax(16rem,22rem)] lg:grid-rows-1 lg:overflow-hidden lg:px-8 lg:py-5">
         {/* Left rail — panel itself does not scroll; fold cards scroll inside FoldList */}
         <aside className="flex min-h-0 flex-col gap-0 overflow-hidden border border-hairline bg-washi/40 px-4 py-4">
-          <div className="label-ui shrink-0 text-[11px] text-ink-fade">
+          <div className="label-ui shrink-0 label-lg text-ink-fade">
             Fold {foldTotal > 0 ? String(foldIndex + 1).padStart(2, "0") : "—"}
             {" of "}
             {foldTotal > 0 ? String(foldTotal).padStart(2, "0") : "—"}
@@ -722,7 +722,7 @@ export default function TextReader() {
               ))
             )}
             {foldTotal > 16 && (
-              <span className="font-data text-[10px] text-ink-fade">
+              <span className="font-data label-lg text-ink-fade">
                 +{foldTotal - 16}
               </span>
             )}
@@ -764,11 +764,11 @@ export default function TextReader() {
           {!hideSource && (
           <div id="source">
             <div className="flex items-center justify-between gap-2">
-              <h2 className="label-ui text-[11px] text-sumi-soft">Source</h2>
+              <h2 className="label-ui label-lg text-sumi-soft">Source</h2>
               <button
                 type="button"
                 onClick={() => setSourceOpen((v) => !v)}
-                className="label-ui text-[10px] text-ink-fade hover:text-vermilion"
+                className="label-ui label-lg text-ink-fade hover:text-vermilion"
                 aria-expanded={sourceOpen}
               >
                 {sourceOpen ? "Hide" : "Show"}
@@ -801,8 +801,8 @@ export default function TextReader() {
 
           {foldsQueued > 0 && foldsComplete < foldsQueued && (
             <div className="mt-4 border border-hairline bg-fold p-3">
-              <div className="flex items-center justify-between font-ui text-[11px] text-sumi-soft">
-                <span>Folding speech…</span>
+              <div className="flex items-center justify-between font-ui label-lg text-sumi-soft">
+                <span>Folding…</span>
                 <span className="font-data tabular-nums">
                   {foldsComplete} / {foldsQueued} folds
                 </span>
@@ -838,7 +838,7 @@ export default function TextReader() {
               <button
                 type="button"
                 onClick={handleStop}
-                className="outline-btn h-11 shrink-0 rounded-full px-4 text-[10px]"
+                className="outline-btn h-11 shrink-0 rounded-full px-4 label-lg"
               >
                 <StopIcon className="h-3.5 w-3.5" />
                 Stop
@@ -848,7 +848,7 @@ export default function TextReader() {
               <button
                 type="button"
                 onClick={handleStop}
-                className="outline-btn h-11 shrink-0 rounded-full px-4 text-[10px]"
+                className="outline-btn h-11 shrink-0 rounded-full px-4 label-lg"
               >
                 Cancel
               </button>
@@ -857,7 +857,7 @@ export default function TextReader() {
               type="button"
               onClick={audioPlayer.isPlaying ? handlePause : handlePlay}
               disabled={isLoading || docTTS.isSubmitting}
-              className={`gold-dot-btn h-11 text-[11px] ${
+              className={`gold-dot-btn h-11 label-lg ${
                 hasSecondTransport ? "flex-1" : "w-full"
               }`}
               aria-label={playLabel}
@@ -885,14 +885,14 @@ export default function TextReader() {
           </div>
           <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2 pt-2 font-ui text-xs text-vermilion-soft">
             <span aria-hidden="true">▶</span>
-            <span className="label-ui text-[9px] text-ink-mute tabular-nums">
-              Helped read {foldsUnfolded.toLocaleString()} fold{foldsUnfolded === 1 ? "" : "s"}.
+            <span className="label-ui label-sm text-ink-mute tabular-nums">
+              Helped read {foldsUnfolded.toLocaleString()} fold{foldsUnfolded === 1 ? "" : "s"}
             </span>
             <a
               href="https://buymeacoffee.com/aaroncayanan"
               target="_blank"
               rel="noopener noreferrer"
-              className="label-ui text-[9px] text-ink-mute transition-colors hover:text-vermilion"
+              className="label-ui label-sm text-ink-mute transition-colors hover:text-vermilion"
             >
               ☕ Buy me a coffee
             </a>
@@ -914,17 +914,17 @@ export default function TextReader() {
               className="flex w-full cursor-pointer items-center justify-between gap-3 border-b border-hairline px-4 py-3 text-left transition-colors hover:bg-washi/60"
             >
               <div className="flex items-center gap-2.5">
-                <span className="label-ui text-[11px] text-sumi-soft">
+                <span className="label-ui label-lg text-sumi-soft">
                   Companion
                 </span>
                 {Boolean(text.trim()) && (
-                  <span className="font-data text-[10px] text-ink-mute">
+                  <span className="font-data label-lg text-ink-mute">
                     optional
                   </span>
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <span className="label-ui text-[10px] text-ink-fade">
+                <span className="label-ui label-lg text-ink-fade">
                   {companionOpen ? "Hide" : "Show"}
                 </span>
                 <ChevronIcon
@@ -942,7 +942,7 @@ export default function TextReader() {
           </section>
 
           <div className="shrink-0 border border-hairline bg-fold px-4 py-4">
-            <div className="label-ui text-[11px] text-ink-mute">Current fold</div>
+            <div className="label-ui label-lg text-ink-mute">Current fold</div>
             <div className="mt-2 flex items-stretch gap-3">
               <FoldCreaseArt
                 index={Math.max(0, foldIndex)}
@@ -973,8 +973,8 @@ export default function TextReader() {
                   disabled={!prevFold}
                   className="outline-btn h-auto min-h-[3.25rem] flex-col items-start gap-0.5 px-3 py-2 text-left disabled:opacity-35"
                 >
-                  <span className="label-ui text-[9px] text-ink-fade">Previous</span>
-                  <span className="w-full truncate font-ui text-[11px] font-semibold tracking-normal normal-case text-sumi">
+                  <span className="label-ui label-sm text-ink-fade">Previous</span>
+                  <span className="w-full truncate font-ui label-lg font-semibold tracking-normal normal-case text-sumi">
                     {prevFold
                       ? `${String(prevFold.index + 1).padStart(2, "0")} · ${prevFold.section.title}`
                       : "—"}
@@ -986,8 +986,8 @@ export default function TextReader() {
                   disabled={!nextFold}
                   className="outline-btn h-auto min-h-[3.25rem] flex-col items-start gap-0.5 px-3 py-2 text-left disabled:opacity-35"
                 >
-                  <span className="label-ui text-[9px] text-ink-fade">Next</span>
-                  <span className="w-full truncate font-ui text-[11px] font-semibold tracking-normal normal-case text-sumi">
+                  <span className="label-ui label-sm text-ink-fade">Next</span>
+                  <span className="w-full truncate font-ui label-lg font-semibold tracking-normal normal-case text-sumi">
                     {nextFold
                       ? `${String(nextFold.index + 1).padStart(2, "0")} · ${nextFold.section.title}`
                       : "—"}
@@ -999,7 +999,7 @@ export default function TextReader() {
 
           {/* Voice / speed / waveform — under current fold, above quiz */}
           <div className="shrink-0 border border-hairline bg-fold px-4 py-3">
-            <div className="label-ui mb-1 text-[11px] text-ink-mute">Playback</div>
+            <div className="label-ui mb-1 label-lg text-ink-mute">Playback</div>
             <Controls
               voice={voice}
               onVoiceChange={setVoice}

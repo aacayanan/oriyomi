@@ -29,7 +29,7 @@ export default function Controls({
   return (
     <div className="flex flex-col">
       <label className="flex items-center gap-3 border-t border-hairline py-3">
-        <span className="label-ui w-[4.5rem] shrink-0 text-[11px] text-sumi-soft">
+        <span className="label-ui w-[4.5rem] shrink-0 label-lg text-sumi-soft">
           Voice
         </span>
         <span className="relative min-w-0 flex-1">
@@ -56,7 +56,7 @@ export default function Controls({
       </label>
 
       <label className="flex items-center gap-3 border-t border-hairline py-3">
-        <span className="label-ui w-[4.5rem] shrink-0 text-[11px] text-sumi-soft">
+        <span className="label-ui w-[4.5rem] shrink-0 label-lg text-sumi-soft">
           Speed
         </span>
         <span className="flex min-w-0 flex-1 items-center gap-3">

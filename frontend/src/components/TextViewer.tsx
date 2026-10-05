@@ -120,7 +120,7 @@ export default function TextViewer({
       <div className="flex items-center justify-between gap-3 border-b border-hairline px-4 py-2.5 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
           {totalFolds > 0 && (
-            <span className="label-ui shrink-0 text-[11px] text-ink-fade">
+            <span className="label-ui shrink-0 label-lg text-ink-fade">
               Fold {String(Math.min(completedFolds + 1, totalFolds)).padStart(2, "0")}
             </span>
           )}
@@ -319,10 +319,10 @@ function EmptySheet() {
   return (
     <div className="mx-auto flex h-full min-h-[22rem] max-w-[36rem] flex-col items-start justify-center gap-4 px-2">
       <p className="font-display leading-tight text-sumi text-[1.786em] sm:text-[2.143em]">
-        Fold a document into speech.
+        Fold a chapter into speech.
       </p>
       <p className="max-w-[34ch] font-body leading-relaxed text-ink-fade text-[0.952em]">
-        Paste text or drop a file in the source panel. Play reads it aloud
+        Paste a chapter, or drop one in. Play reads it aloud
         sentence by sentence — the active crease lights gold as it goes.
       </p>
       <p className="label-ui text-ink-mute text-[0.655em]">

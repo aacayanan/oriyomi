@@ -191,7 +191,7 @@ export default function BrainrotStage({ className = "" }: BrainrotStageProps) {
       )}
 
       <div className="pointer-events-none absolute bottom-2 left-2 z-20">
-        <span className="label-ui bg-fold/90 px-2 py-1 text-[9px] text-sumi opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+        <span className="label-ui label-sm bg-fold/90 px-2 py-1 text-sumi opacity-0 transition-opacity duration-200 group-hover:opacity-100">
           {active ? `${active.label} · muted` : "Companion"}
         </span>
       </div>

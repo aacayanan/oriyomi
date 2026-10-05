@@ -36,7 +36,7 @@ export default function FoldList({
     <div className="fold-list flex h-full min-h-0 flex-col">
       {showHeader && (
         <div className="flex shrink-0 items-center justify-between px-1 pb-1.5">
-          <span className="label-ui text-[10px] text-sumi-soft">
+          <span className="label-ui label-lg text-sumi-soft">
             Folds&nbsp;·&nbsp;{sections.length}
           </span>
         </div>
@@ -69,7 +69,7 @@ export default function FoldList({
               />
 
               <span
-                className={`w-5 shrink-0 font-data text-[11px] tabular-nums ${
+                className={`w-5 shrink-0 font-data label-lg tabular-nums ${
                   isActive ? "font-semibold text-gold" : "text-ink-fade"
                 }`}
               >
@@ -88,7 +88,7 @@ export default function FoldList({
                 >
                   {section.title}
                 </span>
-                <span className="shrink-0 font-data text-[10px] tabular-nums text-ink-fade">
+                <span className="shrink-0 font-data label-lg tabular-nums text-ink-fade">
                   {estimateDuration(chars)}
                 </span>
               </div>

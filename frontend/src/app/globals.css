@@ -19,7 +19,7 @@
 
   --font-display: var(--font-shippori), "Times New Roman", serif;
   --font-body: var(--font-shippori), "Times New Roman", serif;
-  --font-ui: var(--font-shippori), system-ui, sans-serif;
+  --font-ui: var(--font-shippori), "Times New Roman", serif;
   --font-data: var(--font-sometype), ui-monospace, monospace;
 }
 
@@ -104,6 +104,10 @@ button {
   text-transform: uppercase;
 }
 
+/* Landing uses a disciplined two-size label system; these pin the app to it. */
+.label-lg { font-size: 11px; }  /* section headers: Source, Companion, Playback */
+.label-sm { font-size: 9px; }   /* secondary: Previous/Next, file metadata */
+
 /* Gold-dot primary action — the comp's PLAY chrome. */
 .gold-dot-btn {
   display: inline-flex;
@@ -165,6 +169,24 @@ button {
   opacity: 0.45;
   cursor: not-allowed;
 }
+
+/* Quiz option button — full-width hairline tile. */
+.option-btn {
+  display: block; width: 100%;
+  border: 1px solid var(--color-hairline);
+  background: transparent;
+  padding: 8px 12px;
+  text-align: left;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--color-sumi);
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+.option-btn:hover:not(:disabled) { background: var(--color-fold); }
+.option-btn--correct { border-color: var(--color-vermilion); background: var(--color-fold); font-weight: 600; color: var(--color-vermilion-ink); }
+.option-btn--wrong { border-color: var(--color-hairline-deep); background: var(--color-washi-deep); color: var(--color-ink-fade); text-decoration: line-through; }
+.option-btn:disabled { cursor: not-allowed; }
 
 /* Active sentence: gold margin dot + vermilion crease underline. */
 .crease-active {

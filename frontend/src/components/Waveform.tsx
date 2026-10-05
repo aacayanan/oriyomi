@@ -173,7 +173,7 @@ export default function Waveform({
     <div className="flex flex-col gap-2 border-t border-hairline pt-3">
       {audioBase64 ? (
         <>
-          <div className="flex items-center justify-between font-data text-[11px] tabular-nums text-ink-fade">
+          <div className="flex items-center justify-between font-data label-lg tabular-nums text-ink-fade">
             <span>{formatTime(Math.min(currentTime, duration > 0 ? duration : Infinity))}</span>
             {/* Hover target time — shows where a click would seek */}
             <span className={hover ? "text-sumi" : undefined}>
@@ -199,7 +199,7 @@ export default function Waveform({
           </div>
         </>
       ) : (
-        <div className="flex h-12 items-center justify-center border border-dashed border-hairline font-ui text-[10px] tracking-[0.12em] text-ink-mute uppercase">
+        <div className="flex h-12 items-center justify-center border border-dashed border-hairline font-ui label-lg tracking-[0.12em] text-ink-mute uppercase">
           Waveform after play
         </div>
       )}

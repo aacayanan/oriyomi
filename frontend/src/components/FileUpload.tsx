@@ -235,13 +235,13 @@ export default function FileUpload({ onTextExtracted }: FileUploadProps) {
               >
                 {uploadedFile.name}
               </span>
-              <span className="font-data text-[10px] tabular-nums text-ink-fade">
+              <span className="font-data label-lg tabular-nums text-ink-fade">
                 {formatFileSize(uploadedFile.size)} ·{" "}
                 {uploadedFile.wordCount.toLocaleString()} words
               </span>
             </div>
-            <span className="label-ui text-[9px] text-ink-mute">
-              Loaded — choose another
+            <span className="label-ui label-sm text-ink-mute">
+              Ready — drop another
             </span>
           </>
         ) : error ? (
@@ -250,17 +250,17 @@ export default function FileUpload({ onTextExtracted }: FileUploadProps) {
             <span className="font-ui text-xs font-semibold text-vermilion-ink">
               {error}
             </span>
-            <span className="label-ui text-[9px] text-ink-mute">
-              Click to try another file
+            <span className="label-ui label-sm text-ink-mute">
+              Try another
             </span>
           </>
         ) : (
           <>
             <UploadIcon className="h-6 w-6 text-ink-fade" />
             <span className="font-ui text-xs font-semibold text-sumi-soft">
-              Drop a file, or click to browse
+              Drop one in, or browse
             </span>
-            <span className="font-data text-[10px] text-ink-fade">
+            <span className="font-data label-lg text-ink-fade">
               .txt · .md · .pdf · .docx
             </span>
           </>
