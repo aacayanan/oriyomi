@@ -924,11 +924,17 @@
     grid-template-columns: 1fr;
     padding-right: 0;
   }
-  .plate-wrap { max-width: 460px; }
+  .plate-wrap {
+    max-width: 460px;
+    margin-inline: auto;
+  }
   .seal { right: 8px; top: 8px; }
   .beat-grid { grid-template-columns: 1fr; }
   .diagram-plate { max-width: none; min-height: 0; }
   .diagram-step img { max-height: clamp(160px, 28vw, 240px); }
+  /* images share the arrows' vertical axis instead of sitting bottom-heavy */
+  .diagram-step img,
+  .diagram-step.is-pull img { align-self: center; }
 }
 
 /* flaps stack early: the reader mock needs room to stay legible */
@@ -945,12 +951,26 @@
 }
 
 @media (max-width: 720px) {
-  /* diagram stacks; arrows rotate into the vertical flow */
+  /* diagram stacks; every step and arrow shares one center axis */
   .diagram-inner { flex-direction: column; gap: 14px; padding: 8px 0; }
   .diagram-arrow { transform: rotate(90deg); width: 40px; }
-  .diagram-step { max-width: min(100%, 360px); }
-  .diagram-step img { max-height: 180px; width: auto; max-width: 100%; }
-  .diagram-step .diagram-speech { max-height: 140px; width: min(100%, 160px); }
+  .diagram-step {
+    max-width: min(100%, 360px);
+    margin-inline: auto;
+    justify-items: center;
+  }
+  .diagram-step img {
+    max-height: 180px;
+    width: auto;
+    max-width: 100%;
+    margin-inline: auto;
+    align-self: center;
+  }
+  .diagram-step .diagram-speech {
+    max-height: 140px;
+    width: min(100%, 160px);
+    margin-inline: auto;
+  }
 
   /* obi stacks say over CTA */
   .obi {
@@ -983,14 +1003,8 @@
 
 @media (max-width: 520px) {
   .folio, .reg { display: none; }
-  .landing-masthead { flex-wrap: wrap; }
-  .landing-issue {
-    margin-left: 0;
-    border-left: 0;
-    padding-left: 0;
-    text-align: left;
-    width: 100%;
-  }
+  /* masthead data block is desktop marginalia — hide it on phones */
+  .landing-issue { display: none; }
   .landing-masthead::after { display: none; }
   .landing-masthead { border-bottom: 2px solid var(--color-sumi); }
 
@@ -1008,6 +1022,18 @@
     padding: 14px 22px 13px;
   }
   .close .obi .cta-slot { min-width: 0; width: 100%; }
+
+  /* footer becomes a tidy centered colophon */
+  .landing-footer {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 6px;
+    padding-top: 14px;
+  }
+  .landing-footer .landing-mono { line-height: 1.65; }
+  .landing-footer-vol { display: none; }
+  .landing-footer .landing-mark { order: -1; }
 
   .reader-header { padding: 9px 12px; }
   .reader-header .label-ui { font-size: 9px; }
