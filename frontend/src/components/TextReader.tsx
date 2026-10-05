@@ -242,6 +242,12 @@ export default function TextReader() {
 
         loadedOrigamiRef.current = id;
 
+        // Stop anything currently playing before loading the new session.
+        audioPlayer.stop();
+        setPlayingFoldIndex(null);
+        setWaitingFold(null);
+        setAutoPlayFold(null);
+
         const secs = (o.sections || []) as Section[];
         setText(o.text);
         setSections(secs);
@@ -492,10 +498,12 @@ export default function TextReader() {
   useEffect(() => {
     const target = waitingFold ?? autoPlayFold;
     if (target === null) return;
+    // Already playing or paused on this fold — don't restart it.
+    if (playingFoldRef.current === target && (audioPlayer.isPlaying || audioPlayer.isPaused)) return;
     if (docTTS.hasFold(target)) {
       startPlayingFold(target);
     }
-  }, [docTTS.readyTick, waitingFold, autoPlayFold, docTTS, startPlayingFold]);
+  }, [docTTS.readyTick, waitingFold, autoPlayFold, docTTS, startPlayingFold, audioPlayer.isPlaying, audioPlayer.isPaused]);
 
   const ensureDocumentTTS = useCallback(async () => {
     if (docTTS.documentId) return;

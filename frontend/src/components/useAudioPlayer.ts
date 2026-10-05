@@ -78,6 +78,21 @@ export default function useAudioPlayer(): AudioPlayerReturn {
       }
       const ctx = audioContextRef.current;
 
+      // Stop any current source SYNCHRONOUSLY — before the async decode.
+      // This prevents overlapping playback when play() is called twice
+      // before the first decodeAudioData resolves.
+      if (sourceNodeRef.current) {
+        sourceNodeRef.current.onended = null;
+        try {
+          sourceNodeRef.current.stop();
+        } catch {
+          // already stopped
+        }
+        sourceNodeRef.current.disconnect();
+        sourceNodeRef.current = null;
+      }
+      cancelAnimationFrame(animFrameRef.current);
+
       // Decode base64 audio
       const binaryString = atob(base64Audio);
       const bytes = new Uint8Array(binaryString.length);
@@ -86,12 +101,6 @@ export default function useAudioPlayer(): AudioPlayerReturn {
       }
 
       ctx.decodeAudioData(bytes.buffer).then((audioBuffer) => {
-        // Disconnect previous source if any
-        if (sourceNodeRef.current) {
-          sourceNodeRef.current.disconnect();
-          sourceNodeRef.current.stop();
-        }
-
         const source = ctx.createBufferSource();
         source.buffer = audioBuffer;
         source.playbackRate.value = playbackRateRef.current;
