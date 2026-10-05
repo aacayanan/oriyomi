@@ -44,7 +44,7 @@ export default function LandingPage() {
         <div className="landing-issue">
           <span className="landing-issue-label">Vol. 01 · Free Forever</span>
           <span className="landing-issue-sub">
-            Sentence-sync read-along · edition of one
+            Sentence-sync read-along
           </span>
         </div>
         <Link className="landing-nav-cta" href="/app">
@@ -337,7 +337,7 @@ export default function LandingPage() {
         <span className="landing-mono">
           sentence-sync read-along · 9 edge neural voices
         </span>
-        <span className="landing-mono landing-footer-vol">vol. 01 · edition of one</span>
+        <span className="landing-mono landing-footer-vol">vol. 01</span>
         <svg className="landing-mark" viewBox="0 0 64 64" aria-hidden="true">
           <path
             d="M2 30 L20 17 L32 5 L44 17 L62 30 L44 31 L32 45 L20 31 Z M27 31 L32 60 L37 31 Z"
