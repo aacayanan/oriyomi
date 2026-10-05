@@ -337,6 +337,8 @@ export default function TextReader() {
     setSelectedSection(null);
     setHasStructure(false);
     setError(null);
+    // Ready for the next document — bring the source box back
+    setSourceOpen(true);
   }, [resetReadingState]);
 
   const handleFileExtracted = useCallback(
@@ -838,8 +840,8 @@ export default function TextReader() {
           <div className="shrink-0 pt-5">
           <div className="flex items-center gap-2">
             {showHeaderTransport ? (
-              /* Audio ready: only Stop in rail (play/stop also in sheet header) */
-              showStop && (
+              /* Audio ready: Stop while playing; Clear once the read finishes */
+              showStop ? (
                 <button
                   type="button"
                   onClick={handleStop}
@@ -848,7 +850,15 @@ export default function TextReader() {
                   <StopIcon className="h-3.5 w-3.5" />
                   Stop
                 </button>
-              )
+              ) : hasCompletedRead ? (
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  className="outline-btn reader-transport-btn h-11 w-full rounded-none px-4 label-lg"
+                >
+                  Clear
+                </button>
+              ) : null
             ) : (
               <>
                 {showCancel && (
