@@ -117,14 +117,6 @@ export default function LandingPage() {
                   alt="Red paper crane, transparent background."
                 />
               </figure>
-              <div className="plate-cap">
-                <span className="landing-mono">
-                  fig. · transparent plate · 3:4
-                </span>
-                <span className="landing-mono">
-                  img-crane · red crane · 2048px
-                </span>
-              </div>
             </div>
           </div>
 

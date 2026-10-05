@@ -168,7 +168,7 @@
     display: grid;
     grid-template-columns: minmax(0, 1.08fr) minmax(280px, .72fr);
     gap: clamp(28px, 4.6vw, 72px);
-    align-items: start;
+    align-items: stretch;
     padding-right: clamp(0px, 6vw, 88px);
   }
 
@@ -237,12 +237,18 @@
   }
 
   /* ── hero plate slot ─────────────────────────────────────────────── */
-  /* HERO PLACEMENT — transparent crane, portrait 3:4, style-swappable */
+  /* HERO PLACEMENT — red crane fills the cover column, no figcaption */
+  .plate-wrap {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    height: 100%;
+  }
   .plate {
-    aspect-ratio: 3 / 4;
+    flex: 1;
     width: 100%;
     max-width: 100%;
-    min-width: 0;
+    min-height: 0;
     margin: 0;
     border: none;
     position: relative;
@@ -261,13 +267,6 @@
     z-index: 1;
     display: block;
     mix-blend-mode: multiply;
-  }
-  .plate-cap {
-    display: flex;
-    justify-content: space-between;
-    gap: 14px;
-    padding: 8px 0 0;
-    flex-wrap: wrap;
   }
 
   /* hanko seal — stamps onto the cover */
@@ -998,14 +997,10 @@
         </div>
 
         <div class="plate-wrap">
-          <!-- HERO PLATE — transparent red crane, fixed image for official page -->
+          <!-- HERO PLATE — red crane fills the cover column -->
           <figure class="plate" id="hero-plate" role="img" aria-label="Red origami crane plate, transparent ground.">
             <img id="hero-crane" src="../assets/crane.png" alt="Red origami crane with near-white ground, blended via multiply into the washi page background." style="width:100%;height:100%;object-fit:contain;position:relative;z-index:1;display:block;">
           </figure>
-          <figcaption class="plate-cap">
-            <span class="mono">fig. · red crane · transparent plate</span>
-            <span class="mono">img-crane · origami · 1:1</span>
-          </figcaption>
         </div>
       </div>
 
