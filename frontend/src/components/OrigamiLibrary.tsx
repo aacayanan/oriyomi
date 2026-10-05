@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import type { Origami } from "@/types/origami";
+import { msUntilExpiry, type Origami } from "@/types/origami";
 import FoldCreaseArt from "./FoldCreaseArt";
 import { CraneMark } from "./Icons";
 
@@ -25,12 +25,23 @@ function formatChars(n: number): string {
   return n.toLocaleString("en-US");
 }
 
+/** "23h 59m" / "4h 12m" / "48m" — time until the origami expires. */
+function formatRemaining(ms: number): string {
+  const totalMin = Math.floor(ms / 60_000);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
 export default function OrigamiLibrary() {
   const router = useRouter();
   const [origamis, setOrigamis] = useState<Origami[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  /** Ticks every 30s to refresh countdowns and drop expired entries. */
+  const [now, setNow] = useState(() => Date.now());
 
   const fetchOrigamis = useCallback(async () => {
     setLoading(true);
@@ -53,6 +64,16 @@ export default function OrigamiLibrary() {
   useEffect(() => {
     fetchOrigamis();
   }, [fetchOrigamis]);
+
+  // Countdown ticker — also prunes locally once an origami expires.
+  useEffect(() => {
+    const id = setInterval(() => {
+      const t = Date.now();
+      setNow(t);
+      setOrigamis((prev) => prev.filter((o) => msUntilExpiry(o, t) > 0));
+    }, 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   async function handleDelete(id: string) {
     if (!window.confirm("Delete this origami? This cannot be undone.")) return;
@@ -137,6 +158,8 @@ export default function OrigamiLibrary() {
       {/* Folios */}
       {origamis.map((o) => {
         const seed = creaseSeed(o.id);
+        const remaining = msUntilExpiry(o, now);
+        if (remaining <= 0) return null;
         return (
           <article key={o.id} className="lib-folio">
             <button
@@ -157,6 +180,13 @@ export default function OrigamiLibrary() {
                   <span>{formatChars(o.text.length)} chars</span>
                   <span aria-hidden="true">·</span>
                   <span>{o.speed}×</span>
+                </div>
+                <div className="lib-folio-expiry">
+                  <span
+                    className={`lib-folio-expiry-dot${remaining < 60 * 60 * 1000 ? " lib-folio-expiry-dot-warn" : ""}`}
+                    aria-hidden="true"
+                  />
+                  Expires in {formatRemaining(remaining)}
                 </div>
               </div>
             </button>

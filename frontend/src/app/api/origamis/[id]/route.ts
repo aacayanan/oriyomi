@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import { ORIGAMI_TTL_MS } from "@/types/origami";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-/** GET /api/origamis/:id — fetch a single origami (owner only). */
+/**
+ * GET /api/origamis/:id — fetch a single origami (owner only).
+ * Returns 404 and deletes the row if the origami has expired.
+ */
 export async function GET(_request: Request, { params }: RouteContext) {
   const { id } = await params;
   const cookieStore = await cookies();
@@ -28,6 +32,17 @@ export async function GET(_request: Request, { params }: RouteContext) {
     .single();
 
   if (error || !data) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // Expired — delete and report gone.
+  const created = new Date(data.created_at).getTime();
+  if (Date.now() - created > ORIGAMI_TTL_MS) {
+    await supabase
+      .from("origamis")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", user.id);
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 

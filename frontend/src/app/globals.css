@@ -1171,6 +1171,30 @@ button {
   color: var(--color-ink-mute);
 }
 
+.lib-folio-expiry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-family: var(--font-data);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-fade);
+}
+
+.lib-folio-expiry-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-gold);
+  flex-shrink: 0;
+}
+
+.lib-folio-expiry-dot-warn {
+  background: var(--color-vermilion);
+}
+
 /* Skeleton loading */
 .lib-folio-skeleton {
   pointer-events: none;

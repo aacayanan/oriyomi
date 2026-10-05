@@ -61,7 +61,6 @@ export default function SaveOrigamiButton({
         throw new Error(body.error || `Save failed (${res.status})`);
       }
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Save failed");
     } finally {
@@ -73,11 +72,11 @@ export default function SaveOrigamiButton({
     <button
       type="button"
       onClick={handleSave}
-      disabled={saving}
+      disabled={saving || saved}
       className="outline-btn reader-transport-btn h-11 w-full rounded-none px-4 label-lg"
       title={error ?? undefined}
     >
-      {saved ? "Saved ✓" : saving ? "Saving…" : "Save folds"}
+      {saved ? "Saved for 24 hours" : saving ? "Saving…" : "Save folds"}
     </button>
   );
 }

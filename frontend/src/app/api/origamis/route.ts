@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
-import type { OrigamiInsert } from "@/types/origami";
+import { ORIGAMI_TTL_MS, type OrigamiInsert } from "@/types/origami";
 
-/** GET /api/origamis — list current user's origamis (newest first). */
+/** Cutoff timestamp — origamis created before this are expired. */
+function cutoffIso(): string {
+  return new Date(Date.now() - ORIGAMI_TTL_MS).toISOString();
+}
+
+/**
+ * GET /api/origamis — list current user's live origamis (newest first).
+ * Expired origamis are deleted as a side effect (lazy cleanup).
+ */
 export async function GET() {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
@@ -16,10 +24,18 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Lazy cleanup: delete anything past its 24-hour TTL.
+  await supabase
+    .from("origamis")
+    .delete()
+    .eq("user_id", user.id)
+    .lt("created_at", cutoffIso());
+
   const { data, error } = await supabase
     .from("origamis")
     .select("*")
     .eq("user_id", user.id)
+    .gte("created_at", cutoffIso())
     .order("created_at", { ascending: false });
 
   if (error) {
