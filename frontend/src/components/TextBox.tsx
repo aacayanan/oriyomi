@@ -17,7 +17,7 @@ export default function TextBox({ text, onChange, onClear, disabled }: TextBoxPr
     <div className="flex flex-col gap-2">
       <textarea
         className="min-h-[9rem] w-full resize-y border border-hairline bg-fold p-3 font-body text-sm leading-relaxed text-sumi placeholder:text-ink-mute focus-visible:border-vermilion"
-        placeholder="Paste a chapter…"
+        placeholder="Paste a chapter"
         value={text}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}

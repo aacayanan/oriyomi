@@ -34,6 +34,8 @@ interface TextViewerProps {
   activeFoldIndex?: number | null;
   /** When this number changes, scroll that sentence into view (fold jump). */
   jumpToSentenceIndex?: number | null;
+  /** Optional transport controls slot rendered in the sheet header before zoom. */
+  transport?: React.ReactNode;
 }
 
 const MIN_SCALE = 0.75;
@@ -49,6 +51,7 @@ export default function TextViewer({
   totalFolds = 0,
   activeFoldIndex = null,
   jumpToSentenceIndex = null,
+  transport,
 }: TextViewerProps) {
   const activeRef = useRef<HTMLSpanElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -131,6 +134,11 @@ export default function TextViewer({
           )}
         </div>
         <div className="flex shrink-0 items-center gap-1">
+          {transport && (
+            <div className="flex shrink-0 items-center gap-1 mr-2">
+              {transport}
+            </div>
+          )}
           <button
             type="button"
             onClick={zoomOut}
@@ -326,7 +334,7 @@ function EmptySheet() {
         sentence by sentence — the active crease lights gold as it goes.
       </p>
       <p className="label-ui text-ink-mute text-[0.655em]">
-        .txt · .md · .pdf · .docx
+        .txt .md .pdf .docx
       </p>
     </div>
   );

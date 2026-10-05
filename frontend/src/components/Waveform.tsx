@@ -199,7 +199,7 @@ export default function Waveform({
           </div>
         </>
       ) : (
-        <div className="flex h-12 items-center justify-center border border-dashed border-hairline font-ui label-lg tracking-[0.12em] text-ink-mute uppercase">
+        <div className="flex h-12 items-center justify-center border border-dashed border-hairline label-ui label-lg text-ink-mute">
           Waveform after play
         </div>
       )}

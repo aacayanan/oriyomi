@@ -677,6 +677,9 @@ export default function TextReader() {
   const showCancel = (isLoading || docTTS.isSubmitting) && !showStop;
   const hasSecondTransport = showStop || showCancel;
 
+  /** Audio is ready — transport controls live in the sheet header. */
+  const showHeaderTransport = Boolean(audioBase64) || audioPlayer.isPlaying || audioPlayer.isPaused;
+
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       {/* ——— Top bar: logo + tagline ——— */}
@@ -834,37 +837,43 @@ export default function TextReader() {
           {/* Transport — pinned at the rail bottom, always visible */}
           <div className="shrink-0 pt-5">
           <div className="flex items-center gap-2">
-            {showStop && (
-              <button
-                type="button"
-                onClick={handleStop}
-                className="outline-btn h-11 shrink-0 rounded-full px-4 label-lg"
-              >
-                <StopIcon className="h-3.5 w-3.5" />
-                Stop
-              </button>
+            {showHeaderTransport ? (
+              /* Audio ready: only Stop in rail (play/stop also in sheet header) */
+              showStop && (
+                <button
+                  type="button"
+                  onClick={handleStop}
+                  className="outline-btn h-11 w-full rounded-full px-4 label-lg"
+                >
+                  <StopIcon className="h-3.5 w-3.5" />
+                  Stop
+                </button>
+              )
+            ) : (
+              <>
+                {showCancel && (
+                  <button
+                    type="button"
+                    onClick={handleStop}
+                    className="outline-btn h-11 shrink-0 rounded-full px-4 label-lg"
+                  >
+                    Cancel
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={audioPlayer.isPlaying ? handlePause : handlePlay}
+                  disabled={isLoading || docTTS.isSubmitting}
+                  className={`gold-dot-btn h-11 label-lg ${
+                    hasSecondTransport ? "flex-1" : "w-full"
+                  }`}
+                  aria-label={playLabel}
+                >
+                  {playIcon}
+                  <span>{playLabel}</span>
+                </button>
+              </>
             )}
-            {showCancel && (
-              <button
-                type="button"
-                onClick={handleStop}
-                className="outline-btn h-11 shrink-0 rounded-full px-4 label-lg"
-              >
-                Cancel
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={audioPlayer.isPlaying ? handlePause : handlePlay}
-              disabled={isLoading || docTTS.isSubmitting}
-              className={`gold-dot-btn h-11 label-lg ${
-                hasSecondTransport ? "flex-1" : "w-full"
-              }`}
-              aria-label={playLabel}
-            >
-              {playIcon}
-              <span>{playLabel}</span>
-            </button>
           </div>
           </div>
         </aside>
@@ -881,12 +890,41 @@ export default function TextReader() {
               totalFolds={foldTotal}
               activeFoldIndex={foldIndex}
               jumpToSentenceIndex={jumpToSentenceIndex}
+              transport={showHeaderTransport ? (
+                <>
+                  {showStop && (
+                    <button
+                      type="button"
+                      onClick={handleStop}
+                      className="outline-btn h-8 rounded-full px-3 label-lg"
+                      aria-label="Stop"
+                    >
+                      <StopIcon className="h-3.5 w-3.5" />
+                      Stop
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={audioPlayer.isPlaying ? handlePause : handlePlay}
+                    disabled={isLoading || docTTS.isSubmitting}
+                    className="gold-dot-btn h-8 px-3 label-lg"
+                    aria-label={playLabel}
+                  >
+                    {audioPlayer.isPlaying ? (
+                      <PauseIcon className="h-3.5 w-3.5" />
+                    ) : (
+                      <PlayIcon className="h-3.5 w-3.5" />
+                    )}
+                    <span>{playLabel}</span>
+                  </button>
+                </>
+              ) : undefined}
             />
           </div>
           <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2 pt-2 font-ui text-xs text-vermilion-soft">
             <span aria-hidden="true">▶</span>
             <span className="label-ui label-sm text-ink-mute tabular-nums">
-              Helped read {foldsUnfolded.toLocaleString()} fold{foldsUnfolded === 1 ? "" : "s"}
+              Helped read {foldsUnfolded.toLocaleString()} fold{foldsUnfolded === 1 ? "" : "s"}.
             </span>
             <a
               href="https://buymeacoffee.com/aaroncayanan"

@@ -261,7 +261,7 @@ export default function FileUpload({ onTextExtracted }: FileUploadProps) {
               Drop one in, or browse
             </span>
             <span className="font-data label-lg text-ink-fade">
-              .txt · .md · .pdf · .docx
+              .txt .md .pdf .docx
             </span>
           </>
         )}
