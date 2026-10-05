@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { msUntilExpiry, type Origami } from "@/types/origami";
 import FoldCreaseArt from "./FoldCreaseArt";
+import ConfirmDialog from "./ConfirmDialog";
 import { CraneMark } from "./Icons";
 
 /** Deterministic 0–999 from an id — drives the crease pattern per origami. */
@@ -40,6 +41,8 @@ export default function OrigamiLibrary() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  /** Origami pending delete confirmation (id + title for the dialog). */
+  const [pendingDelete, setPendingDelete] = useState<Origami | null>(null);
   /** Ticks every 30s to refresh countdowns and drop expired entries. */
   const [now, setNow] = useState(() => Date.now());
 
@@ -75,8 +78,14 @@ export default function OrigamiLibrary() {
     return () => clearInterval(id);
   }, []);
 
-  async function handleDelete(id: string) {
-    if (!window.confirm("Delete this origami? This cannot be undone.")) return;
+  function requestDelete(o: Origami) {
+    setPendingDelete(o);
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    const id = pendingDelete.id;
+    setPendingDelete(null);
     setDeletingId(id);
     try {
       const res = await fetch(`/api/origamis/${id}`, { method: "DELETE" });
@@ -193,7 +202,7 @@ export default function OrigamiLibrary() {
             <button
               type="button"
               className="lib-folio-delete"
-              onClick={() => handleDelete(o.id)}
+              onClick={() => requestDelete(o)}
               disabled={deletingId === o.id}
               aria-label={`Delete origami: ${o.title}`}
             >
@@ -202,6 +211,20 @@ export default function OrigamiLibrary() {
           </article>
         );
       })}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete origami?"
+        message={
+          pendingDelete
+            ? `"${pendingDelete.title}" will be removed permanently. This cannot be undone.`
+            : ""
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

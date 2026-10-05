@@ -1258,12 +1258,101 @@ button {
   cursor: default;
 }
 
+/* ── Confirm dialog ───────────────────────────────────── */
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(26, 21, 19, 0.45);
+  backdrop-filter: blur(4px);
+  padding: 24px;
+}
+
+.confirm-dialog {
+  position: relative;
+  background: var(--color-washi);
+  border: 1px solid var(--color-hairline-deep);
+  padding: 32px 28px 24px;
+  max-width: 340px;
+  width: 100%;
+}
+
+.confirm-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+  color: var(--color-sumi);
+}
+
+.confirm-rule {
+  width: 40px;
+  height: 2px;
+  background: var(--color-vermilion);
+  margin: 12px 0 14px;
+}
+
+.confirm-message {
+  margin: 0 0 24px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-sumi-soft);
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.confirm-cancel {
+  background: none;
+  border: 1px solid var(--color-hairline-deep);
+  font-family: var(--font-data);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-sumi);
+  padding: 9px 16px;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.confirm-cancel:hover {
+  background: color-mix(in srgb, var(--color-fold) 80%, var(--color-hairline));
+}
+
+.confirm-delete {
+  background: var(--color-vermilion);
+  border: none;
+  font-family: var(--font-data);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #f8f4ea;
+  padding: 9px 16px;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.confirm-delete:hover {
+  background: var(--color-vermilion-ink);
+}
+
 @media (max-width: 600px) {
   .lib-main {
-    padding: 32px 20px 48px;
+    padding: 32px 16px 48px;
   }
   .lib-shelf {
     grid-template-columns: 1fr;
+    gap: 14px;
   }
   .lib-reg {
     display: none;
@@ -1280,5 +1369,15 @@ button {
   }
   .lib-create-sub {
     font-size: 9px;
+  }
+  /* Folio cards: hide crease art on mobile */
+  .lib-folio-art {
+    display: none;
+  }
+  .lib-folio-body {
+    padding: 12px 14px 14px;
+  }
+  .lib-folio {
+    overflow: hidden;
   }
 }
