@@ -24,8 +24,10 @@ except ImportError:  # pragma: no cover - sumy ships in requirements.txt
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
 _WORD = re.compile(r"[A-Za-z0-9']+")
 
-# Sidebar description budget — long enough for 2–3 sentences, short enough to scan
-_MAX_CHARS = 320
+# Sidebar description budget — long enough for 2–3 real sentences, short enough
+# to scan. At 320 a single ~150-char opener plus one companion exhausted the
+# budget and dense folds collapsed to a lone first sentence.
+_MAX_CHARS = 480
 
 # How many sentences the sidebar aims to show
 _DEFAULT_SENTENCE_COUNT = 3
@@ -71,22 +73,19 @@ def _truncate_to_budget(text: str, limit: int = _MAX_CHARS) -> str:
 def _pack_sentences(candidates: list[str], count: int, budget: int) -> list[str]:
     """Greedily keep whole sentences until `count` or `budget` is hit.
 
-    An opener longer than the budget is hard-truncated to ~half the budget so
-    a second sentence can still fit — otherwise one dense textbook sentence
+    Any single sentence longer than half the budget is hard-truncated so a
+    second line always has room — otherwise one dense textbook sentence
     swallows the whole sidebar and the summary looks like a single line.
     """
     picked: list[str] = []
     used = 0
+    half = budget // 2
     for raw in candidates:
         s = raw.strip()
         if not s:
             continue
-        if not picked and len(s) > budget:
-            head_budget = max(80, int(budget * 0.55))
-            head = _truncate_to_budget(s, head_budget)
-            picked.append(head)
-            used = len(head)
-            continue
+        if len(s) > half:
+            s = _truncate_to_budget(s, max(80, half - 1))
         cost = len(s) + (1 if picked else 0)  # +1 for joining space
         if picked and used + cost > budget:
             continue
@@ -170,8 +169,13 @@ def summarize_fold(
     # sidebar shows a real 2–3 sentence summary, not one long opener.
     picked = _top_up_with_body(picked, sentences, sentences_count, _MAX_CHARS)
 
-    if not picked:
-        picked = _pack_sentences(sentences[:sentences_count], sentences_count, _MAX_CHARS)
+    # Floor: even after packing and top-up, a very dense fold can still yield
+    # one line. Rebuild from the best-ranked sentences at an even per-line
+    # share of the budget so the sidebar never shows a lone first sentence.
+    if len(picked) < 2:
+        pool = candidates or sentences
+        share = max(80, _MAX_CHARS // max(sentences_count, 2))
+        picked = [_truncate_to_budget(s, share) for s in pool[:sentences_count]]
 
     summary = " ".join(picked)
     return _truncate_to_budget(summary, _MAX_CHARS)

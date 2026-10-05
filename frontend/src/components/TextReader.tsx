@@ -545,13 +545,13 @@ export default function TextReader() {
     : text.trim().length;
   const foldCardDuration = estimateDuration(foldCardChars);
 
-  // Right-sidebar description: backend fold summary first, preview fallback
+  // Right-sidebar description: show the backend fold summary the moment it
+  // exists; while a fold has none, say so — never fall back to the raw
+  // first-sentence preview. Reacts automatically when a summary arrives.
   const foldDescription = activeSection?.summary
     ? activeSection.summary
-    : activeSection?.text_preview
-      ? `${activeSection.text_preview.slice(0, 140)}${
-          activeSection.text_preview.length > 140 ? "…" : ""
-        }`
+    : activeSection
+      ? "Summarizing this fold — the description will appear here when it's ready."
       : text.trim()
         ? "Press play. Read along. The sheet advances as sentences finish."
         : "Load a document to begin. Each section is a fold; the crane stands when the last one closes.";
@@ -843,7 +843,7 @@ export default function TextReader() {
                 <button
                   type="button"
                   onClick={handleStop}
-                  className="outline-btn h-11 w-full rounded-full px-4 label-lg"
+                  className="outline-btn reader-transport-btn h-11 w-full rounded-none px-4 label-lg"
                 >
                   <StopIcon className="h-3.5 w-3.5" />
                   Stop
@@ -855,7 +855,7 @@ export default function TextReader() {
                   <button
                     type="button"
                     onClick={handleStop}
-                    className="outline-btn h-11 shrink-0 rounded-full px-4 label-lg"
+                    className="outline-btn reader-transport-btn h-11 shrink-0 rounded-none px-4 label-lg"
                   >
                     Cancel
                   </button>
@@ -896,18 +896,17 @@ export default function TextReader() {
                     <button
                       type="button"
                       onClick={handleStop}
-                      className="outline-btn h-8 rounded-full px-3 label-lg"
+                      className="outline-btn reader-transport-btn h-8 w-8 rounded-none"
                       aria-label="Stop"
                     >
                       <StopIcon className="h-3.5 w-3.5" />
-                      Stop
                     </button>
                   )}
                   <button
                     type="button"
                     onClick={audioPlayer.isPlaying ? handlePause : handlePlay}
                     disabled={isLoading || docTTS.isSubmitting}
-                    className="gold-dot-btn h-8 px-3 label-lg"
+                    className="gold-dot-btn reader-transport-btn h-8 w-8"
                     aria-label={playLabel}
                   >
                     {audioPlayer.isPlaying ? (
@@ -915,7 +914,6 @@ export default function TextReader() {
                     ) : (
                       <PlayIcon className="h-3.5 w-3.5" />
                     )}
-                    <span>{playLabel}</span>
                   </button>
                 </>
               ) : undefined}

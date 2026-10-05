@@ -170,6 +170,16 @@ button {
   cursor: not-allowed;
 }
 
+/* Text-reader transport only: Cancel/Stop take the primary's data face, and
+   the sheet-header stop/play sit square beside the zoom pair. Compound
+   selectors so ChapterSelector/Quiz outline/gold buttons keep their look. */
+.outline-btn.reader-transport-btn {
+  font-family: var(--font-data);
+}
+.gold-dot-btn.reader-transport-btn {
+  border-radius: 0;
+}
+
 /* Quiz option button — full-width hairline tile. */
 .option-btn {
   display: block; width: 100%;
