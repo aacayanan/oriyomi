@@ -358,7 +358,7 @@
 }
 .diagram-inner {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
   gap: clamp(14px, 2.2vw, 28px);
   height: 100%;
@@ -367,10 +367,10 @@
   z-index: 1;
 }
 .diagram-step {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  align-items: end;
+  justify-items: center;
   gap: 12px;
   flex: 1 1 0;
   min-width: 0;
@@ -382,13 +382,16 @@
   height: auto;
   object-fit: contain;
   mix-blend-mode: multiply;
+  align-self: end;
 }
 .diagram-step.is-pull {
   flex: 1.35 1 0;
+  margin-inline: clamp(6px, 1.2vw, 16px);
+  padding-inline: clamp(6px, 1vw, 14px);
 }
 .diagram-step.is-pull img {
-  width: 118%;
-  max-width: 118%;
+  width: 100%;
+  max-width: 100%;
   max-height: clamp(200px, 30vw, 380px);
 }
 .diagram-step .landing-mono {
@@ -396,18 +399,22 @@
   letter-spacing: 0.14em;
   color: var(--color-ink-fade);
   text-align: center;
+  align-self: start;
 }
 .diagram-step .diagram-speech {
   width: min(100%, clamp(140px, 16vw, 240px));
   max-height: clamp(160px, 20vw, 260px);
   height: auto;
   display: block;
+  align-self: end;
 }
 .diagram-arrow {
   color: var(--color-hairline-deep);
   width: clamp(36px, 4.2vw, 52px);
   height: auto;
   flex: none;
+  align-self: center;
+  margin-inline: clamp(2px, 0.4vw, 8px);
 }
 
 /* ── flaps / book section ─────────────────────────────── */

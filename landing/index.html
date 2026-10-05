@@ -412,7 +412,7 @@
   /* beat flow (three-step horizontal) — assets fill the plate */
   .beat-flow {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     justify-content: center;
     gap: clamp(14px, 2.2vw, 28px);
     height: 100%;
@@ -421,10 +421,10 @@
     z-index: 1;
   }
   .beat-step {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    display: grid;
+    grid-template-rows: 1fr auto;
+    align-items: end;
+    justify-items: center;
     gap: 12px;
     flex: 1 1 0;
     max-width: none;
@@ -435,13 +435,16 @@
     max-height: clamp(180px, 26vw, 340px);
     object-fit: contain;
     display: block;
+    align-self: end;
   }
   .beat-step.is-pull {
     flex: 1.35 1 0;
+    margin-inline: clamp(6px, 1.2vw, 16px);
+    padding-inline: clamp(6px, 1vw, 14px);
   }
   .beat-step.is-pull img {
-    width: 118%;
-    max-width: 118%;
+    width: 100%;
+    max-width: 100%;
     max-height: clamp(200px, 30vw, 380px);
   }
   .beat-step .mono {
@@ -449,12 +452,15 @@
     letter-spacing: .14em;
     color: var(--ink-fade);
     text-align: center;
+    align-self: start;
   }
   .beat-arrow {
     color: var(--hairline-deep);
     width: clamp(36px, 4.2vw, 52px);
     height: auto;
     flex: none;
+    align-self: center;
+    margin-inline: clamp(2px, 0.4vw, 8px);
   }
   .beat-speech {
     width: min(100%, clamp(140px, 16vw, 240px));
@@ -957,7 +963,7 @@
     <svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><path d="M2 30 L20 17 L32 5 L44 17 L62 30 L44 31 L32 45 L20 31 Z M27 31 L32 60 L37 31 Z" fill="currentColor"/></svg>
     <span class="wordmark">oriyomi</span>
     <div class="issue">
-      <span class="label">Vol. 01 · Free issue</span>
+      <span class="label">Vol. 01 · Free Forever</span>
       <span class="sub">Sentence-sync read-along · edition of one</span>
     </div>
   </header>
@@ -982,7 +988,7 @@
             <li><span class="mono">Input</span><span class="v">.pdf · .docx · .md · .txt · paste</span></li>
             <li><span class="mono">Voices</span><span class="v">9 · edge neural · us english</span></li>
             <li><span class="mono">Speed</span><span class="v">0.5× – 2.0× · applied live</span></li>
-            <li><span class="mono">Account</span><span class="v">none</span></li>
+            <li><span class="mono">Account</span><span class="v">No account needed</span></li>
           </ul>
         </div>
 

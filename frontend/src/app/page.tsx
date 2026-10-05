@@ -42,7 +42,7 @@ export default function LandingPage() {
         </svg>
         <span className="wordmark">oriyomi</span>
         <div className="landing-issue">
-          <span className="landing-issue-label">Vol. 01 · Free issue</span>
+          <span className="landing-issue-label">Vol. 01 · Free Forever</span>
           <span className="landing-issue-sub">
             Sentence-sync read-along · edition of one
           </span>
@@ -100,7 +100,7 @@ export default function LandingPage() {
                 </li>
                 <li>
                   <span className="landing-mono">Account</span>
-                  <span className="cover-meta-v">none</span>
+                  <span className="cover-meta-v">No account needed</span>
                 </li>
               </ul>
             </div>
