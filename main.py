@@ -44,9 +44,14 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname
 # ---------------------------------------------------------------------------
 # Global stats counter
 # ---------------------------------------------------------------------------
-# In-process fold counter — resets on server restart.  Incremented on every
-# successful TTS fold (/api/tts/fold → +1, /api/tts → +1 per call).
-_folds_unfolded: int = 0
+# In-process words-folded counter — resets on server restart.  Incremented by
+# the word count of every successful TTS fold (/api/tts/fold, /api/tts).
+_words_folded: int = 0
+
+
+def _count_words(text: str) -> int:
+    """Whitespace-delimited word count — the unit of the words-folded stat."""
+    return len(text.split())
 
 def _cors_origins() -> list[str]:
     """Browser origins allowed to call the API directly.
@@ -144,7 +149,7 @@ class VoiceResponse(BaseModel):
 
 class StatsResponse(BaseModel):
     """Global usage statistics."""
-    folds_unfolded: int = Field(description="Total folds successfully generated since last server restart.")
+    words_folded: int = Field(description="Total words successfully folded into speech since last server restart.")
 
 
 # ---------------------------------------------------------------------------
@@ -286,8 +291,8 @@ async def text_to_speech(request: TTSRequest):
     except RuntimeError as e:
         raise HTTPException(status_code=500, detail=f"TTS generation failed: {e}")
 
-    global _folds_unfolded
-    _folds_unfolded += 1
+    global _words_folded
+    _words_folded += _count_words(request.text)
 
     return TTSResponse(
         audio_base64=base64.b64encode(result.audio_bytes).decode("utf-8"),
@@ -325,8 +330,8 @@ async def tts_fold(request: FoldTTSRequest):
 
     duration_val = result.sentences[-1].end_ms if result.sentences else 0
 
-    global _folds_unfolded
-    _folds_unfolded += 1
+    global _words_folded
+    _words_folded += _count_words(request.text)
 
     return DocumentFoldResult(
         fold_index=request.fold_index,
@@ -443,7 +448,7 @@ async def health():
 @app.get("/api/stats", response_model=StatsResponse)
 async def stats():
     """Return global usage stats (in-memory, resets on restart)."""
-    return StatsResponse(folds_unfolded=_folds_unfolded)
+    return StatsResponse(words_folded=_words_folded)
 
 
 # ---------------------------------------------------------------------------

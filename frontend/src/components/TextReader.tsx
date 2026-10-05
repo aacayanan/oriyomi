@@ -76,7 +76,7 @@ export default function TextReader() {
   const [selectedSection, setSelectedSection] = useState<Section | null>(null);
   const [hasStructure, setHasStructure] = useState(false);
   const [docType, setDocType] = useState("flat");
-  const [foldsUnfolded, setFoldsUnfolded] = useState(0);
+  const [wordsFolded, setWordsFolded] = useState(0);
 
   const audioPlayer = useAudioPlayer();
   const docTTS = useDocumentTTS();
@@ -185,15 +185,15 @@ export default function TextReader() {
     };
   }, []);
 
-  // Poll global folds-unfolded counter every 15s
+  // Poll global words-folded counter every 15s
   useEffect(() => {
     let cancelled = false;
     const fetchStats = () => {
       fetch(apiUrl("/api/stats"))
         .then((res) => res.json())
         .then((data) => {
-          if (!cancelled && typeof data?.folds_unfolded === "number") {
-            setFoldsUnfolded(data.folds_unfolded);
+          if (!cancelled && typeof data?.words_folded === "number") {
+            setWordsFolded(data.words_folded);
           }
         })
         .catch(() => {});
@@ -924,7 +924,7 @@ export default function TextReader() {
           <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2 pt-2 font-ui text-xs text-vermilion-soft">
             <span aria-hidden="true">▶</span>
             <span className="label-ui label-sm text-ink-mute tabular-nums">
-              Helped read {foldsUnfolded.toLocaleString()} fold{foldsUnfolded === 1 ? "" : "s"}.
+              {wordsFolded.toLocaleString()} word{wordsFolded === 1 ? "" : "s"} folded
             </span>
             <a
               href="https://buymeacoffee.com/aaroncayanan"
