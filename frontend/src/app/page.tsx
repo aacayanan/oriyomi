@@ -170,7 +170,7 @@ export default function LandingPage() {
                 aria-label="Diagram: a flat sheet creases into folds and opens into speech; arrows point right."
               >
                 <div className="diagram-inner">
-                  <div className="diagram-step">
+                  <div className="diagram-step is-sheet">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src="/plates/paper-stack.png"

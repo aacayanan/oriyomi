@@ -437,6 +437,10 @@
     display: block;
     align-self: end;
   }
+  .beat-step.is-sheet img,
+  .beat-step.is-pull img {
+    align-self: center;
+  }
   .beat-step.is-pull {
     flex: 1.35 1 0;
     margin-inline: clamp(6px, 1.2vw, 16px);
@@ -1032,7 +1036,7 @@
           <!-- BEAT FLOW — one sheet → one pull → out loud; all arrows point right -->
           <figure class="diagram-plate" id="beat-diagram" role="img" aria-label="Three-step flow: flat sheet folds into an accordion, then opens into speech.">
             <div class="beat-flow">
-              <div class="beat-step">
+              <div class="beat-step is-sheet">
                 <img src="../assets/paper-stack.png" alt="A flat stack of paper sheets." style="mix-blend-mode:multiply;">
                 <span class="mono">one sheet</span>
               </div>
