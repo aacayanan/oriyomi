@@ -876,6 +876,7 @@ export default function TextReader() {
               sections={sections}
               voice={voice}
               speed={speed}
+              foldAudio={docTTS.getAllFolds()}
             />
           <div className="flex items-center gap-2">
             {showHeaderTransport ? (

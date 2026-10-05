@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import ReaderMock from "@/components/LandingReaderMock";
 import LandingNav from "@/components/LandingNav";
+import LandingCta from "@/components/LandingCta";
 import "./landing.css";
 
 export const metadata: Metadata = {
@@ -117,12 +118,12 @@ export default function LandingPage() {
               </p>
             </div>
             <div className="cta-slot">
-              <Link className="landing-cta" href="/app">
+              <LandingCta className="landing-cta">
                 <svg viewBox="0 0 12 14" aria-hidden="true">
                   <path d="M0 0 L12 7 L0 14 Z" fill="currentColor" />
                 </svg>
                 Try it out
-              </Link>
+              </LandingCta>
             </div>
           </div>
         </section>
@@ -302,12 +303,12 @@ export default function LandingPage() {
           <div className="obi">
             <h2>Bring one chapter. Read it tonight.</h2>
             <div className="cta-slot">
-              <Link className="landing-cta" href="/app">
+              <LandingCta className="landing-cta">
                 <svg viewBox="0 0 12 14" aria-hidden="true">
                   <path d="M0 0 L12 7 L0 14 Z" fill="currentColor" />
                 </svg>
                 Try it out
-              </Link>
+              </LandingCta>
               <p className="fine landing-mono landing-mono-on-verm">
                 free · no api key · save your folds
               </p>

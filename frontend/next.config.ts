@@ -30,7 +30,8 @@ const nextConfig: NextConfig = {
     if (onVercel) return [];
     return [
       {
-        source: "/api/:path*",
+        // Exclude Next.js route handlers (origamis) from the FastAPI proxy.
+        source: "/api/:path((?!origamis).*)",
         destination: `${backend}/api/:path*`,
       },
     ];

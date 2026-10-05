@@ -1268,4 +1268,17 @@ button {
   .lib-reg {
     display: none;
   }
+  /* Create card: text-only on mobile for concision */
+  .lib-create-art {
+    display: none;
+  }
+  .lib-create-body {
+    padding: 14px 16px;
+  }
+  .lib-create-title {
+    font-size: 15px;
+  }
+  .lib-create-sub {
+    font-size: 9px;
+  }
 }

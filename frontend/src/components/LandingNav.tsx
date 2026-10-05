@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
+import LandingCta from './LandingCta'
 import LoginModal from './LoginModal'
 
 export default function LandingNav() {
@@ -35,9 +35,9 @@ export default function LandingNav() {
         </button>
       )}
 
-      <Link className="landing-nav-cta" href="/app">
+      <LandingCta className="landing-nav-cta">
         Open the reader
-      </Link>
+      </LandingCta>
 
       <LoginModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </>
