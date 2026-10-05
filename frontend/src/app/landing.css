@@ -306,6 +306,36 @@
 .login-modal-toggle-btn:hover {
   color: var(--color-vermilion-ink);
 }
+.login-modal-verify {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.login-modal-verify-mark {
+  width: 40px;
+  height: 40px;
+  color: var(--color-vermilion-ink);
+}
+.login-modal-verify p {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-sumi-soft);
+}
+.login-modal-verify p strong {
+  color: var(--color-sumi);
+  font-weight: 700;
+}
+.login-modal-verify-fine {
+  font-family: var(--font-data) !important;
+  font-size: 10px !important;
+  letter-spacing: 0.06em;
+  color: var(--color-ink-fade) !important;
+}
 
 /* ── mono label ───────────────────────────────────────── */
 .landing-mono {

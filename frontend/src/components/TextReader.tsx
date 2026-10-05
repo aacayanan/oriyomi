@@ -24,7 +24,8 @@ import {
 } from "./Icons";
 import { apiUrl } from "@/lib/api";
 import SaveOrigamiButton from "./SaveOrigamiButton";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, useAuthActions } from "@/hooks/useAuth";
+import LoginModal from "./LoginModal";
 import Link from "next/link";
 
 interface Voice {
@@ -84,6 +85,8 @@ export default function TextReader() {
   const audioPlayer = useAudioPlayer();
   const docTTS = useDocumentTTS();
   const { user } = useAuth();
+  const { signOut } = useAuthActions();
+  const [loginOpen, setLoginOpen] = useState(false);
 
   const sentencesRef = useRef<Sentence[]>([]);
   const playingFoldRef = useRef<number | null>(null);
@@ -688,7 +691,7 @@ export default function TextReader() {
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      {/* ——— Top bar: logo + tagline ——— */}
+      {/* ——— Top bar: logo · tagline (centered) · auth ——— */}
       <header className="z-30 flex shrink-0 items-center gap-4 border-b border-hairline bg-fold px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex shrink-0 items-center gap-2.5">
           <CraneMark className="h-7 w-7 text-vermilion-ink" />
@@ -698,25 +701,44 @@ export default function TextReader() {
           </span>
         </div>
         {user && (
-          <div className="ml-auto flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <SaveOrigamiButton
               text={text}
               sections={sections}
               voice={voice}
               speed={speed}
             />
+          </div>
+        )}
+        <p className="label-ui label-sm min-w-0 flex-1 text-center leading-relaxed text-ink-fade">
+          <span className="text-sumi-soft">ori</span>—to fold,{" "}
+          <span className="text-sumi-soft">yomi</span>—to read
+        </p>
+        {user ? (
+          <div className="flex shrink-0 items-center gap-2">
             <Link
               href="/library"
               className="outline-btn label-sm h-8 rounded-none px-3 no-underline"
             >
               Library
             </Link>
+            <button
+              type="button"
+              className="outline-btn label-sm h-8 rounded-none px-3"
+              onClick={() => signOut()}
+            >
+              Sign out
+            </button>
           </div>
+        ) : (
+          <button
+            type="button"
+            className="outline-btn label-sm h-8 rounded-none px-3 shrink-0"
+            onClick={() => setLoginOpen(true)}
+          >
+            Log in
+          </button>
         )}
-        <p className={`label-ui text-right label-sm leading-relaxed text-ink-fade ${user ? "" : "ml-auto"}`}>
-          <span className="text-sumi-soft">ori</span>—to fold,{" "}
-          <span className="text-sumi-soft">yomi</span>—to read
-        </p>
       </header>
 
       {/* ——— Three-zone desk (viewport-locked; only the sheet scrolls long content) ——— */}
@@ -1090,6 +1112,8 @@ export default function TextReader() {
           <Quiz text={text} fullyRead={hasCompletedRead} />
         </aside>
       </main>
+
+      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </div>
   );
 }

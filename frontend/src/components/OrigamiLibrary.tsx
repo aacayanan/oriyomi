@@ -3,9 +3,14 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { Origami } from "@/types/origami";
+import FoldCreaseArt from "./FoldCreaseArt";
+import { CraneMark } from "./Icons";
 
-function formatChars(n: number): string {
-  return n.toLocaleString("en-US") + " chars";
+/** Deterministic 0–999 from an id — drives the crease pattern per origami. */
+function creaseSeed(id: string): number {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return h % 1000;
 }
 
 function formatDate(iso: string): string {
@@ -14,6 +19,10 @@ function formatDate(iso: string): string {
     day: "numeric",
     year: "numeric",
   });
+}
+
+function formatChars(n: number): string {
+  return n.toLocaleString("en-US");
 }
 
 export default function OrigamiLibrary() {
@@ -65,80 +74,104 @@ export default function OrigamiLibrary() {
     router.push(`/app?origami=${id}`);
   }
 
+  function handleNew() {
+    router.push("/app");
+  }
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <span className="label-ui label-lg text-ink-fade">
-          Loading library…
-        </span>
+      <div className="lib-shelf lib-shelf-loading" aria-busy="true">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="lib-folio lib-folio-skeleton">
+            <div className="lib-folio-art lib-folio-art-skeleton" />
+            <div className="lib-folio-body">
+              <div className="lib-skeleton-line lib-skeleton-line-lg" />
+              <div className="lib-skeleton-line" />
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center gap-3 py-16">
-        <span className="label-ui label-lg text-vermilion">{error}</span>
+      <div className="lib-error">
+        <span className="lib-error-mark" aria-hidden="true">
+          ×
+        </span>
+        <p className="lib-error-copy">{error}</p>
         <button
           type="button"
           onClick={fetchOrigamis}
-          className="outline-btn label-sm h-8 rounded-none px-3"
+          className="gold-dot-btn label-sm h-9 px-4"
         >
-          Retry
+          Try again
         </button>
       </div>
     );
   }
 
-  if (origamis.length === 0) {
-    return (
-      <div className="flex flex-col items-center gap-2 py-16 text-center">
-        <span className="label-ui label-lg text-ink-fade">
-          No origamis yet
-        </span>
-        <p className="font-body text-sm text-ink-mute">
-          Save a fold session from the reader.
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <ul className="flex flex-col gap-0 divide-y divide-hairline">
-      {origamis.map((o) => (
-        <li
-          key={o.id}
-          className="group flex items-start justify-between gap-4 px-4 py-4 transition-colors hover:bg-fold"
-        >
-          <div className="min-w-0 flex-1">
-            <h3 className="font-display text-base font-bold text-sumi truncate">
-              {o.title}
-            </h3>
-            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 font-data label-sm text-ink-fade">
-              <span>{formatDate(o.created_at)}</span>
-              <span>{formatChars(o.text.length)}</span>
-              <span>{o.speed}×</span>
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-2 pt-0.5">
+    <div className="lib-shelf">
+      {/* Create sheet — the cover of the shelf, primary entry into the reader */}
+      <button type="button" className="lib-create" onClick={handleNew}>
+        <div className="lib-create-art" aria-hidden="true">
+          <svg viewBox="0 0 100 100" className="lib-create-crease">
+            <g stroke="#F8F4EA" fill="none" strokeLinecap="square">
+              <line x1="50" y1="-10" x2="50" y2="110" strokeWidth="1.2" opacity="0.55" />
+              <line x1="-10" y1="50" x2="110" y2="50" strokeWidth="1.2" opacity="0.55" />
+              <line x1="14" y1="14" x2="86" y2="86" strokeWidth="0.9" opacity="0.35" />
+              <line x1="86" y1="14" x2="14" y2="86" strokeWidth="0.9" opacity="0.35" />
+              <polygon points="50,14 86,50 50,86 14,50" strokeWidth="1.6" opacity="0.9" />
+            </g>
+          </svg>
+          <CraneMark className="lib-create-crane" />
+        </div>
+        <div className="lib-create-body">
+          <span className="lib-create-title">Create a new origami</span>
+          <span className="lib-create-sub">Open the reader · fold a chapter</span>
+        </div>
+      </button>
+
+      {/* Folios */}
+      {origamis.map((o) => {
+        const seed = creaseSeed(o.id);
+        return (
+          <article key={o.id} className="lib-folio">
             <button
               type="button"
+              className="lib-folio-hit"
               onClick={() => handleRead(o.id)}
-              className="gold-dot-btn h-8 rounded-none px-3 label-sm"
+              aria-label={`Open origami: ${o.title}`}
             >
-              Read
+              <div className="lib-folio-art">
+                <FoldCreaseArt index={seed} className="h-full w-full" />
+              </div>
+              <div className="lib-folio-body">
+                <h3 className="lib-folio-title">{o.title}</h3>
+                <div className="lib-folio-rule" aria-hidden="true" />
+                <div className="lib-folio-meta">
+                  <span>{formatDate(o.created_at)}</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{formatChars(o.text.length)} chars</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{o.speed}×</span>
+                </div>
+              </div>
             </button>
             <button
               type="button"
+              className="lib-folio-delete"
               onClick={() => handleDelete(o.id)}
               disabled={deletingId === o.id}
-              className="outline-btn h-8 rounded-none px-3 label-sm"
+              aria-label={`Delete origami: ${o.title}`}
             >
-              {deletingId === o.id ? "…" : "Delete"}
+              {deletingId === o.id ? "…" : "×"}
             </button>
-          </div>
-        </li>
-      ))}
-    </ul>
+          </article>
+        );
+      })}
+    </div>
   );
 }

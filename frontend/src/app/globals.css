@@ -529,10 +529,12 @@ button {
   }
 
   .mr-progress-fill {
+    width: 100%;
     height: 100%;
     background: var(--color-vermilion);
     border-radius: 2px;
-    transition: width 200ms linear;
+    transform-origin: left;
+    transition: transform 200ms linear;
   }
 
   /* ── loading / error states ── */
@@ -844,5 +846,402 @@ button {
     color: var(--color-ink-fade);
     flex-shrink: 0;
     margin-left: 12px;
+  }
+}
+
+/* ── Origami Library — the folio shelf ────────────────── */
+.lib-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--color-washi);
+}
+
+.lib-topbar {
+  z-index: 30;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  border-bottom: 1px solid var(--color-hairline);
+  background: var(--color-fold);
+  padding: 12px 24px;
+}
+
+.lib-topbar-brand {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.lib-topbar-wordmark {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 28px;
+  line-height: 1;
+  letter-spacing: 0.012em;
+  color: var(--color-sumi);
+}
+
+.lib-main {
+  position: relative;
+  width: 100%;
+  max-width: 1040px;
+  flex: 1;
+  overflow-y: auto;
+  padding: 48px 32px 64px;
+  margin-inline: auto;
+}
+
+/* Registration crosses — landing marginalia, scoped to the sheet */
+.lib-reg {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  color: var(--color-hairline-deep);
+  pointer-events: none;
+}
+.lib-reg-tl { top: 20px; left: 12px; }
+.lib-reg-tr { top: 20px; right: 12px; }
+
+/* Editorial title block */
+.lib-heading {
+  margin-bottom: 40px;
+}
+
+.lib-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: var(--color-sumi);
+  text-wrap: balance;
+}
+
+.lib-title-rule {
+  width: 64px;
+  height: 2px;
+  background: var(--color-vermilion);
+  margin: 16px 0 10px;
+}
+
+.lib-folio-mark {
+  font-family: var(--font-data);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-ink-fade);
+}
+
+/* Checking session */
+.lib-checking {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 96px 0;
+}
+
+.lib-checking-label {
+  font-family: var(--font-data);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ink-fade);
+}
+
+/* Signed-out state */
+.lib-signed-out {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  padding: 80px 0;
+}
+
+.lib-signed-out-mark {
+  width: 48px;
+  height: 48px;
+  color: var(--color-vermilion-ink);
+  margin-bottom: 12px;
+}
+
+.lib-signed-out-copy {
+  margin: 0 0 8px;
+  max-width: 38ch;
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--color-sumi-soft);
+}
+
+/* Error state */
+.lib-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 80px 0;
+  text-align: center;
+}
+
+.lib-error-mark {
+  font-family: var(--font-display);
+  font-size: 36px;
+  color: var(--color-vermilion);
+  line-height: 1;
+}
+
+.lib-error-copy {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--color-sumi-soft);
+  max-width: 40ch;
+}
+
+/* ── The shelf ────────────────────────────────────────── */
+.lib-shelf {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 24px;
+}
+
+.lib-shelf-loading {
+  gap: 24px;
+}
+
+/* ── Create sheet — the cover ─────────────────────────── */
+.lib-create {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  background: var(--color-vermilion);
+  color: var(--color-washi);
+  overflow: hidden;
+  transition: background-color 200ms ease, transform 200ms ease, box-shadow 200ms ease;
+  box-shadow: 0 1px 3px rgba(26, 21, 19, 0.12);
+}
+
+.lib-create:hover {
+  background: var(--color-vermilion-ink);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(26, 21, 19, 0.18);
+}
+
+.lib-create:active {
+  transform: translateY(0);
+}
+
+.lib-create-art {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+}
+
+.lib-create-crease {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.lib-create-crane {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  color: var(--color-washi);
+  transform: translate(-50%, -50%);
+  opacity: 0.9;
+}
+
+.lib-create-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px 18px;
+}
+
+.lib-create-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.25;
+  color: var(--color-washi);
+}
+
+.lib-create-sub {
+  font-family: var(--font-data);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-washi) 70%, transparent);
+}
+
+/* ── Origami folio ────────────────────────────────────── */
+.lib-folio {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-fold);
+  border: 1px solid var(--color-hairline);
+  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+  box-shadow: 0 1px 2px rgba(26, 21, 19, 0.06);
+}
+
+.lib-folio:hover {
+  border-color: var(--color-hairline-deep);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(26, 21, 19, 0.1);
+}
+
+.lib-folio-hit {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+
+.lib-folio-hit:focus-visible {
+  outline: 2px solid var(--color-vermilion);
+  outline-offset: -2px;
+}
+
+.lib-folio-art {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--color-vermilion);
+}
+
+.lib-folio-body {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px 16px;
+}
+
+.lib-folio-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1.3;
+  color: var(--color-sumi);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lib-folio-rule {
+  width: 28px;
+  height: 1px;
+  background: var(--color-hairline-deep);
+  margin: 8px 0 7px;
+}
+
+.lib-folio-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-data);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-mute);
+}
+
+/* Skeleton loading */
+.lib-folio-skeleton {
+  pointer-events: none;
+}
+
+.lib-folio-art-skeleton {
+  background: var(--color-washi-deep);
+}
+
+.lib-skeleton-line {
+  height: 8px;
+  width: 60%;
+  background: var(--color-hairline);
+  margin-top: 10px;
+  animation: lib-pulse 1.4s ease-in-out infinite;
+}
+
+.lib-skeleton-line-lg {
+  width: 80%;
+  height: 12px;
+}
+
+@keyframes lib-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Delete mark — editorial correction, not a dashboard button */
+.lib-folio-delete {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-washi);
+  color: var(--color-ink-fade);
+  border: 1px solid var(--color-hairline-deep);
+  font-family: var(--font-display);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.lib-folio:hover .lib-folio-delete,
+.lib-folio-delete:focus-visible {
+  opacity: 1;
+}
+
+.lib-folio-delete:hover {
+  color: var(--color-vermilion);
+  border-color: var(--color-vermilion);
+}
+
+.lib-folio-delete:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+@media (max-width: 600px) {
+  .lib-main {
+    padding: 32px 20px 48px;
+  }
+  .lib-shelf {
+    grid-template-columns: 1fr;
+  }
+  .lib-reg {
+    display: none;
   }
 }

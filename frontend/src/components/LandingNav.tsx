@@ -2,12 +2,11 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useAuth, useAuthActions } from '@/hooks/useAuth'
+import { useAuth } from '@/hooks/useAuth'
 import LoginModal from './LoginModal'
 
 export default function LandingNav() {
   const { user, loading } = useAuth()
-  const { signOut } = useAuthActions()
   const [modalOpen, setModalOpen] = useState(false)
 
   return (
@@ -26,18 +25,7 @@ export default function LandingNav() {
         </span>
       </div>
 
-      {!loading && user ? (
-        <div className="landing-nav-auth">
-          <span className="landing-nav-email">{user.email}</span>
-          <button
-            type="button"
-            className="landing-nav-ghost"
-            onClick={() => signOut()}
-          >
-            Sign out
-          </button>
-        </div>
-      ) : (
+      {!loading && !user && (
         <button
           type="button"
           className="landing-nav-ghost"

@@ -594,7 +594,7 @@ export default function MobileReader() {
                   <div
                     className="mr-progress-fill"
                     style={{
-                      width: `${currentFold.duration_ms > 0 ? Math.min(100, (player.currentTime * 1000) / currentFold.duration_ms * 100) : 0}%`,
+                      transform: `scaleX(${currentFold.duration_ms > 0 ? Math.min(1, (player.currentTime * 1000) / currentFold.duration_ms) : 0})`,
                     }}
                   />
                 </div>
