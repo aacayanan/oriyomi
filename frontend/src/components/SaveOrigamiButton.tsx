@@ -74,7 +74,7 @@ export default function SaveOrigamiButton({
       type="button"
       onClick={handleSave}
       disabled={saving}
-      className="outline-btn label-sm h-8 shrink-0 rounded-none px-3"
+      className="outline-btn reader-transport-btn h-11 w-full rounded-none px-4 label-lg"
       title={error ?? undefined}
     >
       {saved ? "Saved ✓" : saving ? "Saving…" : "Save folds"}

@@ -700,16 +700,6 @@ export default function TextReader() {
             oriyomi
           </span>
         </Link>
-        {user && (
-          <div className="flex shrink-0 items-center gap-2">
-            <SaveOrigamiButton
-              text={text}
-              sections={sections}
-              voice={voice}
-              speed={speed}
-            />
-          </div>
-        )}
         <p className="label-ui label-sm min-w-0 flex-1 text-center leading-relaxed text-ink-fade">
           <span className="text-sumi-soft">ori</span>—to fold,{" "}
           <span className="text-sumi-soft">yomi</span>—to read
@@ -880,6 +870,13 @@ export default function TextReader() {
 
           {/* Transport — pinned at the rail bottom, always visible */}
           <div className="shrink-0 pt-5">
+          <div className="flex flex-col gap-2">
+            <SaveOrigamiButton
+              text={text}
+              sections={sections}
+              voice={voice}
+              speed={speed}
+            />
           <div className="flex items-center gap-2">
             {showHeaderTransport ? (
               /* Audio ready: Stop while playing; Clear once the read finishes */
@@ -926,6 +923,7 @@ export default function TextReader() {
                 </button>
               </>
             )}
+          </div>
           </div>
           </div>
         </aside>
