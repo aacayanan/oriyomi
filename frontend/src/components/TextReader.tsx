@@ -223,17 +223,24 @@ export default function TextReader() {
   /* ── load a saved origami from ?origami= ── */
 
   useEffect(() => {
-    if (!origamiParam || loadedOrigamiRef.current === origamiParam) return;
+    // Read the id from the URL directly — more reliable than the hook
+    // across client-side navigations in Next 16.
+    const id = new URLSearchParams(window.location.search).get("origami");
+    if (!id || loadedOrigamiRef.current === id) return;
     let cancelled = false;
 
     (async () => {
       try {
-        const res = await fetch(apiUrl(`/api/origamis/${origamiParam}`));
-        if (!res.ok) return;
+        // Same-origin fetch — these are Next.js route handlers, not FastAPI.
+        const res = await fetch(`/api/origamis/${id}`);
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error || `Load failed (${res.status})`);
+        }
         const o: Origami = await res.json();
         if (cancelled) return;
 
-        loadedOrigamiRef.current = origamiParam;
+        loadedOrigamiRef.current = id;
 
         const secs = (o.sections || []) as Section[];
         setText(o.text);
@@ -274,7 +281,11 @@ export default function TextReader() {
       } catch (err) {
         console.error("Failed to load origami:", err);
         if (!cancelled) {
-          setError("Could not load the saved origami. It may have expired.");
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Could not load the saved origami. It may have expired.",
+          );
         }
       }
     })();

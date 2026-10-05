@@ -18,7 +18,6 @@ import LoginModal from "@/components/LoginModal";
 import type { Origami } from "@/types/origami";
 import type { Section } from "@/components/ChapterSelector";
 import { PlayIcon, PauseIcon, StopIcon, CraneMark } from "@/components/Icons";
-import { apiUrl } from "@/lib/api";
 
 /* ─── helpers ─── */
 
@@ -89,7 +88,7 @@ export default function MobileReader() {
       setLibraryLoading(true);
       setLibraryError(null);
       try {
-        const res = await fetch(apiUrl("/api/origamis"), {
+        const res = await fetch("/api/origamis", {
           credentials: "include",
         });
         if (!res.ok) throw new Error(`Failed to load (${res.status})`);
@@ -301,7 +300,7 @@ export default function MobileReader() {
       // Fetch the full record — list responses omit fold_audio.
       let full = o;
       try {
-        const res = await fetch(apiUrl(`/api/origamis/${o.id}`));
+        const res = await fetch(`/api/origamis/${o.id}`);
         if (res.ok) full = (await res.json()) as Origami;
       } catch {
         // Fall back to the list record; TTS will regenerate if no audio.
