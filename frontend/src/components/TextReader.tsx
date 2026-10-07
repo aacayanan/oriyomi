@@ -92,6 +92,14 @@ export default function TextReader() {
 
   const audioPlayer = useAudioPlayer();
   const docTTS = useDocumentTTS();
+  /** Fold generation tallies — computed early; callbacks below close over them. */
+  const foldStatusList = Object.values(docTTS.foldStatus);
+  const foldsComplete = foldStatusList.filter((s) => s === "complete").length;
+  const foldsQueued = foldStatusList.length;
+  const foldsFailed = foldStatusList.filter((s) => s === "error").length;
+  const foldsPending = foldStatusList.filter(
+    (s) => s === "queued" || s === "processing",
+  ).length;
   const { user, loading: authLoading } = useAuth();
   const { signOut } = useAuthActions();
   const [loginOpen, setLoginOpen] = useState(false);
@@ -558,6 +566,13 @@ export default function TextReader() {
       (audioPlayer.isPlaying || audioPlayer.isPaused || playInFlightRef.current)
     )
       return;
+    // The awaited fold failed to generate — stop waiting on it. The folding
+    // card surfaces the failure and offers a retry.
+    if (docTTS.foldStatus[target] === "error") {
+      setWaitingFold(null);
+      setAutoPlayFold(null);
+      return;
+    }
     if (docTTS.hasFold(target)) {
       startPlayingFold(target);
     }
@@ -594,6 +609,15 @@ export default function TextReader() {
       return;
     }
 
+    // Everything settled and the wanted fold failed — re-queue failures and
+    // auto-play this fold once its audio lands.
+    if (foldsPending === 0 && foldsFailed > 0) {
+      setWaitingFold(idx);
+      setAutoPlayFold(idx);
+      void docTTS.retryFailed();
+      return;
+    }
+
     // Fold audio not ready — queue generation and auto-play when it lands
     setWaitingFold(idx);
     setAutoPlayFold(idx);
@@ -607,6 +631,8 @@ export default function TextReader() {
     playingFoldIndex,
     startPlayingFold,
     ensureDocumentTTS,
+    foldsPending,
+    foldsFailed,
   ]);
 
   const handleSpeedChange = useCallback(
@@ -803,13 +829,11 @@ export default function TextReader() {
     }
   }, [text]);
 
-  // Play → pause when running; resume when audio exists; else queue folds
-  const foldStatusList = Object.values(docTTS.foldStatus);
-  const foldsComplete = foldStatusList.filter((s) => s === "complete").length;
-  const foldsQueued = foldStatusList.length;
+  // Play → pause when running; resume when audio exists; else queue folds.
+  // "Preparing" only while audio is still expected — a run whose remaining
+  // folds all FAILED is not preparing, it is broken, and the card says so.
   const isPreparingFolds =
-    waitingFold !== null ||
-    (foldsQueued > 0 && foldsComplete < foldsQueued && !audioBase64);
+    waitingFold !== null || (foldsPending > 0 && !audioBase64);
 
   const playLabel = audioPlayer.isPlaying
     ? "Pause"
@@ -944,6 +968,7 @@ export default function TextReader() {
                 activeFoldIndex={foldIndex}
                 onSelectFold={handleSelectFold}
                 disabled={isLoading}
+                foldStatus={docTTS.foldStatus}
               />
             </div>
           )}
@@ -987,22 +1012,43 @@ export default function TextReader() {
           </div>
           )}
 
-          {foldsQueued > 0 && foldsComplete < foldsQueued && (
+          {(foldsPending > 0 || foldsFailed > 0) && (
             <div className="mt-4 border border-hairline bg-fold p-3">
               <div className="flex items-center justify-between font-ui label-lg text-sumi-soft">
-                <span>Folding…</span>
-                <span className="font-data tabular-nums">
+                <span>{foldsPending > 0 ? "Folding…" : "Folding failed"}</span>
+                <span
+                  className={`font-data tabular-nums ${foldsFailed > 0 ? "text-vermilion" : ""}`}
+                >
                   {foldsComplete} / {foldsQueued} folds
+                  {foldsFailed > 0 ? ` · ${foldsFailed} failed` : ""}
                 </span>
               </div>
-              <div className="mt-2 h-1 overflow-hidden bg-hairline">
-                <div
-                  className="h-full bg-vermilion transition-all duration-300"
-                  style={{
-                    width: `${foldsQueued ? (foldsComplete / foldsQueued) * 100 : 0}%`,
-                  }}
-                />
-              </div>
+              {foldsPending > 0 && (
+                <div className="mt-2 h-1 overflow-hidden bg-hairline">
+                  <div
+                    className="h-full bg-vermilion transition-all duration-300"
+                    style={{
+                      width: `${foldsQueued ? (foldsComplete / foldsQueued) * 100 : 0}%`,
+                    }}
+                  />
+                </div>
+              )}
+              {foldsPending === 0 && foldsFailed > 0 && (
+                <div className="mt-2">
+                  {docTTS.lastError && (
+                    <p className="font-ui text-xs leading-relaxed text-vermilion-ink">
+                      {docTTS.lastError}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => void docTTS.retryFailed()}
+                    className="outline-btn label-sm mt-2 h-8 rounded-none px-3"
+                  >
+                    Retry failed folds
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

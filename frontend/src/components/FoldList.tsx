@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import type { Section } from "./ChapterSelector";
+import type { FoldStatus } from "@/hooks/useDocumentTTS";
 import FoldCreaseArt from "./FoldCreaseArt";
 import "./folds.css";
 
@@ -8,6 +9,8 @@ interface FoldListProps {
   activeFoldIndex: number; // -1 when none
   onSelectFold: (index: number, section: Section | null) => void;
   disabled?: boolean;
+  /** Per-fold generation status — failed folds show "failed", not a duration. */
+  foldStatus?: Record<number, FoldStatus>;
 }
 
 function estimateDuration(chars: number): string {
@@ -27,6 +30,7 @@ export default function FoldList({
   activeFoldIndex,
   onSelectFold,
   disabled = false,
+  foldStatus,
 }: FoldListProps): ReactElement | null {
   if (sections.length === 0) return null;
 
@@ -46,6 +50,7 @@ export default function FoldList({
         {sections.map((section, i) => {
           const isActive = i === activeFoldIndex;
           const chars = section.char_end - section.char_start;
+          const status = foldStatus?.[i];
 
           return (
             <button
@@ -88,8 +93,16 @@ export default function FoldList({
                 >
                   {section.title}
                 </span>
-                <span className="shrink-0 font-data label-lg tabular-nums text-ink-fade">
-                  {estimateDuration(chars)}
+                <span
+                  className={`shrink-0 font-data label-lg tabular-nums ${
+                    status === "error" ? "text-vermilion" : "text-ink-fade"
+                  }`}
+                >
+                  {status === "error"
+                    ? "failed"
+                    : status === "processing" || status === "queued"
+                      ? "folding…"
+                      : estimateDuration(chars)}
                 </span>
               </div>
             </button>

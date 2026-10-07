@@ -386,6 +386,12 @@ export default function MobileReader() {
     Object.values(foldStatusMap).some(
       (s) => s === "queued" || s === "processing",
     );
+  const foldsFailed = Object.values(foldStatusMap).filter(
+    (s) => s === "error",
+  ).length;
+  const foldsPending = Object.values(foldStatusMap).filter(
+    (s) => s === "queued" || s === "processing",
+  ).length;
   const currentFoldReady = tts.hasFold(activeFoldIndex);
 
   const currentSentence = currentFold?.sentences[activeSentenceIndex];
@@ -584,6 +590,22 @@ export default function MobileReader() {
                 {completedFolds} of {sections.length} folds ready
               </span>
             )}
+          </div>
+        )}
+
+        {foldsFailed > 0 && foldsPending === 0 && !player.isPlaying && (
+          <div className="mr-stage-error" role="alert">
+            <span>
+              {foldsFailed} fold{foldsFailed === 1 ? "" : "s"} failed to
+              generate.{tts.lastError ? ` ${tts.lastError}` : ""}
+            </span>
+            <button
+              type="button"
+              className="mr-stage-error-dismiss"
+              onClick={() => void tts.retryFailed()}
+            >
+              Retry
+            </button>
           </div>
         )}
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { apiUrl } from "@/lib/api";
 import type { Section } from "@/components/ChapterSelector";
 
@@ -35,6 +35,8 @@ interface UseDocumentTTSReturn {
   /** Bumped whenever a fold's audio becomes available */
   readyTick: number;
   isSubmitting: boolean;
+  /** Most recent fold failure message — surfaced in the folding card. */
+  lastError: string | null;
   start: (opts: StartOpts) => Promise<string | null>;
   /** Load saved fold audio directly — skips TTS generation entirely. */
   hydrate: (audio: FoldAudio[]) => void;
@@ -43,6 +45,8 @@ interface UseDocumentTTSReturn {
   /** All currently loaded folds, for persisting a session. */
   getAllFolds: () => FoldAudio[];
   hasFold: (index: number) => boolean;
+  /** Re-queue folds whose generation failed. No-op while a run is active. */
+  retryFailed: () => Promise<void>;
 }
 
 /**
@@ -54,7 +58,9 @@ interface UseDocumentTTSReturn {
  * Network failures are retried once before the fold is marked error.
  *
  * The first completed fold is playable immediately (readyTick bumps per fold).
- * Cancel aborts every in-flight fold request.
+ * Cancel aborts every in-flight fold request. Folds that settled as error
+ * can be re-queued with retryFailed() — the failure message is kept in
+ * lastError so the UI can show why instead of "preparing" forever.
  */
 const MAX_CONCURRENT_FOLDS = 3;
 const FOLD_RETRY_DELAY_MS = 400;
@@ -70,17 +76,24 @@ export default function useDocumentTTS(): UseDocumentTTSReturn {
   const [foldStatus, setFoldStatus] = useState<Record<number, FoldStatus>>({});
   const [readyTick, setReadyTick] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
 
   const foldAudioRef = useRef<Map<number, FoldAudio>>(new Map());
   const abortRef = useRef<AbortController | null>(null);
+  /** Jobs + prefs from the last start() — retryFailed regenerates from these. */
+  const jobsRef = useRef<FoldJob[]>([]);
+  const optsRef = useRef<{ voice: string; speed: number } | null>(null);
 
   const cancel = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
+    jobsRef.current = [];
+    optsRef.current = null;
     setDocumentId(null);
     setFoldStatus({});
     foldAudioRef.current.clear();
     setIsSubmitting(false);
+    setLastError(null);
   }, []);
 
   const hydrate = useCallback(
@@ -104,43 +117,16 @@ export default function useDocumentTTS(): UseDocumentTTSReturn {
     [cancel],
   );
 
-  const start = useCallback(
-    async (opts: StartOpts): Promise<string | null> => {
-      cancel();
-
-      const folds: FoldJob[] = opts.sections
-        .map((s, i) => ({
-          index: i,
-          title: s.title || `Fold ${String(i + 1).padStart(2, "0")}`,
-          text: (s.text || "").trim(),
-        }))
-        .filter((f) => f.text.length > 0);
-
-      if (folds.length === 0) return null;
-
-      const abort = new AbortController();
-      abortRef.current = abort;
-
-      // Client-side job id — there is no server-side document record.
-      const docId =
-        typeof crypto !== "undefined" && "randomUUID" in crypto
-          ? crypto.randomUUID()
-          : `doc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      setDocumentId(docId);
-
-      const initial: Record<number, FoldStatus> = {};
-      for (const f of folds) initial[f.index] = "queued";
-      setFoldStatus(initial);
-      setIsSubmitting(true);
-
-      let remaining = folds.length;
-      const settle = () => {
-        remaining -= 1;
-        if (remaining <= 0 && !abort.signal.aborted) {
-          setIsSubmitting(false);
-        }
-      };
-
+  /**
+   * Shared worker pool: generate `jobs`, updating per-fold status as they
+   * land. Settles isSubmitting when every job in THIS run has finished.
+   */
+  const runFoldJobs = useCallback(
+    async (
+      jobs: FoldJob[],
+      opts: { voice: string; speed: number },
+      abort: AbortController,
+    ) => {
       const sleep = (ms: number) =>
         new Promise<void>((resolve) => {
           const t = window.setTimeout(resolve, ms);
@@ -192,12 +178,20 @@ export default function useDocumentTTS(): UseDocumentTTSReturn {
         throw lastErr;
       };
 
+      let remaining = jobs.length;
+      const settle = () => {
+        remaining -= 1;
+        if (remaining <= 0 && !abort.signal.aborted) {
+          setIsSubmitting(false);
+        }
+      };
+
       // Bounded worker pool: at most MAX_CONCURRENT_FOLDS in flight.
       let cursor = 0;
       const worker = async () => {
-        while (cursor < folds.length) {
+        while (cursor < jobs.length) {
           if (abort.signal.aborted) return;
-          const f = folds[cursor];
+          const f = jobs[cursor];
           cursor += 1;
           setFoldStatus((s) => ({ ...s, [f.index]: "processing" }));
           try {
@@ -209,6 +203,9 @@ export default function useDocumentTTS(): UseDocumentTTSReturn {
           } catch (err) {
             if (abort.signal.aborted) return;
             console.error(`Fold ${f.index} generation failed:`, err);
+            setLastError(
+              err instanceof Error ? err.message : "Fold generation failed",
+            );
             setFoldStatus((s) => ({ ...s, [f.index]: "error" }));
           } finally {
             settle();
@@ -216,13 +213,77 @@ export default function useDocumentTTS(): UseDocumentTTSReturn {
         }
       };
 
-      const poolSize = Math.min(MAX_CONCURRENT_FOLDS, folds.length);
+      const poolSize = Math.min(MAX_CONCURRENT_FOLDS, jobs.length);
       await Promise.all(Array.from({ length: poolSize }, () => worker()));
+    },
+    [],
+  );
+
+  const start = useCallback(
+    async (opts: StartOpts): Promise<string | null> => {
+      cancel();
+
+      const folds: FoldJob[] = opts.sections
+        .map((s, i) => ({
+          index: i,
+          title: s.title || `Fold ${String(i + 1).padStart(2, "0")}`,
+          text: (s.text || "").trim(),
+        }))
+        .filter((f) => f.text.length > 0);
+
+      if (folds.length === 0) return null;
+
+      const abort = new AbortController();
+      abortRef.current = abort;
+      jobsRef.current = folds;
+      optsRef.current = { voice: opts.voice, speed: opts.speed };
+
+      // Client-side job id — there is no server-side document record.
+      const docId =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `doc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      setDocumentId(docId);
+
+      const initial: Record<number, FoldStatus> = {};
+      for (const f of folds) initial[f.index] = "queued";
+      setFoldStatus(initial);
+      setIsSubmitting(true);
+
+      await runFoldJobs(folds, { voice: opts.voice, speed: opts.speed }, abort);
 
       return docId;
     },
-    [cancel],
+    [cancel, runFoldJobs],
   );
+
+  const retryFailed = useCallback(async () => {
+    if (isSubmitting) return;
+    const opts = optsRef.current;
+    const jobs = jobsRef.current;
+    if (!opts || jobs.length === 0) return;
+
+    const failed = jobs.filter((f) => foldStatus[f.index] === "error");
+    if (failed.length === 0) return;
+
+    let abort = abortRef.current;
+    if (!abort) {
+      abort = new AbortController();
+      abortRef.current = abort;
+    }
+
+    setLastError(null);
+    // Synchronous re-queue: waiting/autoPlay effects must observe "queued"
+    // rather than the stale "error" as soon as retry is requested.
+    setFoldStatus((s) => {
+      const next = { ...s };
+      for (const f of failed) next[f.index] = "queued";
+      return next;
+    });
+    setIsSubmitting(true);
+
+    await runFoldJobs(failed, opts, abort);
+  }, [isSubmitting, foldStatus, runFoldJobs]);
 
   const getFold = useCallback(
     (index: number) => foldAudioRef.current.get(index),
@@ -248,11 +309,13 @@ export default function useDocumentTTS(): UseDocumentTTSReturn {
     foldStatus,
     readyTick,
     isSubmitting,
+    lastError,
     start,
     hydrate,
     cancel,
     getFold,
     getAllFolds,
     hasFold,
+    retryFailed,
   };
 }
