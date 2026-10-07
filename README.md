@@ -70,10 +70,30 @@ Open **http://localhost:3000**. Point the frontend at the API with `API_PROXY_UR
 
 ### Environment
 
-| Variable | Required | Purpose |
-|----------|----------|---------|
-| `GEMINI_API_KEY` | No | Enables the comprehension quiz. Without it, the reader still works; the quiz degrades gracefully. |
-| `ALLOWED_ORIGINS` | No | CORS origins for direct browser → API calls. Defaults to `http://localhost:3000,http://127.0.0.1:3000`. Unused when the Next.js proxy is in play. |
+| Variable | Service | Required | Purpose |
+|----------|---------|----------|---------|
+| `NEXT_PUBLIC_SUPABASE_URL` | frontend | **Yes (deployed)** | Supabase project URL. Inlined at build time from `frontend/.env.local` locally. |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | frontend | **Yes (deployed)** | Supabase publishable (anon) key. Same inlining rules. |
+| `GEMINI_API_KEY` | app | No | Enables the comprehension quiz. Without it, the reader still works; the quiz degrades gracefully. |
+| `SUPABASE_URL` | app | No | FastAPI: persistent words-folded counter. Falls back to in-memory counting when unset. |
+| `SUPABASE_SERVICE_ROLE_KEY` | app | No | FastAPI: service-role key backing the counter RPC. |
+| `ALLOWED_ORIGINS` | app | No | CORS origins for direct browser → API calls. Defaults to `http://localhost:3000,http://127.0.0.1:3000`. Unused when the Next.js proxy is in play. |
+| `API_PROXY_URL` | frontend (Docker) | No | Where the Next dev/proxy forwards `/api/*`. Defaults to `http://localhost:8000`. |
+
+### Deploying to Vercel
+
+The two `NEXT_PUBLIC_SUPABASE_*` vars **must** be set in the Vercel project
+(Settings → Environment Variables, scoped to the **frontend** service) before
+the first deploy. They are inlined into the client bundle at build time — a
+deployment without them builds cleanly but every page returns
+`500 Internal Server Error` (the auth middleware has no project to talk to).
+After adding or changing them, **redeploy** so the bundle is rebuilt.
+
+The `app` (FastAPI) service vars are optional; without them the reader and
+TTS still work and only the persistent stats counter / quiz degrade.
+
+Local setup: copy the values from your Supabase project into
+`frontend/.env.local` (see `frontend/.env.example`).
 
 ## The TTS API
 

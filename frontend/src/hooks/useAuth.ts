@@ -14,7 +14,17 @@ export function useAuth(): AuthState {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const supabase = createClient()
+    let supabase: ReturnType<typeof createClient>
+    try {
+      supabase = createClient()
+    } catch (e) {
+      // Missing NEXT_PUBLIC_SUPABASE_* env vars — render signed-out
+      // instead of crashing the page.
+      console.error(e)
+      setUser(null)
+      setLoading(false)
+      return
+    }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
@@ -38,36 +48,55 @@ export function useAuth(): AuthState {
 export function useAuthActions() {
   const signInWithPassword = useCallback(
     async (email: string, password: string) => {
-      const supabase = createClient()
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-      return { error: error?.message ?? null }
+      try {
+        const supabase = createClient()
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+        return { error: error?.message ?? null }
+      } catch (e) {
+        return { error: e instanceof Error ? e.message : "Sign-in failed" }
+      }
     },
     []
   )
 
   const signUpWithPassword = useCallback(
     async (email: string, password: string) => {
-      const supabase = createClient()
-      const { data, error } = await supabase.auth.signUp({ email, password })
-      // session is null when email confirmation is required
-      const needsVerification = !error && !data.session
-      return { error: error?.message ?? null, needsVerification }
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase.auth.signUp({ email, password })
+        // session is null when email confirmation is required
+        const needsVerification = !error && !data.session
+        return { error: error?.message ?? null, needsVerification }
+      } catch (e) {
+        return {
+          error: e instanceof Error ? e.message : "Sign-up failed",
+          needsVerification: false,
+        }
+      }
     },
     []
   )
 
   const signOut = useCallback(async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
+    try {
+      const supabase = createClient()
+      await supabase.auth.signOut()
+    } catch (e) {
+      console.error(e)
+    }
   }, [])
 
   const signInWithOtp = useCallback(async (email: string) => {
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithOtp({ email })
-    return { error: error?.message ?? null }
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.signInWithOtp({ email })
+      return { error: error?.message ?? null }
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : "Sign-in failed" }
+    }
   }, [])
 
   return { signInWithPassword, signUpWithPassword, signOut, signInWithOtp }

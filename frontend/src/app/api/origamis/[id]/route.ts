@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import { isSupabaseConfigured, SUPABASE_CONFIG_HELP } from "@/utils/supabase/env";
 import { ORIGAMI_TTL_MS } from "@/types/origami";
 
 interface RouteContext {
@@ -12,6 +13,9 @@ interface RouteContext {
  * Returns 404 and deletes the row if the origami has expired.
  */
 export async function GET(_request: Request, { params }: RouteContext) {
+  if (!isSupabaseConfigured()) {
+    return NextResponse.json({ error: SUPABASE_CONFIG_HELP }, { status: 503 });
+  }
   const { id } = await params;
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
@@ -51,6 +55,9 @@ export async function GET(_request: Request, { params }: RouteContext) {
 
 /** DELETE /api/origamis/:id — delete an origami (owner only). */
 export async function DELETE(_request: Request, { params }: RouteContext) {
+  if (!isSupabaseConfigured()) {
+    return NextResponse.json({ error: SUPABASE_CONFIG_HELP }, { status: 503 });
+  }
   const { id } = await params;
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);

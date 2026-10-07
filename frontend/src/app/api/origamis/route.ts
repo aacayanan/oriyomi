@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import { isSupabaseConfigured, SUPABASE_CONFIG_HELP } from "@/utils/supabase/env";
 import { ORIGAMI_TTL_MS, type OrigamiInsert } from "@/types/origami";
 
 /** Cutoff timestamp — origamis created before this are expired. */
@@ -13,6 +14,9 @@ function cutoffIso(): string {
  * Expired origamis are deleted as a side effect (lazy cleanup).
  */
 export async function GET() {
+  if (!isSupabaseConfigured()) {
+    return NextResponse.json({ error: SUPABASE_CONFIG_HELP }, { status: 503 });
+  }
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
@@ -48,6 +52,9 @@ export async function GET() {
 
 /** POST /api/origamis — create a new origami for the current user. */
 export async function POST(request: Request) {
+  if (!isSupabaseConfigured()) {
+    return NextResponse.json({ error: SUPABASE_CONFIG_HELP }, { status: 503 });
+  }
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 

@@ -5,8 +5,11 @@ import { createClient } from '@/utils/supabase/middleware'
 export async function proxy(request: NextRequest) {
   const { supabase, response } = createClient(request)
 
-  // Refresh the auth session on every request
-  await supabase.auth.getUser()
+  // Refresh the auth session on every request. No-op when Supabase env
+  // vars are absent — pages render signed-out instead of erroring.
+  if (supabase) {
+    await supabase.auth.getUser()
+  }
 
   return response
 }
