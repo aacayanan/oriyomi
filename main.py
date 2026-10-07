@@ -51,6 +51,17 @@ if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
     from supabase import create_client
     _supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
+# Surface the counter's backing store at boot — a deploy without these vars
+# (or with them scoped to the wrong Vercel service) silently loses every
+# increment, which looks exactly like "stats frozen at 0" in production.
+if _supabase is not None:
+    logger.info("Words-folded counter: Supabase-backed (%s)", SUPABASE_URL)
+else:
+    logger.warning(
+        "Words-folded counter: in-memory only — set SUPABASE_URL and "
+        "SUPABASE_SERVICE_ROLE_KEY on the app service for a persistent counter"
+    )
+
 # ---------------------------------------------------------------------------
 # Global stats counter
 # ---------------------------------------------------------------------------
@@ -71,10 +82,13 @@ def _increment_words_folded(n: int) -> None:
     if _supabase is not None:
         try:
             _supabase.rpc("increment_words_folded", {"n": n}).execute()
+            return
         except Exception:
-            _words_folded += n
-    else:
-        _words_folded += n
+            # Log loudly: a swallowed RPC failure (e.g. pg-safeupdate
+            # rejecting the WHERE-less UPDATE, or a missing migration)
+            # leaves the deployed counter frozen at 0 with no other trace.
+            logger.exception("words-folded Supabase RPC failed; using in-memory count")
+    _words_folded += n
 
 def _cors_origins() -> list[str]:
     """Browser origins allowed to call the API directly.

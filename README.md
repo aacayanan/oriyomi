@@ -75,8 +75,8 @@ Open **http://localhost:3000**. Point the frontend at the API with `API_PROXY_UR
 | `NEXT_PUBLIC_SUPABASE_URL` | frontend | **Yes (deployed)** | Supabase project URL. Inlined at build time from `frontend/.env.local` locally. |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | frontend | **Yes (deployed)** | Supabase publishable (anon) key. Same inlining rules. |
 | `GEMINI_API_KEY` | app | No | Enables the comprehension quiz. Without it, the reader still works; the quiz degrades gracefully. |
-| `SUPABASE_URL` | app | No | FastAPI: persistent words-folded counter. Falls back to in-memory counting when unset. |
-| `SUPABASE_SERVICE_ROLE_KEY` | app | No | FastAPI: service-role key backing the counter RPC. |
+| `SUPABASE_URL` | app | **Yes (deployed)** | FastAPI: persistent words-folded counter. Without it the counter is in-memory and resets on every serverless cold start — stats freeze near 0. |
+| `SUPABASE_SERVICE_ROLE_KEY` | app | **Yes (deployed)** | FastAPI: service-role key backing the counter RPC. |
 | `FFMPEG_PATH` | app | No | Explicit ffmpeg binary for MP3 chunk merging. Defaults to the static binary bundled via `imageio-ffmpeg`, then PATH. |
 | `ALLOWED_ORIGINS` | app | No | CORS origins for direct browser → API calls. Defaults to `http://localhost:3000,http://127.0.0.1:3000`. Unused when the Next.js proxy is in play. |
 | `API_PROXY_URL` | frontend (Docker) | No | Where the Next dev/proxy forwards `/api/*`. Defaults to `http://localhost:8000`. |
@@ -90,8 +90,17 @@ deployment without them builds cleanly but every page returns
 `500 Internal Server Error` (the auth middleware has no project to talk to).
 After adding or changing them, **redeploy** so the bundle is rebuilt.
 
-The `app` (FastAPI) service vars are optional; without them the reader and
-TTS still work and only the persistent stats counter / quiz degrade.
+The `app` (FastAPI) service also needs `SUPABASE_URL` and
+`SUPABASE_SERVICE_ROLE_KEY` (same values, scoped to the **app** service) or
+the words-folded counter resets on every serverless cold start and the stat
+stays frozen near 0 on all devices. The reader and TTS work either way; only
+the counter and quiz degrade. After setting them, check the app service logs
+for `Words-folded counter: Supabase-backed` to confirm.
+
+Run the `supabase/migrations/` SQL against your project (0001 → 0005 in
+order). `0005` is required in production: this project loads `pg-safeupdate`,
+which rejects the original `increment_words_folded` body's WHERE-less
+`UPDATE`, so every increment failed silently.
 
 Local setup: copy the values from your Supabase project into
 `frontend/.env.local` (see `frontend/.env.example`).
