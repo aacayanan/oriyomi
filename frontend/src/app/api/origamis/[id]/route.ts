@@ -53,6 +53,50 @@ export async function GET(_request: Request, { params }: RouteContext) {
   return NextResponse.json(data);
 }
 
+/** PATCH /api/origamis/:id — rename an origami (owner only). */
+export async function PATCH(request: Request, { params }: RouteContext) {
+  if (!isSupabaseConfigured()) {
+    return NextResponse.json({ error: SUPABASE_CONFIG_HELP }, { status: 503 });
+  }
+  const { id } = await params;
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let body: { title?: unknown };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const title = typeof body.title === "string" ? body.title.trim() : "";
+  if (!title) {
+    return NextResponse.json({ error: "title is required" }, { status: 400 });
+  }
+
+  const { data, error } = await supabase
+    .from("origamis")
+    .update({ title, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .select("id,title")
+    .single();
+
+  if (error || !data) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  return NextResponse.json(data);
+}
+
 /** DELETE /api/origamis/:id — delete an origami (owner only). */
 export async function DELETE(_request: Request, { params }: RouteContext) {
   if (!isSupabaseConfigured()) {

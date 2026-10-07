@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import type { FocusEvent, KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { msUntilExpiry, type Origami } from "@/types/origami";
 import FoldCreaseArt from "./FoldCreaseArt";
@@ -43,6 +44,11 @@ export default function OrigamiLibrary() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   /** Origami pending delete confirmation (id + title for the dialog). */
   const [pendingDelete, setPendingDelete] = useState<Origami | null>(null);
+  /** Inline rename: the single folio whose title is being edited. */
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [renameSaving, setRenameSaving] = useState(false);
+  const [renameError, setRenameError] = useState<string | null>(null);
   /** Ticks every 30s to refresh countdowns and drop expired entries. */
   const [now, setNow] = useState(() => Date.now());
 
@@ -98,6 +104,70 @@ export default function OrigamiLibrary() {
     } finally {
       setDeletingId(null);
     }
+  }
+
+  function startRename(o: Origami) {
+    setRenamingId(o.id);
+    setRenameValue(o.title);
+    setRenameError(null);
+  }
+
+  function cancelRename() {
+    setRenamingId(null);
+    setRenameValue("");
+    setRenameError(null);
+  }
+
+  async function submitRename(id: string) {
+    const title = renameValue.trim();
+    if (!title) {
+      setRenameError("Title can't be blank");
+      return;
+    }
+    setRenameSaving(true);
+    setRenameError(null);
+    try {
+      const res = await fetch(`/api/origamis/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `Rename failed (${res.status})`);
+      }
+      setOrigamis((prev) =>
+        prev.map((o) => (o.id === id ? { ...o, title } : o)),
+      );
+      cancelRename();
+    } catch (e) {
+      setRenameError(e instanceof Error ? e.message : "Rename failed");
+    } finally {
+      setRenameSaving(false);
+    }
+  }
+
+  function handleRenameKeyDown(e: KeyboardEvent<HTMLInputElement>, id: string) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (!renameSaving) void submitRename(id);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      cancelRename();
+    }
+  }
+
+  /** Commit on click-away when the title changed; blank input just reverts. */
+  function handleRenameBlur(e: FocusEvent<HTMLInputElement>, id: string) {
+    if (renameSaving) return;
+    const title = e.currentTarget.value.trim();
+    const current = origamis.find((o) => o.id === id)?.title ?? "";
+    if (!title || title === current.trim()) {
+      cancelRename();
+      return;
+    }
+    setRenameValue(title);
+    void submitRename(id);
   }
 
   function handleRead(id: string) {
@@ -169,36 +239,80 @@ export default function OrigamiLibrary() {
         const seed = creaseSeed(o.id);
         const remaining = msUntilExpiry(o, now);
         if (remaining <= 0) return null;
+        const renaming = renamingId === o.id;
+        const cardBody = (
+          <>
+            <div className="lib-folio-art">
+              <FoldCreaseArt index={seed} className="h-full w-full" />
+            </div>
+            <div className="lib-folio-body">
+              {renaming ? (
+                <input
+                  className="lib-folio-title-input"
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onKeyDown={(e) => handleRenameKeyDown(e, o.id)}
+                  onBlur={(e) => handleRenameBlur(e, o.id)}
+                  onFocus={(e) => e.currentTarget.select()}
+                  autoFocus
+                  aria-label="Origami title"
+                  title="Enter to save · Esc to cancel"
+                />
+              ) : (
+                <h3 className="lib-folio-title">{o.title}</h3>
+              )}
+              {renaming && renameError && (
+                <p className="lib-folio-rename-error" role="alert">
+                  {renameError}
+                </p>
+              )}
+              <div className="lib-folio-rule" aria-hidden="true" />
+              <div className="lib-folio-meta">
+                <span>{formatDate(o.created_at)}</span>
+                <span aria-hidden="true">·</span>
+                <span>{formatChars(o.text.length)} chars</span>
+                <span aria-hidden="true">·</span>
+                <span>{o.speed}×</span>
+              </div>
+              <div className="lib-folio-expiry">
+                <span
+                  className={`lib-folio-expiry-dot${remaining < 60 * 60 * 1000 ? " lib-folio-expiry-dot-warn" : ""}`}
+                  aria-hidden="true"
+                />
+                Expires in {formatRemaining(remaining)}
+              </div>
+            </div>
+          </>
+        );
         return (
           <article key={o.id} className="lib-folio">
-            <button
-              type="button"
-              className="lib-folio-hit"
-              onClick={() => handleRead(o.id)}
-              aria-label={`Open origami: ${o.title}`}
-            >
-              <div className="lib-folio-art">
-                <FoldCreaseArt index={seed} className="h-full w-full" />
+            {renaming ? (
+              /* Editing: the card must not be a button — the title input
+                 can't live inside one. Same layout, no open-on-click. */
+              <div className="lib-folio-hit lib-folio-hit-static">
+                {cardBody}
               </div>
-              <div className="lib-folio-body">
-                <h3 className="lib-folio-title">{o.title}</h3>
-                <div className="lib-folio-rule" aria-hidden="true" />
-                <div className="lib-folio-meta">
-                  <span>{formatDate(o.created_at)}</span>
-                  <span aria-hidden="true">·</span>
-                  <span>{formatChars(o.text.length)} chars</span>
-                  <span aria-hidden="true">·</span>
-                  <span>{o.speed}×</span>
-                </div>
-                <div className="lib-folio-expiry">
-                  <span
-                    className={`lib-folio-expiry-dot${remaining < 60 * 60 * 1000 ? " lib-folio-expiry-dot-warn" : ""}`}
-                    aria-hidden="true"
-                  />
-                  Expires in {formatRemaining(remaining)}
-                </div>
-              </div>
-            </button>
+            ) : (
+              <button
+                type="button"
+                className="lib-folio-hit"
+                onClick={() => handleRead(o.id)}
+                aria-label={`Open origami: ${o.title}`}
+              >
+                {cardBody}
+              </button>
+            )}
+            {!renaming && (
+              <button
+                type="button"
+                className="lib-folio-rename"
+                onClick={() => startRename(o)}
+                disabled={deletingId === o.id}
+                aria-label={`Rename origami: ${o.title}`}
+              >
+                ✎
+              </button>
+            )}
             <button
               type="button"
               className="lib-folio-delete"
