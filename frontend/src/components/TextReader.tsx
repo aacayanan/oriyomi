@@ -23,6 +23,7 @@ import {
   ChevronIcon,
 } from "./Icons";
 import { apiUrl } from "@/lib/api";
+import { expandSectionsForTTS } from "@/lib/foldSplit";
 import SaveOrigamiButton from "./SaveOrigamiButton";
 import { useAuth, useAuthActions } from "@/hooks/useAuth";
 import LoginModal from "./LoginModal";
@@ -53,7 +54,12 @@ function estimateDuration(chars: number): string {
 }
 
 export default function TextReader() {
+  /** Canvas data — the document the viewer renders. Set when a session is
+   *  committed (analysis done or origami loaded); never bound to the textarea. */
   const [text, setText] = useState("");
+  /** Ephemeral textbox content. Cleared once audio processing starts so a
+   *  committed session can't be edited — paste again to start a new one. */
+  const [draft, setDraft] = useState("");
   const [voice, setVoice] = useState("en-US-EmmaMultilingualNeural");
   const [speed, setSpeed] = useState(1.0);
   const [voices, setVoices] = useState<Voice[]>([]);
@@ -86,7 +92,7 @@ export default function TextReader() {
 
   const audioPlayer = useAudioPlayer();
   const docTTS = useDocumentTTS();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { signOut } = useAuthActions();
   const [loginOpen, setLoginOpen] = useState(false);
   const searchParams = useSearchParams();
@@ -96,6 +102,8 @@ export default function TextReader() {
 
   const sentencesRef = useRef<Sentence[]>([]);
   const playingFoldRef = useRef<number | null>(null);
+  /** True while a fold play() awaits decode — blocks autoplay re-entry. */
+  const playInFlightRef = useRef(false);
   const sectionsRef = useRef<Section[]>([]);
   const analyzeTimerRef = useRef<number | null>(null);
   /** Sentence seek requested inside a fold that isn't playing yet. */
@@ -223,11 +231,24 @@ export default function TextReader() {
   /* ── load a saved origami from ?origami= ── */
 
   useEffect(() => {
+    // Wait for auth to settle first. AppShell swaps readers when auth
+    // resolves (mobile mounts MobileReader); loading a fold before that
+    // point made this reader fetch and auto-play the stored fold, and the
+    // visible reader then played the same fold again — doubled audio.
+    if (authLoading || !user) return;
+
     // Read the id from the URL directly — more reliable than the hook
     // across client-side navigations in Next 16.
     const id = new URLSearchParams(window.location.search).get("origami");
     if (!id || loadedOrigamiRef.current === id) return;
     let cancelled = false;
+
+    // A pending analyze debounce must not fire after this load — it would
+    // overwrite the canvas with stale draft text and reprocess audio.
+    if (analyzeTimerRef.current) {
+      window.clearTimeout(analyzeTimerRef.current);
+      analyzeTimerRef.current = null;
+    }
 
     (async () => {
       try {
@@ -244,14 +265,24 @@ export default function TextReader() {
 
         // Stop anything currently playing before loading the new session.
         audioPlayer.stop();
+        playInFlightRef.current = false;
         setPlayingFoldIndex(null);
         setWaitingFold(null);
         setAutoPlayFold(null);
 
-        const secs = (o.sections || []) as Section[];
+        const savedSecs = (o.sections || []) as Section[];
+        // Regenerating (no saved audio): expand sections whose audio would
+        // exceed ~4 min into continuation folds BEFORE they enter reader
+        // state — fold indices stay 1:1 with sections everywhere. Hydrate
+        // keeps sections as saved; fold_audio indices match them as-is.
+        const hasSavedAudio = Boolean(o.fold_audio && o.fold_audio.length > 0);
+        const secs = hasSavedAudio
+          ? savedSecs
+          : expandSectionsForTTS(savedSecs, o.speed || speed);
         // Text + sections feed the viewer/canvas directly — the textbox
-        // stays hidden; this is a loaded session, not a fresh paste.
+        // stays hidden and empty; this is a loaded session, not a fresh paste.
         setText(o.text);
+        setDraft("");
         setSections(secs);
         sectionsRef.current = secs;
         setHasStructure(secs.length > 0);
@@ -302,7 +333,7 @@ export default function TextReader() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [origamiParam]);
+  }, [origamiParam, authLoading, user]);
 
   const analyzeText = useCallback(
     async (textToAnalyze: string, opts?: { autoplayFold?: number }) => {
@@ -321,7 +352,12 @@ export default function TextReader() {
         });
         const data = await res.json();
         if (res.ok) {
-          const nextSections: Section[] = data.sections || [];
+          // Expand sections whose audio would exceed ~4 min into
+          // continuation folds before they enter reader state.
+          const nextSections: Section[] = expandSectionsForTTS(
+            data.sections || [],
+            speed,
+          );
           setSections(nextSections);
           sectionsRef.current = nextSections;
           // Paragraph-packed and structured docs both count as folds
@@ -333,6 +369,10 @@ export default function TextReader() {
 
           // Fan out one TTS request per fold immediately
           if (nextSections.length > 0) {
+            // Commit the session: the canvas (text + sections) now owns the
+            // data, and the textbox clears so the fold can't be re-modified.
+            setText(textToAnalyze);
+            setDraft("");
             // Begin reading as soon as fold 0 audio is ready
             setAutoPlayFold(opts?.autoplayFold ?? 0);
             try {
@@ -416,6 +456,11 @@ export default function TextReader() {
   const resetReadingState = useCallback(() => {
     docTTS.cancel();
     audioPlayer.stop();
+    playInFlightRef.current = false;
+    if (analyzeTimerRef.current) {
+      window.clearTimeout(analyzeTimerRef.current);
+      analyzeTimerRef.current = null;
+    }
     pendingSeekRef.current = null;
     updateSentences([]);
     setActiveSentenceIndex(null);
@@ -431,6 +476,7 @@ export default function TextReader() {
   const handleClear = useCallback(() => {
     resetReadingState();
     setText("");
+    setDraft("");
     setSections([]);
     setSelectedSection(null);
     setHasStructure(false);
@@ -443,6 +489,7 @@ export default function TextReader() {
     (extractedText: string) => {
       resetReadingState();
       setText(extractedText);
+      setDraft("");
       setError(null);
       analyzeText(extractedText);
     },
@@ -490,6 +537,9 @@ export default function TextReader() {
 
       // Advance only when this fold's audio actually finishes, not when
       // the last sentence starts (that skipped the final line).
+      // Flag in-flight so the autoplay effect can't re-enter while the
+      // player is still decoding (isPlaying stays false until decode lands).
+      playInFlightRef.current = true;
       audioPlayer.play(fold.audio_base64, handleTimeUpdate, advanceAfterFold);
       return true;
     },
@@ -500,8 +550,14 @@ export default function TextReader() {
   useEffect(() => {
     const target = waitingFold ?? autoPlayFold;
     if (target === null) return;
-    // Already playing or paused on this fold — don't restart it.
-    if (playingFoldRef.current === target && (audioPlayer.isPlaying || audioPlayer.isPaused)) return;
+    // Already playing, paused, or mid-decode on this fold — don't restart it.
+    // (isPlaying is false while decodeAudioData is pending; without the
+    // in-flight check this effect re-fires on every render and stacks plays.)
+    if (
+      playingFoldRef.current === target &&
+      (audioPlayer.isPlaying || audioPlayer.isPaused || playInFlightRef.current)
+    )
+      return;
     if (docTTS.hasFold(target)) {
       startPlayingFold(target);
     }
@@ -583,6 +639,7 @@ export default function TextReader() {
   );
 
   const handlePause = useCallback(() => {
+    playInFlightRef.current = false;
     audioPlayer.pause();
   }, [audioPlayer]);
 
@@ -908,12 +965,13 @@ export default function TextReader() {
               <div className="mt-3 flex flex-col gap-3">
                 <FileUpload onTextExtracted={handleFileExtracted} />
                 <TextBox
-                  text={text}
+                  text={draft}
                   onChange={(t) => {
-                    setText(t);
+                    setDraft(t);
                     setHasCompletedRead(false);
                     if (!t.trim()) {
                       resetReadingState();
+                      setText("");
                       setSections([]);
                       setSelectedSection(null);
                       setHasStructure(false);
@@ -1006,7 +1064,11 @@ export default function TextReader() {
                 <button
                   type="button"
                   onClick={audioPlayer.isPlaying ? handlePause : handlePlay}
-                  disabled={isLoading || docTTS.isSubmitting}
+                  disabled={
+                    !audioPlayer.isPlaying &&
+                    !audioPlayer.isPaused &&
+                    (isLoading || docTTS.isSubmitting)
+                  }
                   className={`gold-dot-btn h-11 label-lg ${
                     hasSecondTransport ? "flex-1" : "w-full"
                   }`}
@@ -1049,7 +1111,11 @@ export default function TextReader() {
                   <button
                     type="button"
                     onClick={audioPlayer.isPlaying ? handlePause : handlePlay}
-                    disabled={isLoading || docTTS.isSubmitting}
+                    disabled={
+                      !audioPlayer.isPlaying &&
+                      !audioPlayer.isPaused &&
+                      (isLoading || docTTS.isSubmitting)
+                    }
                     className="gold-dot-btn reader-transport-btn h-8 w-8"
                     aria-label={playLabel}
                   >

@@ -207,7 +207,7 @@ export default function BrainrotStage({ className = "" }: BrainrotStageProps) {
         }`}
       >
         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-fold/85 text-sumi">
-          <ChevronIcon className="h-4 w-4 -rotate-90" />
+          <ChevronIcon className="h-4 w-4 rotate-90" />
         </span>
       </button>
       <button
@@ -219,7 +219,7 @@ export default function BrainrotStage({ className = "" }: BrainrotStageProps) {
         }`}
       >
         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-fold/85 text-sumi">
-          <ChevronIcon className="h-4 w-4 rotate-90" />
+          <ChevronIcon className="h-4 w-4 -rotate-90" />
         </span>
       </button>
     </div>

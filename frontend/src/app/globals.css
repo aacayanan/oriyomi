@@ -351,7 +351,9 @@ button {
     flex-direction: column;
     height: 100vh;
     height: 100dvh;
-    overflow: hidden;
+    /* No overflow: hidden here — an overflow ancestor can clip the
+       position: fixed transport bar in WebKit, hiding the controls on
+       real iOS devices. The stage below owns its own scrolling. */
     background: var(--color-washi);
   }
 
@@ -434,6 +436,9 @@ button {
   }
 
   .mr-fold-nav-btn {
+    /* Fixed basis — flex children must not shrink below 44px, or the
+       centered fold-nav group loses its symmetric spacing when tight. */
+    flex: 0 0 44px;
     width: 44px;
     height: 44px;
     border: 1px solid var(--color-hairline-deep);

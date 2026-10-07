@@ -18,6 +18,7 @@ import LoginModal from "@/components/LoginModal";
 import type { Origami } from "@/types/origami";
 import type { Section } from "@/components/ChapterSelector";
 import { PlayIcon, PauseIcon, StopIcon, CraneMark } from "@/components/Icons";
+import { expandSectionsForTTS } from "@/lib/foldSplit";
 
 /* ─── helpers ─── */
 
@@ -77,6 +78,15 @@ export default function MobileReader() {
   const player = useAudioPlayer();
   const playingRef = useRef(false);
   const autoAdvanceRef = useRef(false);
+  /** Pending fold-advance timeout — cleared whenever the user takes over. */
+  const foldEndTimeoutRef = useRef<number | null>(null);
+
+  const clearFoldEndTimeout = useCallback(() => {
+    if (foldEndTimeoutRef.current !== null) {
+      window.clearTimeout(foldEndTimeoutRef.current);
+      foldEndTimeoutRef.current = null;
+    }
+  }, []);
 
   /* ── load origami list on mount ── */
 
@@ -128,10 +138,17 @@ export default function MobileReader() {
 
   /* ── generate TTS when origami is selected ── */
 
-  const sections = useMemo(
-    () => (origami ? flattenSections(origami.sections) : []),
-    [origami],
-  );
+  const sections = useMemo(() => {
+    if (!origami) return [];
+    const flat = flattenSections(origami.sections);
+    // Hydrate path: saved fold_audio indices match the saved sections as-is.
+    // Regeneration: expand long sections into continuation folds so nav,
+    // titles, and progress counts stay aligned with the fold indices that
+    // useDocumentTTS will produce. Expansion speed is the generation speed
+    // (origami.speed), which selectOrigami also applies to the slider.
+    if (origami.fold_audio && origami.fold_audio.length > 0) return flat;
+    return expandSectionsForTTS(flat, origami.speed || 1.0);
+  }, [origami]);
 
   useEffect(() => {
     if (!origami || sections.length === 0) return;
@@ -210,20 +227,27 @@ export default function MobileReader() {
     if (tts.hasFold(nextIndex)) {
       setActiveFoldIndex(nextIndex);
       setActiveSentenceIndex(0);
-      // Small delay so the UI updates before audio starts
-      setTimeout(() => playFoldDirect(nextIndex), 150);
+      // Small delay so the UI updates before audio starts. The timeout is
+      // tracked so Stop / fold navigation can cancel a pending advance.
+      clearFoldEndTimeout();
+      foldEndTimeoutRef.current = window.setTimeout(() => {
+        foldEndTimeoutRef.current = null;
+        playFoldDirect(nextIndex);
+      }, 150);
     }
-  }, [activeFoldIndex, tts]);
+  }, [activeFoldIndex, tts, clearFoldEndTimeout]);
 
   const playFoldDirect = useCallback(
     (foldIndex: number) => {
       const fold = tts.getFold(foldIndex);
       if (!fold) return;
+      // Any explicit play supersedes a pending auto-advance.
+      clearFoldEndTimeout();
       playingRef.current = true;
       player.setOffset(0);
       player.play(fold.audio_base64, handleTimeUpdate, handleFoldEnded);
     },
-    [tts, player, handleTimeUpdate, handleFoldEnded],
+    [tts, player, handleTimeUpdate, handleFoldEnded, clearFoldEndTimeout],
   );
 
   const playFold = useCallback(
@@ -254,10 +278,11 @@ export default function MobileReader() {
   }, [player, tts, activeFoldIndex, handleTimeUpdate, handleFoldEnded, playFold]);
 
   const handleStop = useCallback(() => {
+    clearFoldEndTimeout();
     player.stop();
     playingRef.current = false;
     setActiveSentenceIndex(0);
-  }, [player]);
+  }, [player, clearFoldEndTimeout]);
 
   const handlePrevFold = useCallback(() => {
     if (activeFoldIndex <= 0) return;
@@ -293,8 +318,16 @@ export default function MobileReader() {
 
   /* ── navigation ── */
 
+  // Latest-wins token: the ?origami= effect re-fires when router.replace
+  // updates searchParams, so a click and the effect can both call
+  // selectOrigami for the same fold. Each call bumps the token; only the
+  // newest call applies state, so a superseded load can't trigger a second
+  // hydrate + auto-play of the same document.
+  const selectSeqRef = useRef(0);
+
   const selectOrigami = useCallback(
     async (o: Origami) => {
+      const seq = ++selectSeqRef.current;
       // Update URL without full navigation
       router.replace(`/app?origami=${o.id}`, { scroll: false });
       // Fetch the full record — list responses omit fold_audio.
@@ -305,21 +338,26 @@ export default function MobileReader() {
       } catch {
         // Fall back to the list record; TTS will regenerate if no audio.
       }
+      // A newer selection superseded this one while it was in flight —
+      // don't stomp state or kick off another playback round.
+      if (seq !== selectSeqRef.current) return;
       setOrigami(full);
       setSpeed(full.speed || 1.0);
       setActiveFoldIndex(0);
       setActiveSentenceIndex(0);
       setError(null);
+      clearFoldEndTimeout();
       tts.cancel();
       player.stop();
       playingRef.current = false;
       autoAdvanceRef.current = false;
       setView("reader");
     },
-    [router, tts, player],
+    [router, tts, player, clearFoldEndTimeout],
   );
 
   const goBackToLibrary = useCallback(() => {
+    clearFoldEndTimeout();
     tts.cancel();
     player.stop();
     playingRef.current = false;
@@ -330,13 +368,14 @@ export default function MobileReader() {
     setActiveSentenceIndex(0);
     setError(null);
     router.replace("/app", { scroll: false });
-  }, [tts, player, router]);
+  }, [tts, player, router, clearFoldEndTimeout]);
 
   const handleSignOut = useCallback(async () => {
+    clearFoldEndTimeout();
     tts.cancel();
     player.stop();
     await signOut();
-  }, [tts, player, signOut]);
+  }, [tts, player, signOut, clearFoldEndTimeout]);
 
   /* ── derived ── */
 
@@ -559,7 +598,23 @@ export default function MobileReader() {
                 disabled={activeFoldIndex <= 0}
                 aria-label="Previous fold"
               >
-                ‹
+                {/* SVG chevron — ‹/› guillemets have asymmetric font
+                    side-bearings that read as off-center on narrow screens */}
+                <svg
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  width="20"
+                  height="20"
+                >
+                  <path
+                    d="M15 18l-6-6 6-6"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </button>
               <span className="mr-fold-nav-label">{foldTitle}</span>
               <button
@@ -569,7 +624,21 @@ export default function MobileReader() {
                 disabled={activeFoldIndex >= sections.length - 1}
                 aria-label="Next fold"
               >
-                ›
+                <svg
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  width="20"
+                  height="20"
+                >
+                  <path
+                    d="M9 18l6-6-6-6"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </button>
             </div>
 
@@ -637,7 +706,7 @@ export default function MobileReader() {
             type="button"
             className="mr-transport-btn mr-transport-btn--play"
             onClick={handlePlayPause}
-            disabled={!currentFoldReady}
+            disabled={!currentFoldReady && !player.isPlaying && !player.isPaused}
             aria-label={player.isPlaying ? "Pause" : "Play"}
           >
             {player.isPlaying ? <PauseIcon /> : <PlayIcon />}
