@@ -4,6 +4,7 @@ __pycache__/
 .venv/
 node_modules/
 .next/
+.DS_Store
 
 # Playwright regenerable artifacts
 test-results/

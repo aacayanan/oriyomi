@@ -1,6 +1,0 @@
-{
-  "prompt": "A flat desktop web app interface screenshot for Text Reader, a student listen-and-read tool, rendered as an airport wayfinding system. Across the top hangs a saturated yellow overhead sign band (FFD100) with black humanist sans lettering carrying exactly one message: on the left Movement II of IV, on the right monumental black numerals reading 4:12 remaining, plus a small black running-figure pictogram. Below the band, the interface is a concourse: document sections listed as gate rows on white panels with black borders \u2014 row one reads Ch. 3 Cellular Respiration Gate B2 4:12, row two reads Ch. 4 Photosynthesis Gate B4 6:38, row three reads Ch. 5 Genetics Gate B7 5:02; each row has a black directional arrow locked to its right edge; the active route row is filled yellow. At the right, a narrow white document preview panel shows a paragraph of reading text with one sentence highlighted black. Strict grid, flat vector UI, no photography, no photorealistic signage hardware, no people, 16:9.",
-  "model": "seedream_5_0_flash",
-  "job_id": "881e70de-f236-4051-bb6d-ed09abaa398c",
-  "approved": false
-}
