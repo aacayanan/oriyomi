@@ -20,6 +20,14 @@ import type { Section } from "@/components/ChapterSelector";
 export const MAX_FOLD_AUDIO_SECONDS = 240;
 /** Pack split parts to ~3.5 min — margin under the cap, since chars/15 is rough. */
 const TARGET_FOLD_AUDIO_SECONDS = 210;
+/**
+ * Hard character cap per part. The backend chunks internally at 2500 chars
+ * and merges multi-chunk audio with ffmpeg — staying under that keeps every
+ * fold a single edge-tts request (no merge step): faster, and immune to
+ * runtimes without ffmpeg. A single over-long sentence may still exceed it;
+ * the backend's merge path handles that.
+ */
+const PART_MAX_CHARS = 2400;
 
 /** Same sentence regex as tts_chunks.py / tts.py on the backend. */
 const SENTENCE_SPLIT_RE = /(?<=[.!?])(?:"|'|\)|\])*\s+(?=[A-Z"'(\[])/;
@@ -51,19 +59,31 @@ function packSentences(sentences: string[], speed: number): string[] {
   const parts: string[] = [];
   let current: string[] = [];
   let currentSeconds = 0;
+  let currentChars = 0;
+  const safeSpeed = speed > 0 ? speed : 1;
+  // Whichever is tighter: the audio-duration target, or the single-request
+  // char cap (see PART_MAX_CHARS).
+  const charBudget = Math.min(
+    PART_MAX_CHARS,
+    Math.max(1, Math.round(TARGET_FOLD_AUDIO_SECONDS * 15 * safeSpeed)),
+  );
 
   for (const sentence of sentences) {
     const sentenceSeconds = estimateFoldAudioSeconds(sentence, speed);
+    const addedChars = sentence.length + (current.length > 0 ? 1 : 0);
     if (
       current.length > 0 &&
-      currentSeconds + sentenceSeconds > TARGET_FOLD_AUDIO_SECONDS
+      (currentSeconds + sentenceSeconds > TARGET_FOLD_AUDIO_SECONDS ||
+        currentChars + addedChars > charBudget)
     ) {
       parts.push(current.join(" "));
       current = [];
       currentSeconds = 0;
+      currentChars = 0;
     }
     current.push(sentence);
     currentSeconds += sentenceSeconds;
+    currentChars += sentence.length + (current.length > 1 ? 1 : 0);
   }
   if (current.length > 0) parts.push(current.join(" "));
 

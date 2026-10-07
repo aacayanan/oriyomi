@@ -77,6 +77,7 @@ Open **http://localhost:3000**. Point the frontend at the API with `API_PROXY_UR
 | `GEMINI_API_KEY` | app | No | Enables the comprehension quiz. Without it, the reader still works; the quiz degrades gracefully. |
 | `SUPABASE_URL` | app | No | FastAPI: persistent words-folded counter. Falls back to in-memory counting when unset. |
 | `SUPABASE_SERVICE_ROLE_KEY` | app | No | FastAPI: service-role key backing the counter RPC. |
+| `FFMPEG_PATH` | app | No | Explicit ffmpeg binary for MP3 chunk merging. Defaults to the static binary bundled via `imageio-ffmpeg`, then PATH. |
 | `ALLOWED_ORIGINS` | app | No | CORS origins for direct browser → API calls. Defaults to `http://localhost:3000,http://127.0.0.1:3000`. Unused when the Next.js proxy is in play. |
 | `API_PROXY_URL` | frontend (Docker) | No | Where the Next dev/proxy forwards `/api/*`. Defaults to `http://localhost:8000`. |
 

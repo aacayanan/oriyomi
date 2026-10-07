@@ -6,3 +6,6 @@ python-dotenv>=1.0
 google-genai>=1.0
 sumy>=0.11
 supabase>=2.0
+# Static ffmpeg binary for MP3 chunk merging on serverless runtimes
+# (Vercel's Python runtime ships no system ffmpeg; Docker installs it).
+imageio-ffmpeg>=0.5

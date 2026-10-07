@@ -313,6 +313,13 @@ async def text_to_speech(request: TTSRequest):
         raise HTTPException(status_code=400, detail=str(e))
     except RuntimeError as e:
         raise HTTPException(status_code=500, detail=f"TTS generation failed: {e}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Anything else (missing binary, OOM, …) — return JSON so clients
+        # surface the message instead of dying on a plain-text 500 body.
+        logger.exception("Unexpected TTS failure")
+        raise HTTPException(status_code=500, detail=f"TTS generation failed: {e}")
 
     _increment_words_folded(_count_words(request.text))
 
@@ -348,6 +355,13 @@ async def tts_fold(request: FoldTTSRequest):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=f"TTS generation failed: {e}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Anything else (missing binary, OOM, …) — return JSON so clients
+        # surface the message instead of dying on a plain-text 500 body.
+        logger.exception("Unexpected TTS failure")
         raise HTTPException(status_code=500, detail=f"TTS generation failed: {e}")
 
     duration_val = result.sentences[-1].end_ms if result.sentences else 0

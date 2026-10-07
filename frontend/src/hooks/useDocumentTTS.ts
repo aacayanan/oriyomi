@@ -160,7 +160,19 @@ export default function useDocumentTTS(): UseDocumentTTSReturn {
               }),
               signal: abort.signal,
             });
-            const data = await res.json();
+            // Parse defensively: platform/proxy failures can return plain-text
+            // bodies ("Internal Server Error") that would crash res.json().
+            const bodyText = await res.text();
+            let data: { detail?: string } = {};
+            if (bodyText) {
+              try {
+                data = JSON.parse(bodyText);
+              } catch {
+                throw new Error(
+                  bodyText.slice(0, 200) || `Server error (${res.status})`,
+                );
+              }
+            }
             if (!res.ok) {
               throw new Error(data.detail || `Server error (${res.status})`);
             }

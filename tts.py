@@ -9,6 +9,7 @@ import asyncio
 import logging
 import os
 import re
+import shutil
 import subprocess
 import tempfile
 import time
@@ -355,37 +356,57 @@ async def generate_audio_chunked(
     return _merge_chunk_results(list(results))
 
 
-def _merge_chunk_results(results: list[TTSResult]) -> TTSResult:
+def _resolve_ffmpeg() -> str | None:
     """
-    Concatenate chunk audio with ffmpeg (lossless, no re-encoding) and
-    stitch sentence timestamps with cumulative offsets.
+    Locate an ffmpeg binary.
+
+    Order: FFMPEG_PATH env override → the static binary bundled in the
+    imageio-ffmpeg wheel (covers serverless runtimes like Vercel, which
+    ship no system ffmpeg) → whatever is on PATH (Docker/local dev).
+    Returns None when nothing is available; callers fall back to a
+    pure-Python MP3 byte-concatenation.
     """
-    if len(results) == 1:
-        return results[0]
+    override = os.environ.get("FFMPEG_PATH")
+    if override and os.path.exists(override):
+        return override
+    try:
+        import imageio_ffmpeg
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:
+        pass
+    return shutil.which("ffmpeg")
+
+
+def _concat_mp3_bytes(chunk_bytes: list[bytes]) -> bytes:
+    """
+    Merge per-chunk MP3 audio into one buffer.
+
+    Uses ffmpeg's concat demuxer (lossless, no re-encoding) when a binary
+    is available. Without one — e.g. a bare Vercel Python function — falls
+    back to byte concatenation: MP3 frames are self-contained, so browsers
+    decode the joined stream fine, and sentence timestamps are already
+    cumulative across chunks.
+    """
+    if len(chunk_bytes) == 1:
+        return chunk_bytes[0]
+
+    ffmpeg_exe = _resolve_ffmpeg()
+    if not ffmpeg_exe:
+        logger.warning(
+            "ffmpeg not found (set FFMPEG_PATH or install imageio-ffmpeg) — "
+            "concatenating MP3 bytes directly",
+        )
+        return b"".join(chunk_bytes)
 
     audio_files: list[str] = []
-    all_sentences: list[SentenceTimestamp] = []
-    cumulative_ms = 0
     concat_list_name = ""
     output_name = ""
-
     try:
-        for result in results:
+        for data in chunk_bytes:
             tmp = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
-            tmp.write(result.audio_bytes)
+            tmp.write(data)
             tmp.close()
             audio_files.append(tmp.name)
-
-            for s in result.sentences:
-                all_sentences.append(
-                    SentenceTimestamp(
-                        text=s.text,
-                        start_ms=s.start_ms + cumulative_ms,
-                        end_ms=s.end_ms + cumulative_ms,
-                    )
-                )
-            if result.sentences:
-                cumulative_ms += result.sentences[-1].end_ms
 
         concat_list = tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False)
         for f in audio_files:
@@ -399,7 +420,7 @@ def _merge_chunk_results(results: list[TTSResult]) -> TTSResult:
 
         subprocess.run(
             [
-                "ffmpeg", "-y",
+                ffmpeg_exe, "-y",
                 "-f", "concat",
                 "-safe", "0",
                 "-i", concat_list_name,
@@ -411,9 +432,7 @@ def _merge_chunk_results(results: list[TTSResult]) -> TTSResult:
         )
 
         with open(output_name, "rb") as f:
-            merged_audio = f.read()
-
-        return TTSResult(audio_bytes=merged_audio, sentences=all_sentences)
+            return f.read()
     finally:
         for f in audio_files:
             try:
@@ -426,3 +445,29 @@ def _merge_chunk_results(results: list[TTSResult]) -> TTSResult:
                     os.unlink(name)
                 except OSError:
                     pass
+
+
+def _merge_chunk_results(results: list[TTSResult]) -> TTSResult:
+    """
+    Stitch chunk sentence timestamps with cumulative offsets and concatenate
+    the chunk audio (ffmpeg when available, byte-join otherwise).
+    """
+    if len(results) == 1:
+        return results[0]
+
+    all_sentences: list[SentenceTimestamp] = []
+    cumulative_ms = 0
+    for result in results:
+        for s in result.sentences:
+            all_sentences.append(
+                SentenceTimestamp(
+                    text=s.text,
+                    start_ms=s.start_ms + cumulative_ms,
+                    end_ms=s.end_ms + cumulative_ms,
+                )
+            )
+        if result.sentences:
+            cumulative_ms += result.sentences[-1].end_ms
+
+    merged_audio = _concat_mp3_bytes([r.audio_bytes for r in results])
+    return TTSResult(audio_bytes=merged_audio, sentences=all_sentences)
